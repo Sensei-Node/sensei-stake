@@ -1,0 +1,16 @@
+{
+  "name": "ssv-keys-node-example",
+  "version": "0.0.1",
+  "description": "",
+  "main": "ssv-register-validator.js",
+  "scripts": {
+    "start": "node ssv-register-validator.js"
+  },
+  "author": "SSV.Network",
+  "license": "ISC",
+  "dependencies": {
+    "js-base64": "^3.7.2",
+    "ssv-keys": "https://github.com/bloxapp/ssv-keys.git",
+    "web3": "^1.7.3"
+  }
+}
