@@ -59,6 +59,7 @@ describe('TestnetComplete', () => {
     */
     const { salt, sc } = serviceContracts[0];
     const { salt: salt1, sc: sc1 } = serviceContracts[1];
+    let receipt;
     let balances = {
       sc: {},
       token: {}
@@ -71,28 +72,27 @@ describe('TestnetComplete', () => {
     let tx = await factoryContract.connect(alice).fundMultipleContracts([salt], false, {
       value: amount
     });
-    await tx.wait();
+    receipt = await tx.wait(1);
     balances.sc.after_1 = (await factoryContract.getBalanceOf(alice.address)).toString()
     balances.token.after_1 = (await tokenContract.balanceOf(alice.address)).toString()
-    console.log(balances);
     expect(balances.sc.after_1 - balances.sc.before_1).to.be.equal(parseInt(amount));
     expect(balances.token.after_1 - balances.token.before_1).to.be.equal(parseInt(amount));
-    console.log('OK: 1. Alice deposita 1 eth en sc1 (factory salt1)');
+    console.log('OK: 1. Alice deposita 1 eth en sc1 (factory salt1) at block', receipt.blockNumber);
 
     // 2. Alice retira 1 eth factory
     balances.sc.before_2 = (await factoryContract.getBalanceOf(alice.address)).toString()
     balances.token.before_2 = (await tokenContract.balanceOf(alice.address)).toString()
     let withdrawAllowance = await factoryContract.connect(alice).increaseWithdrawalAllowance(amount);
-    await withdrawAllowance.wait();
+    receipt = await withdrawAllowance.wait(1);
     let withdraw = await factoryContract.connect(alice).withdraw(amount);
-    await withdraw.wait();
+    receipt = await withdraw.wait(1);
     balances.sc.after_2 = (await factoryContract.getBalanceOf(alice.address)).toString()
     balances.token.after_2 = (await tokenContract.balanceOf(alice.address)).toString()
     expect(balances.sc.before_2 - balances.sc.after_2).to.be.equal(parseInt(amount));
     expect(balances.token.before_2 - balances.token.after_2).to.be.equal(parseInt(amount));
     expect(parseInt(balances.sc.after_2)).to.be.equal(parseInt(balances.sc.before_2)-parseInt(balances.sc.after_2)-parseInt(amount));
     expect(parseInt(balances.token.after_2)).to.be.equal(parseInt(balances.token.before_2)-parseInt(balances.token.after_2)-parseInt(amount));
-    console.log('OK: 2. Alice retira 1 eth factory');
+    console.log('OK: 2. Alice retira 1 eth factory at block', receipt.blockNumber);
     
     // 3. Alice deposita 1 eth en sc1  (factory sal1)
     balances.sc.before_3 = (await factoryContract.getBalanceOf(alice.address)).toString()
@@ -100,12 +100,12 @@ describe('TestnetComplete', () => {
     tx = await factoryContract.connect(alice).fundMultipleContracts([salt], false, {
       value: amount
     });
-    await tx.wait();
+    receipt = await tx.wait(1);
     balances.sc.after_3 = (await factoryContract.getBalanceOf(alice.address)).toString()
     balances.token.after_3 = (await tokenContract.balanceOf(alice.address)).toString()
     expect(balances.sc.after_3 - balances.sc.before_3).to.be.equal(parseInt(amount));
     expect(balances.token.after_3 - balances.token.before_3).to.be.equal(parseInt(amount));
-    console.log('OK: 3. Alice deposita 1 eth en sc1  (factory sal1)')
+    console.log('OK: 3. Alice deposita 1 eth en sc1  (factory sal1) at block', receipt.blockNumber)
 
     // 4. Alice deposita 1 eth en sc2 (factory sal2)
     balances.sc.before_4 = (await factoryContract.getBalanceOf(alice.address)).toString()
@@ -113,28 +113,28 @@ describe('TestnetComplete', () => {
     tx = await factoryContract.connect(alice).fundMultipleContracts([salt1], false, {
       value: amount
     });
-    await tx.wait();
+    receipt = await tx.wait(1);
     balances.sc.after_4 = (await factoryContract.getBalanceOf(alice.address)).toString()
     balances.token.after_4 = (await tokenContract.balanceOf(alice.address)).toString()
     expect(balances.sc.after_4 - balances.sc.before_4).to.be.equal(parseInt(amount));
     expect(balances.token.after_4 - balances.token.before_4).to.be.equal(parseInt(amount));
-    console.log('OK: 4. Alice deposita 1 eth en sc2 (factory sal2)')
+    console.log('OK: 4. Alice deposita 1 eth en sc2 (factory sal2) at block', receipt.blockNumber)
 
     // 5. Alice retira 2 eth factory
     balances.sc.before_5 = (await factoryContract.getBalanceOf(alice.address)).toString()
     balances.token.before_5 = (await tokenContract.balanceOf(alice.address)).toString()
     let withdrawAmount = "2000000000000000000" // 2eth
     withdrawAllowance = await factoryContract.connect(alice).increaseWithdrawalAllowance(withdrawAmount);
-    await withdrawAllowance.wait();
+    receipt = await withdrawAllowance.wait(1);
     withdraw = await factoryContract.connect(alice).withdraw(withdrawAmount);
-    await withdraw.wait();
+    receipt = await withdraw.wait(1);
     balances.sc.after_5 = (await factoryContract.getBalanceOf(alice.address)).toString()
     balances.token.after_5 = (await tokenContract.balanceOf(alice.address)).toString()
     expect(balances.sc.before_5 - balances.sc.after_5).to.be.equal(parseInt(withdrawAmount));
     expect(balances.token.before_5 - balances.token.after_5).to.be.equal(parseInt(withdrawAmount));
     expect(parseInt(balances.sc.after_5)).to.be.equal(parseInt(balances.sc.before_5)-parseInt(balances.sc.after_5)-parseInt(withdrawAmount));
     expect(parseInt(balances.token.after_5)).to.be.equal(parseInt(balances.sc.before_5)-parseInt(balances.sc.after_5)-parseInt(withdrawAmount));
-    console.log('OK: 5. Alice retira 2 eth factory')
+    console.log('OK: 5. Alice retira 2 eth factory at block', receipt.blockNumber)
 
     // 6. Alice deposita 2 eth en sc1  (factory sal1)
     balances.sc.before_6 = (await factoryContract.getBalanceOf(alice.address)).toString()
@@ -142,12 +142,12 @@ describe('TestnetComplete', () => {
     tx = await factoryContract.connect(alice).fundMultipleContracts([salt], false, {
       value: withdrawAmount
     });
-    await tx.wait();
+    receipt = await tx.wait(1);
     balances.sc.after_6 = (await factoryContract.getBalanceOf(alice.address)).toString()
     balances.token.after_6 = (await tokenContract.balanceOf(alice.address)).toString()
     expect(balances.sc.after_6 - balances.sc.before_6).to.be.equal(parseInt(withdrawAmount));
     expect(balances.token.after_6 - balances.token.before_6).to.be.equal(parseInt(withdrawAmount));
-    console.log('OK: 6. Alice deposita 2 eth en sc1  (factory sal1)')
+    console.log('OK: 6. Alice deposita 2 eth en sc1  (factory sal1) at block', receipt.blockNumber)
 
     // 7. Alice transfiere a bob 1 eth
     let amountDeposit =  "2000000000000000000"
@@ -187,7 +187,7 @@ describe('TestnetComplete', () => {
         -1
     }
     const txTranf = await tokenContract.connect(alice).transfer(bob.address, amountTransfer)
-    await txTranf.wait();
+    receipt = await txTranf.wait(1);
 
     balances.sc.after_7 = {
       alice: (await factoryContract.getBalanceOf(alice.address)).toString(),
@@ -223,17 +223,17 @@ describe('TestnetComplete', () => {
     let lenbi = deposit_service_contracts_indices.after.bob.length
     // todo aca
     // expect(parseInt(deposit_service_contracts_indices.before.alice[lenai-1])).to.be.equal(parseInt(deposit_service_contracts_indices.after.bob[lenbi-1]));
-    console.log('OK: 7. Alice transfiere a bob 1 eth')
+    console.log('OK: 7. Alice transfiere a bob 1 eth at block', receipt.blockNumber)
 
     // 8. Bob retira 0.5 eth factory
     amount = "500000000000000000"
     balances.sc.before_8 = (await factoryContract.getBalanceOf(bob.address)).toString()
     balances.token.before_8 = (await tokenContract.balanceOf(bob.address)).toString()
-    withdrawAllowance = await factoryContract.connect(bob).increaseWithdrawalAllowance(amount);
     deposit_service_contracts.before.bob = await factoryContract.getDepositServiceContract(bob.address)
-    await withdrawAllowance.wait();
+    withdrawAllowance = await factoryContract.connect(bob).increaseWithdrawalAllowance(amount);
+    receipt = await withdrawAllowance.wait(1);
     withdraw = await factoryContract.connect(bob).withdraw(amount);
-    await withdraw.wait();
+    receipt = await withdraw.wait(1);
     balances.sc.after_8 = (await factoryContract.getBalanceOf(bob.address)).toString()
     balances.token.after_8 = (await tokenContract.balanceOf(bob.address)).toString()
     deposit_service_contracts.after.bob = await factoryContract.getDepositServiceContract(bob.address)
@@ -247,16 +247,16 @@ describe('TestnetComplete', () => {
     amount = "1000000000000000000"
     balances.sc.before_9 = (await factoryContract.getBalanceOf(alice.address)).toString()
     balances.token.before_9 = (await tokenContract.balanceOf(alice.address)).toString()
-    withdrawAllowance = await factoryContract.connect(alice).increaseWithdrawalAllowance(amount);
     deposit_service_contracts.before.alice = await factoryContract.getDepositServiceContract(alice.address)
+    withdrawAllowance = await factoryContract.connect(alice).increaseWithdrawalAllowance(amount);
+    receipt = await withdrawAllowance.wait(1);
     for (let index = 0; index < serviceContractIndex; index++) {
       deposit_service_contracts_indices.before.alice[index] = deposit_service_contracts.before.alice[index] ?
         (await factoryContract.getDepositServiceContractIndex(alice.address, deposit_service_contracts.before.alice[index])).toString() : 
         -1
     }
-    await withdrawAllowance.wait();
     withdraw = await factoryContract.connect(alice).withdraw(amount);
-    await withdraw.wait();
+    receipt = await withdraw.wait(1);
     balances.sc.after_9 = (await factoryContract.getBalanceOf(alice.address)).toString()
     balances.token.after_9 = (await tokenContract.balanceOf(alice.address)).toString()
     deposit_service_contracts.after.alice = await factoryContract.getDepositServiceContract(alice.address)
@@ -275,17 +275,17 @@ describe('TestnetComplete', () => {
     // check its indices (if -1 means no existent)
     // todo aca
     // expect(parseInt(deposit_service_contracts_indices.after.alice[deposit_service_contracts_indices.after.alice.length-1])).to.be.equal(-1);
-    console.log('OK: 9. Alice retira 1 eth factory');
+    console.log('OK: 9. Alice retira 1 eth factory at block', receipt.blockNumber);
 
     // 10. Bob retira 0.5 eth factory
     amount = "500000000000000000"
     balances.sc.before_10 = (await factoryContract.getBalanceOf(bob.address)).toString()
     balances.token.before_10 = (await tokenContract.balanceOf(bob.address)).toString()
-    withdrawAllowance = await factoryContract.connect(bob).increaseWithdrawalAllowance(amount);
     deposit_service_contracts.before.bob = await factoryContract.getDepositServiceContract(bob.address)
-    await withdrawAllowance.wait();
+    withdrawAllowance = await factoryContract.connect(bob).increaseWithdrawalAllowance(amount);
+    receipt = await withdrawAllowance.wait(1);
     withdraw = await factoryContract.connect(bob).withdraw(amount);
-    await withdraw.wait();
+    receipt = await withdraw.wait(1);
     balances.sc.after_10 = (await factoryContract.getBalanceOf(bob.address)).toString()
     balances.token.after_10 = (await tokenContract.balanceOf(bob.address)).toString()
     deposit_service_contracts.after.bob = await factoryContract.getDepositServiceContract(bob.address)
@@ -294,7 +294,7 @@ describe('TestnetComplete', () => {
     // deposit contracts mappings
     // expect(deposit_service_contracts.before.bob.length).to.be.equal(1);
     expect(deposit_service_contracts.after.bob.length).to.be.equal(deposit_service_contracts.before.bob.length-1);
-    console.log('OK: 10. Bob retira 0.5 eth factory');
+    console.log('OK: 10. Bob retira 0.5 eth factory at block', receipt.blockNumber);
 
     console.log(balances)
   });

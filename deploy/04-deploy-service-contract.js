@@ -69,6 +69,9 @@ module.exports = async ({
             exitDate)
 
         const fcs = await factoryContract.createContract(saltBytes, commitment);
+        if (['testnet', 'mainnet'].includes(network.config.type)) {
+            await fcs.wait(2)
+        }
 
         console.log("Service contract deployed at: ", contractAddress);
         console.log("Salt bytes (remix format):", `["0x${saltBytes.toString("hex")}"]`);
@@ -110,7 +113,7 @@ module.exports = async ({
             ...artifact
         }
 
-        // if ([1, 5].includes(network.config.chainId) && process.env.ETHERSCAN_KEY) {
+        // if (['testnet', 'mainnet'].includes(network.config.type) && process.env.ETHERSCAN_KEY) {
         //     await verify(NNETWK.CONTRACT_IMPL_ADDRESS, args)
         // }
 

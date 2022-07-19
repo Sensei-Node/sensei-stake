@@ -51,7 +51,7 @@ module.exports = {
     },
     goerli: {
       url: process.env.GOERLI_RPC,
-      accounts: [process.env.ACCOUNT_PK_GOERLI, process.env.ACCOUNT_PK_GOERLI_FEDE, process.env.ACCOUNT_PK_GOERLI_ALICE],
+      accounts: [process.env.ACCOUNT_PK_GOERLI, process.env.ACCOUNT_PK_GOERLI_ALICE, process.env.ACCOUNT_PK_GOERLI_FEDE],
       chainId: 5,
       type: 'testnet'
     },

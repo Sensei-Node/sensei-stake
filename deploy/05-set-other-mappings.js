@@ -24,36 +24,39 @@ module.exports = async ({
         'SenseistakeStorage'
     );
     const storageContract = await contr.attach(storageDeployment.address);
-    const factoryDeployment = await deployments.get("SenseistakeServicesContractFactory");
-    const FactoryContract = await ethers.getContractFactory(
-        'SenseistakeServicesContractFactory'
-    );
-    const factoryContract = await FactoryContract.attach(factoryDeployment.address);
+    // const factoryDeployment = await deployments.get("SenseistakeServicesContractFactory");
+    // const FactoryContract = await ethers.getContractFactory(
+    //     'SenseistakeServicesContractFactory'
+    // );
+    // const factoryContract = await FactoryContract.attach(factoryDeployment.address);
     // const serviceContractIndex = await factoryContract.getLastIndexServiceContract();
     const serviceContractIndex = deploymentVariables.servicesToDeploy;
     const contracts = ['SenseistakeStorage','SenseistakeERC20Wrapper', 'SenseistakeServicesContractFactory']
     for( let i = 1 ; i <= serviceContractIndex; i++) {
         contracts.push("SenseistakeServicesContract"+i)
     }
+    console.log("... Seteando variables para", contracts, "...");
+    let tx;
     for(contract_name of contracts){
         console.log('... Seteando variables', contract_name, '...')
         const contractDeployment = await deployments.get(contract_name)
-        await storageContract.setBool(
+        tx = await storageContract.setBool(
             keccak256(ethers.utils.solidityPack(["string", "address"], ["contract.exists", contractDeployment.address])),
             true
         );
+        await tx.wait(1);
         // Register the contract's name by address
-        await storageContract.setString(
+        tx = await storageContract.setString(
             keccak256(ethers.utils.solidityPack(["string", "address"], ["contract.name", contractDeployment.address])),
             contract_name
         );
-        
+        await tx.wait(1);
         // Register the contract's address by name
-        await storageContract.setAddress(
+        tx = await storageContract.setAddress(
             keccak256(ethers.utils.solidityPack(["string", "string"], ["contract.address", contract_name])),
             contractDeployment.address
         );
-        
+        await tx.wait(1);
         // const artifact = await deployments.getArtifact('SenseistakeStorage');
         // // Compress and store the ABI by name
         // await storageContract.setString(

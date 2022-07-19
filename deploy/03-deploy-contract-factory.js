@@ -21,8 +21,7 @@ module.exports = async ({
         waitConfirmations: deploymentVariables.waitConfirmations
     })
 
-    //   goerli == 5 .. mainnet == 1
-    if ([1, 5].includes(network.config.chainId) && process.env.ETHERSCAN_KEY) {
+    if (['testnet', 'mainnet'].includes(network.config.type) && process.env.ETHERSCAN_KEY) {
         await verify(senseistakeFactory.address, args)
     }
 }
