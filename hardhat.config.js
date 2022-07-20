@@ -47,19 +47,25 @@ module.exports = {
   networks: {
     hardhat: {
       initialBaseFeePerGas: 0,
-      type: 'local'
+      type: 'hardhat'
     },
     goerli: {
       url: process.env.GOERLI_RPC,
-      accounts: [process.env.ACCOUNT_PK_GOERLI, process.env.ACCOUNT_PK_GOERLI_ALICE, process.env.ACCOUNT_PK_GOERLI_FEDE],
+      accounts: [process.env.ACCOUNT_PK_GOERLI, process.env.ACCOUNT_PK_GOERLI_ALICE, process.env.ACCOUNT_PK_GOERLI_BOB],
       chainId: 5,
       type: 'testnet'
     },
     ganache: {
       url: process.env.GANACHE_RPC,
-      accounts: [process.env.ACCOUNT_PK_GANACHE],
-      type: 'local'
-    }
+      accounts: [process.env.ACCOUNT_PK_GANACHE, process.env.ACCOUNT_PK_GANACHE_ALICE, process.env.ACCOUNT_PK_GANACHE_BOB],
+      type: 'ganache'
+    },
+    // mainnet: {
+    //   url: process.env.MAINNET_RPC,
+    //   accounts: [process.env.ACCOUNT_PK_MAINNET],
+    //   chainId: 1,
+    //   type: 'mainnet'
+    // },
   },
 
   gasReporter: {

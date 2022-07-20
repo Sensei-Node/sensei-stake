@@ -11,7 +11,7 @@ describe('Withdraw', () => {
   let serviceContracts = [];
 
   beforeEach(async function () {
-    if (network.config.type == 'local') await deployments.fixture();
+    if (network.config.type == 'hardhat') await deployments.fixture();
     [owner, alice, operator, bob] = await ethers.getSigners();
     // get factory deployment
     const factoryDeployment = await deployments.get('SenseistakeServicesContractFactory')

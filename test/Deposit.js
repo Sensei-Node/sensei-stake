@@ -26,7 +26,7 @@ describe('Deposit', () => {
     //   'SenseistakeServicesContract1',
     //   'ServiceContractSalt1',
     // ]);
-    if (network.config.type == 'local') await deployments.fixture();
+    if (network.config.type == 'hardhat') await deployments.fixture();
     [owner, alice, bob, operator] = await ethers.getSigners();
     // get factory deployment
     const factoryDeployment = await deployments.get('SenseistakeServicesContractFactory')

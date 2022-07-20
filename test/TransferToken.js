@@ -12,7 +12,7 @@ describe('TransferToken', () => {
   let deposit_service_contracts_indices, deposit_service_contracts_indices1, deposit_service_contracts_indices2;
 
   beforeEach(async function () {
-    if (network.config.type == 'local') await deployments.fixture();
+    if (network.config.type == 'hardhat') await deployments.fixture();
     [owner, alice, operator, bob] = await ethers.getSigners();
     // get factory deployment
     const factoryDeployment = await deployments.get('SenseistakeServicesContractFactory')

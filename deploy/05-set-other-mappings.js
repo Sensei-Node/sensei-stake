@@ -44,19 +44,25 @@ module.exports = async ({
             keccak256(ethers.utils.solidityPack(["string", "address"], ["contract.exists", contractDeployment.address])),
             true
         );
-        await tx.wait(1);
+        if (['testnet', 'mainnet'].includes(network.config.type)) {
+            await tx.wait(1);
+        }
         // Register the contract's name by address
         tx = await storageContract.setString(
             keccak256(ethers.utils.solidityPack(["string", "address"], ["contract.name", contractDeployment.address])),
             contract_name
         );
-        await tx.wait(1);
+        if (['testnet', 'mainnet'].includes(network.config.type)) {
+            await tx.wait(1);
+        }
         // Register the contract's address by name
         tx = await storageContract.setAddress(
             keccak256(ethers.utils.solidityPack(["string", "string"], ["contract.address", contract_name])),
             contractDeployment.address
         );
-        await tx.wait(1);
+        if (['testnet', 'mainnet'].includes(network.config.type)) {
+            await tx.wait(1);
+        }
         // const artifact = await deployments.getArtifact('SenseistakeStorage');
         // // Compress and store the ABI by name
         // await storageContract.setString(
