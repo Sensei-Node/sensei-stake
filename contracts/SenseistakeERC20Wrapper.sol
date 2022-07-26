@@ -136,26 +136,29 @@ contract SenseistakeERC20Wrapper is SenseistakeBase, IERC20, Initializable, ISen
     //     _transfer(msg.sender, to, amount);
     //     return true;
     // }
-    function transfer(address to, uint256 amount) external override returns (bool) {
-        address factory_address = getContractAddress("SenseistakeServicesContractFactory");
-        ISenseistakeServicesContractFactory factory = ISenseistakeServicesContractFactory(factory_address);
+    function transfer(address to, uint256 amount) external override functionDisabled("transfer", address(this)) returns (bool) {
+        ISenseistakeServicesContractFactory factory = ISenseistakeServicesContractFactory(
+            getContractAddress("SenseistakeServicesContractFactory")
+        );
         require(factory.getBalanceOf(msg.sender) >= amount, "Not enough balance");
         uint256 remaining = amount;
         address[] memory services_contracts = factory.getDepositServiceContract(msg.sender);
         address[] memory removeAddress = new address[](services_contracts.length);
         // first retrieve from all services contracts, and replace ownership
-        for (uint256 i = 0; i < services_contracts.length; i++) {
+        for (uint256 i = 1; i < services_contracts.length; i++) {
             removeAddress[i] = address(0);
-            address addr = services_contracts[i];
-            ISenseistakeServicesContract sc = ISenseistakeServicesContract(payable(addr));
+            // address addr = services_contracts[i];
+            ISenseistakeServicesContract sc = ISenseistakeServicesContract(
+                payable(services_contracts[i])
+            );
             uint256 depositAmount = sc.getDeposit(msg.sender);
             uint256 withdrawAmount = _min(remaining, depositAmount);
             sc.increaseWithdrawalAllowanceFromToken(msg.sender, withdrawAmount);
             sc.transferDepositFrom(msg.sender, to, withdrawAmount); // replace deposits ownership
             if (withdrawAmount == depositAmount) {
-                removeAddress[i] = addr;
+                removeAddress[i] = services_contracts[i];
             } else {
-                factory.addDepositServiceContract(addr, to); // share ownership in _depositServiceContracts in factory
+                factory.addDepositServiceContract(services_contracts[i], to); // share ownership in _depositServiceContracts in factory
             }
             remaining -= withdrawAmount;
             if (remaining == 0) { break; }

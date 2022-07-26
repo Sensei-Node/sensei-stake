@@ -16,4 +16,10 @@ const mappingChainId = {
     goerli: 5
 }
 
-module.exports = { deploymentVariables, mappingChainId }
+const waitConfirmations = {
+    ganache: 0,
+    hardhat: 0,
+    testnet: 2
+}
+
+module.exports = { deploymentVariables, mappingChainId, waitConfirmations }

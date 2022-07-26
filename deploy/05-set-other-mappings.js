@@ -70,6 +70,13 @@ module.exports = async ({
         //     compressABI(artifact.abi)
         // );
     }
+
+    // disabling transfers
+    const contractDeployment = await deployments.get("SenseistakeERC20Wrapper")
+    tx = await storageContract.setBool(
+        keccak256(ethers.utils.solidityPack(["string", "address"], ["contract.exists", contractDeployment.address])),
+        true
+    );
 }
 
 module.exports.tags = ["all", "mappings"]

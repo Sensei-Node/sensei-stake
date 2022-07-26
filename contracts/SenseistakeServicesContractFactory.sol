@@ -254,16 +254,6 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
         return a <= b ? a : b;
     }
 
-    function _addDepositServiceContract(
-        address serviceContractAddress,
-        address depositor
-    ) internal {
-        if (_depositServiceContractsIndices[depositor][serviceContractAddress] == 0) {
-            _depositServiceContracts[depositor].push(serviceContractAddress);
-            _depositServiceContractsIndices[depositor][serviceContractAddress] = (_depositServiceContracts[depositor].length - 1);
-        }
-    }
-
     function getDepositServiceContract(
         address depositor
     ) external override view returns (address[] memory) {
@@ -292,20 +282,6 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
         _replaceFromDepositServiceContracts(index, from);
     }
 
-    // for putting the last element in the array of the mapping _depositServiceContractsIndices
-    // into a certain index, so that we can have the array length decreased
-    function _replaceFromDepositServiceContracts(uint256 index, address user) internal {
-        if (index != _depositServiceContracts[user].length - 1) {
-            address last_value = _depositServiceContracts[user][_depositServiceContracts[user].length - 1];
-            _depositServiceContracts[user].pop(); // remove last element and decrease length
-            _depositServiceContracts[user][index] = last_value; // put last element in desired index
-            _depositServiceContractsIndices[user][last_value] = index; // change also indices mapping
-        } else {
-            delete _depositServiceContractsIndices[user][_depositServiceContracts[user][index]];
-            _depositServiceContracts[user].pop();
-        }
-    }
-
     // this method is used when only a part of the amount deposited from a user (in a service contract)
     // is give to another user, and some other part is kept for the original user
     function addDepositServiceContract(
@@ -315,20 +291,51 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
         _addDepositServiceContract(serviceContractAddress, to);
     }
 
+    // just for adding the smart contract to the storage, without duplicates
+    function _addDepositServiceContract(
+        address serviceContractAddress,
+        address depositor
+    ) internal {
+        // we want to disable usage of zero position, because will generate problems with
+        // dupe check for index == 0 later on
+        if (_depositServiceContracts[depositor].length == 0) {
+            _depositServiceContracts[depositor].push(address(0));
+            _depositServiceContractsIndices[depositor][address(0)] = 0;
+        }
+        if (_depositServiceContractsIndices[depositor][serviceContractAddress] == 0) {
+            _depositServiceContracts[depositor].push(serviceContractAddress);
+            _depositServiceContractsIndices[depositor][serviceContractAddress] = _depositServiceContracts[depositor].length - 1;
+        }
+    }
+
+    // for putting the last element in the array of the mapping _depositServiceContractsIndices
+    // into a certain index, so that we can have the array length decreased
+    function _replaceFromDepositServiceContracts(uint256 index, address user) internal {
+        if (index != _depositServiceContracts[user].length - 1) {
+            address last_value = _depositServiceContracts[user][_depositServiceContracts[user].length - 1];
+            delete _depositServiceContractsIndices[user][_depositServiceContracts[user][index]]; // remove index of service contract to be deleted
+            _depositServiceContracts[user].pop(); // remove last element and decrease length
+            _depositServiceContracts[user][index] = last_value; // put last element in desired index
+            _depositServiceContractsIndices[user][last_value] = index; // change also indices mapping
+        } else {
+            delete _depositServiceContractsIndices[user][_depositServiceContracts[user][index]];
+            _depositServiceContracts[user].pop();
+        }
+    }
 
     function withdraw(
         uint256 amount
     ) external override returns (bool) {
-        require(_depositServiceContracts[msg.sender].length != 0, "Client should have deposited");
+        require(_depositServiceContracts[msg.sender].length > 1, "Client should have deposited");
         uint256 remaining = amount;
         // because cannot create dynamic memory arrays
         uint256 totalContracts = _depositServiceContracts[msg.sender].length;
         int256[] memory removeIndices = new int256[](totalContracts);
-        for (uint256 i = 0; i < totalContracts; i++) {
+        for (uint256 i = 1; i < totalContracts; i++) {
             // we start it with -1 so that we can later check all those that are not -1 for removal
             removeIndices[i] = -1; 
         }
-        for (uint256 i = 0; i < totalContracts; i++) {
+        for (uint256 i = 1; i < totalContracts; i++) {
             address addr = _depositServiceContracts[msg.sender][i];
             ISenseistakeServicesContract sc = ISenseistakeServicesContract(payable(addr));
             uint256 depositAmount = sc.getDeposit(msg.sender);
@@ -338,14 +345,14 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
             if (withdrawAmount == depositAmount) {
                 uint256 idx = _depositServiceContractsIndices[msg.sender][addr];
                 removeIndices[i] = int256(idx);
-                // _replaceFromDepositServiceContracts(idx, msg.sender);
             }
             remaining -= withdrawAmount;
             if (remaining == 0) { break; }
         }
-        for (uint256 idx = totalContracts; idx > 0; idx--) {
+        // remove from depositor the service contract where he does not have more deposits
+        for (uint256 idx = totalContracts; idx > 1; idx--) {
             if (removeIndices[idx-1] != -1) {
-                _replaceFromDepositServiceContracts(idx-1, msg.sender);
+                _replaceFromDepositServiceContracts(uint256(removeIndices[idx-1]), msg.sender);
             }
         }
         if (remaining > 0) {
@@ -358,9 +365,9 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
     function increaseWithdrawalAllowance(
         uint256 amount
     ) external override returns (bool) {
-        require(_depositServiceContracts[msg.sender].length != 0, "Client should have deposited");
+        require(_depositServiceContracts[msg.sender].length > 1, "Client should have deposited");
         uint256 remaining = amount;
-        for (uint256 i = 0; i < _depositServiceContracts[msg.sender].length; i++) {
+        for (uint256 i = 1; i < _depositServiceContracts[msg.sender].length; i++) {
             address addr = _depositServiceContracts[msg.sender][i];
             ISenseistakeServicesContract sc = ISenseistakeServicesContract(payable(addr));
             uint256 withdrawAmount = _min(remaining, sc.getDeposit(msg.sender));
@@ -382,13 +389,14 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
     function getServiceContractList() external override view returns (address[] memory) {
         return _serviceContractList;
     }
+
     function getServiceContractListAt(uint256 index) external override view returns (address) {
         return _serviceContractList[index];
     }
 
     function getBalanceOf(address user) external override view returns (uint256) {
         uint256 balance;
-        for (uint256 index = 0; index < _depositServiceContracts[user].length; index++) {
+        for (uint256 index = 1; index < _depositServiceContracts[user].length; index++) {
             ISenseistakeServicesContract sc = ISenseistakeServicesContract(_depositServiceContracts[user][index]);
             balance += sc.getDeposit(user);
         }

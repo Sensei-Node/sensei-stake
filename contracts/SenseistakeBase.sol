@@ -46,6 +46,14 @@ abstract contract SenseistakeBase {
         _;
     }
 
+    /**
+    * @dev Throws if explicitly specified that a function in a smart contract is disabled
+    */
+    modifier functionDisabled(string memory _contractFunction, address _contractAddress) {
+        require(false == getBool(keccak256(abi.encodePacked(_contractFunction, _contractAddress))), "Function disabled");
+        _;
+    }
+
 
     /*** Methods **********************************************************/
 
