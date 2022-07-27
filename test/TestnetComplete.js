@@ -6,7 +6,7 @@ const expect = chai.expect;
 const { deploymentVariables } = require("../helpers/variables");
 const { network } = require("hardhat")
 
-describe('TestnetComplete', () => {
+describe('TestnetComplete1', () => {
   let owner, alice, operator, bob;
   let factoryContract, serviceContractIndex, tokenContract;
   let serviceContracts = [];
