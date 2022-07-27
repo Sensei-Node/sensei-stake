@@ -325,24 +325,15 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
     }
 
     function withdraw(
-        uint256 amount
+       address serviceContractAddress
     ) external override returns (bool) {
-        require( amount % 32 == 0, "");
-        require(_depositServiceContracts[msg.sender].length > 1, "Client should have deposited");
-        uint256 remaining = amount;
-        // because cannot create dynamic memory arrays
-        uint256 totalContracts = _depositServiceContracts[msg.sender].length;
-        int256[] memory removeIndices = new int256[](totalContracts);
-        for (uint256 i = 1; i < totalContracts; i++) {
-            // we start it with -1 so that we can later check all those that are not -1 for removal
-            removeIndices[i] = -1; 
-        }
-        for (uint256 i = 1; i < totalContracts; i++) {
-            address addr = _depositServiceContracts[msg.sender][i];
-            ISenseistakeServicesContract sc = ISenseistakeServicesContract(payable(addr));
-            uint256 depositAmount = sc.getDeposit(msg.sender);
-            uint256 withdrawAmount = _min(remaining, depositAmount);
-            sc.withdrawOnBehalfOf(payable(msg.sender), withdrawAmount, _minimumDeposit);
+        require(serviceContractAddress != address(0),"Should be a valid service contract");
+        uint indexSC =  _depositServiceContractsIndices[msg.user][serviceContractAddress];
+        require(_depositServiceContracts[msg.sender][indexSC] == serviceContractAddress, 
+        "Client should have deposited");
+        ISenseistakeServicesContract sc = ISenseistakeServicesContract(payable(serviceContractAddress));
+        uint256 depositAmount = sc.getDeposit(msg.sender);
+        sc.withdrawOnBehalfOf(payable(msg.sender), withdrawAmount, _minimumDeposit);
             // full withdraw remove from service contract list
             if (withdrawAmount == depositAmount) {
                 uint256 idx = _depositServiceContractsIndices[msg.sender][addr];
