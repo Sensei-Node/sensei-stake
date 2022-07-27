@@ -444,6 +444,29 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         return value; 
     }
 
+    function withdrawAllOnBehalfOf(
+        //address depositor,
+        address payable beneficiary,
+        uint256 minimumETHAmount
+    )
+        external
+        override
+        onlyLatestContract("SenseistakeServicesContractFactory", msg.sender)
+        returns (uint256)
+    {
+        require(_state != State.PostDeposit, WITHDRAWALS_NOT_ALLOWED);
+        uint256 spenderAllowance = _allowedWithdrawals[beneficiary][msg.sender];
+        uint256 allDeposit = _deposit[msg.sender];
+        if(spenderAllowance < allDeposit){ revert NotEnoughBalance(); }
+        // Please note that there is no need to require(_deposit <= spenderAllowance)
+        // here because modern versions of Solidity insert underflow checks
+        _allowedWithdrawals[beneficiary][msg.sender] = 0;
+        emit WithdrawalApproval(beneficiary, msg.sender, 0);
+
+        uint256 value = _executeWithdrawal(beneficiary, beneficiary, allDeposit);
+        return value; 
+    }
+
     function transferDeposit(
         address to,
         uint256 amount

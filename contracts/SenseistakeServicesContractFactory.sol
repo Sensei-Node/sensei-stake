@@ -33,7 +33,9 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
     uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
     uint256 private constant COMMISSION_RATE_SCALE = 1000000;
 
-    uint256 private _minimumDeposit = 0.1 ether;
+    // Start to receive 32 or multiplo
+    //uint256 private _minimumDeposit = 0.1 ether;
+    uint256 private _minimumDeposit = 32 ether;
     address payable private _servicesContractImpl;
     address private _operatorAddress;
     uint24 private _commissionRate;
@@ -325,6 +327,7 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
     function withdraw(
         uint256 amount
     ) external override returns (bool) {
+        require( amount % 32 == 0, "");
         require(_depositServiceContracts[msg.sender].length > 1, "Client should have deposited");
         uint256 remaining = amount;
         // because cannot create dynamic memory arrays
