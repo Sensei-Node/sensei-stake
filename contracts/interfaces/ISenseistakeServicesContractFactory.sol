@@ -62,10 +62,9 @@ interface ISenseistakeServicesContractFactory {
     /// @dev The surplus will be returned to caller if all services contracts are filled up.
     /// Using salt instead of address to prevent depositing into malicious contracts.
     /// @param saltValues The salts that are used to deploy services contracts.
-    /// @param force If set to `false` then it will only deposit into a services contract 
     /// when it has more than `MINIMUM_DEPOSIT` ETH of capacity.
     /// @return surplus The amount of returned ETH.
-    function fundMultipleContracts(bytes32[] calldata saltValues, bool force) external payable returns (uint256);
+    function fundMultipleContracts(bytes32[] calldata saltValues) external payable returns (uint256);
 
     /// @notice Returns the address of the operator.
     function getOperatorAddress() external view returns (address);

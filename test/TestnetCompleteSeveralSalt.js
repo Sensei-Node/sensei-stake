@@ -66,7 +66,7 @@ describe('TestnetCompleteSeveralSalt', () => {
       // 1. Alice deposita 1 eth en sc1 (factory salt1) 
       balances.sc.before_1 = (await factoryContract.getBalanceOf(alice.address)).toString()
       balances.token.before_1 = (await tokenContract.balanceOf(alice.address)).toString()
-      let tx1 = await factoryContract.connect(alice).fundMultipleContracts([salt1], false, {
+      let tx1 = await factoryContract.connect(alice).fundMultipleContracts([salt1], {
         value: amount
       });
       receipt = await tx1.wait(waitConfirmations[network.config.type]);
@@ -79,7 +79,7 @@ describe('TestnetCompleteSeveralSalt', () => {
       // 2. Alice deposita 1 eth en sc2 (factory salt2) 
       balances.sc.before_2 = (await factoryContract.getBalanceOf(alice.address)).toString()
       balances.token.before_2 = (await tokenContract.balanceOf(alice.address)).toString()
-      let tx2 = await factoryContract.connect(alice).fundMultipleContracts([salt2], false, {
+      let tx2 = await factoryContract.connect(alice).fundMultipleContracts([salt2], {
         value: amount
       });
       receipt = await tx2.wait(waitConfirmations[network.config.type]);
@@ -92,7 +92,7 @@ describe('TestnetCompleteSeveralSalt', () => {
       // 3. Alice deposita 1 eth en sc3 (factory salt3) 
       balances.sc.before_3 = (await factoryContract.getBalanceOf(alice.address)).toString()
       balances.token.before_3 = (await tokenContract.balanceOf(alice.address)).toString()
-      let tx3 = await factoryContract.connect(alice).fundMultipleContracts([salt3], false, {
+      let tx3 = await factoryContract.connect(alice).fundMultipleContracts([salt3], {
         value: amount
       });
       receipt = await tx3.wait(waitConfirmations[network.config.type]);

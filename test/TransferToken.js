@@ -66,7 +66,7 @@ if (!isTransferDisabled()) {
         }
         const { salt, sc } = serviceContracts[0];
         let amount = "1000000000000000000"
-        const tx = await factoryContract.connect(alice).fundMultipleContracts([salt], false, {
+        const tx = await factoryContract.connect(alice).fundMultipleContracts([salt], {
           value: amount
         });
         balances.sc.before = {
@@ -165,11 +165,11 @@ if (!isTransferDisabled()) {
         }
         const { salt, sc } = serviceContracts[0];
         let amount = "1000000000000000000"
-        const txAlice = await factoryContract.connect(alice).fundMultipleContracts([salt], false, {
+        const txAlice = await factoryContract.connect(alice).fundMultipleContracts([salt], {
           value: amount
         });
   
-        const txBob = await factoryContract.connect(bob).fundMultipleContracts([salt], false, {
+        const txBob = await factoryContract.connect(bob).fundMultipleContracts([salt], {
           value: amount
         });
         balances.sc.before = {
@@ -274,11 +274,11 @@ if (!isTransferDisabled()) {
         const { salt, sc } = serviceContracts[0];
         const { salt:salt1, sc:sc1} = serviceContracts[1];
         let amount = "1000000000000000000"
-        const txAlice = await factoryContract.connect(alice).fundMultipleContracts([salt], false, {
+        const txAlice = await factoryContract.connect(alice).fundMultipleContracts([salt], {
           value: amount
         });
   
-        const txBob = await factoryContract.connect(bob).fundMultipleContracts([salt1], false, {
+        const txBob = await factoryContract.connect(bob).fundMultipleContracts([salt1], {
           value: amount
         });
         balances.sc.before = {
@@ -420,13 +420,13 @@ if (!isTransferDisabled()) {
         let amountDeposit =   "2000000000000000000"
         let amountTransfer =  "6000000000000000000"
   
-        const txAlice = await factoryContract.connect(alice).fundMultipleContracts([salt], false, {
+        const txAlice = await factoryContract.connect(alice).fundMultipleContracts([salt], {
           value: amountDeposit
         });
-        const txAlice2 = await factoryContract.connect(alice).fundMultipleContracts([salt1], false, {
+        const txAlice2 = await factoryContract.connect(alice).fundMultipleContracts([salt1], {
           value: amountDeposit
         });
-        const txAlice3 = await factoryContract.connect(alice).fundMultipleContracts([salt2], false, {
+        const txAlice3 = await factoryContract.connect(alice).fundMultipleContracts([salt2], {
           value: amountDeposit
         });
   
@@ -580,7 +580,7 @@ if (!isTransferDisabled()) {
         const { salt, sc } = serviceContracts[0];
         let amountDeposit = "1000000000000000000"
         let amountTransfer = "500000000000000000"
-        const tx = await factoryContract.connect(alice).fundMultipleContracts([salt], false, {
+        const tx = await factoryContract.connect(alice).fundMultipleContracts([salt], {
           value: amountDeposit
         });
         balances.sc.before = {
@@ -664,7 +664,7 @@ if (!isTransferDisabled()) {
         const { salt, sc } = serviceContracts[0];
         let amountDeposit =  "1000000000000000000"
         let amountTransfer = "2000000000000000000"
-        const tx = await factoryContract.connect(alice).fundMultipleContracts([salt], false, {
+        const tx = await factoryContract.connect(alice).fundMultipleContracts([salt], {
           value: amountDeposit
         });
         const txTranf = tokenContract.connect(alice).transfer(bob.address, amountTransfer)

@@ -178,8 +178,7 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
     }
 
     function fundMultipleContracts(
-        bytes32[] calldata saltValues,
-        bool force
+        bytes32[] calldata saltValues
     )
         external
         payable
@@ -190,7 +189,7 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
         address depositor = msg.sender;
 
         for (uint256 i = 0; i < saltValues.length; i++) {
-            if (!force && remaining < _minimumDeposit)
+            if (remaining < _minimumDeposit)
                 break;
 
             address proxy = _getDeterministicAddress(_servicesContractImpl, saltValues[i]);
@@ -198,7 +197,7 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
                 ISenseistakeServicesContract sc = ISenseistakeServicesContract(payable(proxy));
                 if (sc.getState() == ISenseistakeServicesContract.State.PreDeposit) {
                     uint256 depositAmount = _min(remaining, FULL_DEPOSIT_SIZE - address(sc).balance);
-                    if (force || depositAmount >= _minimumDeposit) {
+                    if (depositAmount >= _minimumDeposit) {
                         sc.depositOnBehalfOf{value: depositAmount}(depositor);
                         _addDepositServiceContract(address(sc), depositor);
                         remaining -= depositAmount;

@@ -79,7 +79,7 @@ describe('TestnetCompleteNoTransfer', () => {
       const account = accounts_to_use[index];
       balances.sc.before_1 = (await factoryContract.getBalanceOf(account.address)).toString()
       balances.token.before_1 = (await tokenContract.balanceOf(account.address)).toString()
-      let tx = await factoryContract.connect(account).fundMultipleContracts([salt], false, {
+      let tx = await factoryContract.connect(account).fundMultipleContracts([salt], {
         value: amount
       });
       receipt = await tx.wait(waitConfirmations[network.config.type]);
@@ -113,7 +113,7 @@ describe('TestnetCompleteNoTransfer', () => {
       const account = accounts_to_use[index];
       balances.sc.before_3 = (await factoryContract.getBalanceOf(account.address)).toString()
       balances.token.before_3 = (await tokenContract.balanceOf(account.address)).toString()
-      tx = await factoryContract.connect(account).fundMultipleContracts([salt], false, {
+      tx = await factoryContract.connect(account).fundMultipleContracts([salt], {
         value: amount
       });
       receipt = await tx.wait(waitConfirmations[network.config.type]);
@@ -129,7 +129,7 @@ describe('TestnetCompleteNoTransfer', () => {
       const account = accounts_to_use[index];
       balances.sc.before_4 = (await factoryContract.getBalanceOf(account.address)).toString()
       balances.token.before_4 = (await tokenContract.balanceOf(account.address)).toString()
-      tx = await factoryContract.connect(account).fundMultipleContracts([salt], false, {
+      tx = await factoryContract.connect(account).fundMultipleContracts([salt], {
         value: amount
       });
       receipt = await tx.wait(waitConfirmations[network.config.type]);
@@ -165,7 +165,7 @@ describe('TestnetCompleteNoTransfer', () => {
       let depositAmount = "1000000000000000000" // 2eth
       balances.sc.before_6 = (await factoryContract.getBalanceOf(account.address)).toString()
       balances.token.before_6 = (await tokenContract.balanceOf(account.address)).toString()
-      tx = await factoryContract.connect(account).fundMultipleContracts([salt], false, {
+      tx = await factoryContract.connect(account).fundMultipleContracts([salt], {
         value: depositAmount
       });
       receipt = await tx.wait(waitConfirmations[network.config.type]);
@@ -182,7 +182,7 @@ describe('TestnetCompleteNoTransfer', () => {
       let depositAmount = "1000000000000000000" // 2eth
       balances.sc.before_7 = (await factoryContract.getBalanceOf(account.address)).toString()
       balances.token.before_7 = (await tokenContract.balanceOf(account.address)).toString()
-      tx = await factoryContract.connect(account).fundMultipleContracts([salt], false, {
+      tx = await factoryContract.connect(account).fundMultipleContracts([salt], {
         value: depositAmount
       });
       receipt = await tx.wait(waitConfirmations[network.config.type]);
