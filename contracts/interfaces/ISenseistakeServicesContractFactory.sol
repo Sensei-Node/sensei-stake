@@ -82,7 +82,8 @@ interface ISenseistakeServicesContractFactory {
     function getServiceContractListAt(uint256 index) external view returns (address);
     function getServiceContractList() external view returns (address[] memory);
     function getLastIndexServiceContract() external view returns (uint256);
-    function withdraw(uint256 amount) external returns (bool);
+    function withdraw(address serviceContractAddress) external returns (bool);
+    function withdrawAll() external returns (bool);
     function increaseWithdrawalAllowance(uint256 amount) external returns (bool);
     function transferDepositServiceContract(address serviceContractAddress, address from, address to) external;
     function addDepositServiceContract(address serviceContractAddress, address to) external;

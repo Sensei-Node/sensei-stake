@@ -274,4 +274,11 @@ interface ISenseistakeServicesContract {
         uint256 amount,
         uint256 minimumETHAmount
     ) external returns (uint256);
+
+    function withdrawAllOnBehalfOf(
+        //address depositor,
+        address payable beneficiary,
+        uint256 minimumETHAmount
+    ) external returns (uint256);
+    
 }

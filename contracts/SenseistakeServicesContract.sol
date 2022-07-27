@@ -456,7 +456,7 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
     {
         require(_state != State.PostDeposit, WITHDRAWALS_NOT_ALLOWED);
         uint256 spenderAllowance = _allowedWithdrawals[beneficiary][msg.sender];
-        uint256 allDeposit = _deposit[msg.sender];
+        uint256 allDeposit = _deposits[msg.sender];
         if(spenderAllowance < allDeposit){ revert NotEnoughBalance(); }
         // Please note that there is no need to require(_deposit <= spenderAllowance)
         // here because modern versions of Solidity insert underflow checks

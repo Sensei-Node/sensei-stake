@@ -312,47 +312,45 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
     // for putting the last element in the array of the mapping _depositServiceContractsIndices
     // into a certain index, so that we can have the array length decreased
     function _replaceFromDepositServiceContracts(uint256 index, address user) internal {
-        if (index != _depositServiceContracts[user].length - 1) {
+        /*if (index != _depositServiceContracts[user].length - 1) {
             address last_value = _depositServiceContracts[user][_depositServiceContracts[user].length - 1];
             delete _depositServiceContractsIndices[user][_depositServiceContracts[user][index]]; // remove index of service contract to be deleted
             _depositServiceContracts[user].pop(); // remove last element and decrease length
             _depositServiceContracts[user][index] = last_value; // put last element in desired index
             _depositServiceContractsIndices[user][last_value] = index; // change also indices mapping
-        } else {
+        } else {*/
             delete _depositServiceContractsIndices[user][_depositServiceContracts[user][index]];
             _depositServiceContracts[user].pop();
-        }
+        //}
     }
+
+    function withdrawAll(
+    ) external override returns (bool) {
+        require(_depositServiceContracts[msg.sender].length > 1, "Client should have deposited");
+        uint256 amount = this.getBalanceOf(msg.sender);
+        // because cannot create dynamic memory arrays
+        uint256 totalContracts = _depositServiceContracts[msg.sender].length;
+        for (uint256 i = totalContracts; i < 1; i--) {
+            address addr = _depositServiceContracts[msg.sender][i-1];
+            this.withdraw(addr);
+        }
+        return true;
+    }
+
+
 
     function withdraw(
        address serviceContractAddress
     ) external override returns (bool) {
         require(serviceContractAddress != address(0),"Should be a valid service contract");
-        uint indexSC =  _depositServiceContractsIndices[msg.user][serviceContractAddress];
+        uint256 indexSC =  _depositServiceContractsIndices[msg.sender][serviceContractAddress];
         require(_depositServiceContracts[msg.sender][indexSC] == serviceContractAddress, 
         "Client should have deposited");
         ISenseistakeServicesContract sc = ISenseistakeServicesContract(payable(serviceContractAddress));
-        uint256 depositAmount = sc.getDeposit(msg.sender);
-        sc.withdrawOnBehalfOf(payable(msg.sender), withdrawAmount, _minimumDeposit);
-            // full withdraw remove from service contract list
-            if (withdrawAmount == depositAmount) {
-                uint256 idx = _depositServiceContractsIndices[msg.sender][addr];
-                removeIndices[i] = int256(idx);
-            }
-            remaining -= withdrawAmount;
-            if (remaining == 0) { break; }
-        }
+        sc.withdrawAllOnBehalfOf(payable(msg.sender), _minimumDeposit);
         // remove from depositor the service contract where he does not have more deposits
-        for (uint256 idx = totalContracts; idx > 1; idx--) {
-            if (removeIndices[idx-1] != -1) {
-                _replaceFromDepositServiceContracts(uint256(removeIndices[idx-1]), msg.sender);
-            }
-        }
-        if (remaining > 0) {
-            // perhaps revert, for now it withdraws the maximum it can if more than available is sent
-            return false;
-        }
-        return true;
+        _replaceFromDepositServiceContracts(uint256(indexSC), msg.sender);
+         return true;
     }
 
     function increaseWithdrawalAllowance(
