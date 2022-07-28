@@ -228,20 +228,20 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
     string private constant WITHDRAWALS_NOT_ALLOWED =
         "Not allowed when validator is active";
 
-    function withdrawAll(uint256 minimumETHAmount)
+    function withdrawAll(/*uint256 minimumETHAmount*/)
         external
         override
         returns (uint256)
     {
         require(_state != State.PostDeposit, WITHDRAWALS_NOT_ALLOWED);
         uint256 value = _executeWithdrawal(msg.sender, payable(msg.sender), _deposits[msg.sender]);
-        require(value >= minimumETHAmount, "Less than minimum amount");
+        // require(value >= minimumETHAmount, "Less than minimum amount");
         return value;
     }
 
     function withdraw(
-        uint256 amount,
-        uint256 minimumETHAmount
+        uint256 amount
+        // uint256 minimumETHAmount
     )
         external
         override
@@ -249,14 +249,14 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
     {
         require(_state != State.PostDeposit, WITHDRAWALS_NOT_ALLOWED);
         uint256 value = _executeWithdrawal(msg.sender, payable(msg.sender), amount);
-        require(value >= minimumETHAmount, "Less than minimum amount");
+        // require(value >= minimumETHAmount, "Less than minimum amount");
         return value;
     }
 
     function withdrawTo(
         uint256 amount,
-        address payable beneficiary,
-        uint256 minimumETHAmount
+        address payable beneficiary
+        // uint256 minimumETHAmount
     )
         external
         override
@@ -264,7 +264,7 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
     {
         require(_state != State.PostDeposit, WITHDRAWALS_NOT_ALLOWED);
         uint256 value = _executeWithdrawal(msg.sender, beneficiary, amount);
-        require(value >= minimumETHAmount, "Less than minimum amount");
+        // require(value >= minimumETHAmount, "Less than minimum amount");
         return value;
     }
 
@@ -399,8 +399,8 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
     function withdrawFrom(
         address depositor,
         address payable beneficiary,
-        uint256 amount,
-        uint256 minimumETHAmount
+        uint256 amount
+        // uint256 minimumETHAmount
     )
         external
         override
@@ -415,15 +415,15 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         emit WithdrawalApproval(depositor, msg.sender, newAllowance);
 
         uint256 value = _executeWithdrawal(depositor, beneficiary, amount);
-        require(value >= minimumETHAmount, "Less than minimum amount");
+        // require(value >= minimumETHAmount, "Less than minimum amount");
         return value; 
     }
 
     function withdrawOnBehalfOf(
         //address depositor,
         address payable beneficiary,
-        uint256 amount,
-        uint256 minimumETHAmount
+        uint256 amount
+        // uint256 minimumETHAmount
     )
         external
         override
@@ -440,14 +440,14 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         emit WithdrawalApproval(beneficiary, msg.sender, newAllowance);
 
         uint256 value = _executeWithdrawal(beneficiary, beneficiary, amount);
-        require(value >= minimumETHAmount, "Less than minimum amount");
+        // require(value >= minimumETHAmount, "Less than minimum amount");
         return value; 
     }
 
     function withdrawAllOnBehalfOf(
         //address depositor,
-        address payable beneficiary,
-        uint256 minimumETHAmount
+        address payable beneficiary
+        // uint256 minimumETHAmount
     )
         external
         override

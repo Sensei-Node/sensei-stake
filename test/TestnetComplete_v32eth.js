@@ -3,14 +3,13 @@ const {ethers} = require('hardhat');
 const chai = require('chai');
 require('solidity-coverage');
 const expect = chai.expect;
-const { deploymentVariables } = require("../helpers/variables");
+const { deploymentVariables, waitConfirmations } = require("../helpers/variables");
 const { network } = require("hardhat")
 
 describe('Complete32eth', () => {
-  let owner, alice, operator, bob;
+  let owner, aliceWhale, operator, bob;
   let factoryContract, serviceContractIndex, tokenContract;
   let serviceContracts = [];
-
 
   beforeEach(async function () {
     if (network.config.type == 'hardhat') await deployments.fixture();
@@ -44,23 +43,21 @@ describe('Complete32eth', () => {
     }
   });
 
-  /*
-    1. deposit 32 eth
-    2. withdraw 32 eth
-
-  */
-  it('0. should  revert when I try to deposit less than  32  ', async function () {
+  it('0. should revert when less than 32eth are deposited', async function () {
     const { salt, sc } = serviceContracts[0];
     let amount = "5000000000000000000"
-    const tx = await factoryContract.connect(aliceWhale).fundMultipleContracts([salt], {
+    const tx = factoryContract.connect(aliceWhale).fundMultipleContracts([salt], {
       value: amount
     });
-    // should be revert 
-    
+    await expect(tx).to.be.revertedWith('Deposited amount should be greater than minimum deposit');
   })
 
 
-  it('1. should deposit 32 or multiple of eths and withdraw ', async function () {
+  it('1. should be able to 32eth or multiples of 32eth and withdraw them', async function () {
+    /*
+      1. deposit 32 eth
+      2. withdraw 32 eth
+    */
     const { salt, sc } = serviceContracts[0];
     let balances = {
       sc: {},
@@ -72,20 +69,18 @@ describe('Complete32eth', () => {
     const tx = await factoryContract.connect(aliceWhale).fundMultipleContracts([salt], {
       value: amount
     });
-    await tx.wait();
+    await tx.wait(waitConfirmations[network.config.type]);
     balances.sc.after_1 = (await sc.getDeposit(aliceWhale.address)).toString()
     balances.token.after_1 = (await tokenContract.balanceOf(aliceWhale.address)).toString()
     expect(balances.sc.after_1 - balances.sc.before_1).to.be.equal(parseInt(amount));
     expect(balances.token.after_1 - balances.token.before_1).to.be.equal(parseInt(amount));
-
-
 
     balances.sc.before_2 = (await sc.getDeposit(aliceWhale.address)).toString()
     balances.token.before_2 = (await tokenContract.balanceOf(aliceWhale.address)).toString()
 
     const withdrawAllowance = await factoryContract.connect(aliceWhale).increaseWithdrawalAllowance(amount);
     const withdraw = await factoryContract.connect(aliceWhale).withdrawAll();
-    await withdraw.wait();
+    await withdraw.wait(waitConfirmations[network.config.type]);
     balances.sc.after_2 = (await sc.getDeposit(aliceWhale.address)).toString()
     balances.token.after_2 = (await tokenContract.balanceOf(aliceWhale.address)).toString()
     expect(balances.sc.after_2 - balances.sc.before_2).to.be.equal(parseInt(0));

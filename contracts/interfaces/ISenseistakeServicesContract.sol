@@ -132,26 +132,23 @@ interface ISenseistakeServicesContract {
     /// @notice Withdraws all the ETH of `msg.sender`.
     /// @dev It can only be called when the contract state is not `PostDeposit`.
     /// Emits a {Withdrawal} event.
-    /// @param minimumETHAmount The minimum amount of ETH that must be received for the transaction not to revert.
-    function withdrawAll(uint256 minimumETHAmount) external returns (uint256);
+    function withdrawAll() external returns (uint256);
 
     /// @notice Withdraws the ETH of `msg.sender` which is corresponding to the `amount` of deposit stake.
     /// @dev It can only be called when the contract state is not `PostDeposit`.
     /// Emits a {Withdrawal} event.
     /// @param amount The amount of deposit stake to be converted to ETH.
-    /// @param minimumETHAmount The minimum amount of ETH that must be received for the transaction not to revert.
-    function withdraw(uint256 amount, uint256 minimumETHAmount) external returns (uint256);
+    function withdraw(uint256 amount) external returns (uint256);
 
     /// @notice Withdraws the ETH of `msg.sender` which is corresponding to the `amount` of deposit stake to a specified address.
     /// @dev It can only be called when the contract state is not `PostDeposit`.
     /// Emits a {Withdrawal} event.
     /// @param amount The amount of deposit stake to be converted to ETH.
     /// @param beneficiary The address of ETH receiver.
-    /// @param minimumETHAmount The minimum amount of ETH that must be received for the transaction not to revert.
     function withdrawTo(
         uint256 amount,
-        address payable beneficiary,
-        uint256 minimumETHAmount
+        address payable beneficiary
+        // uint256 minimumETHAmount
     ) external returns (uint256);
 
     /// @notice Sets `amount` as the allowance of `spender` over the caller's deposit stake.
@@ -196,12 +193,11 @@ interface ISenseistakeServicesContract {
     /// @param depositor The address of deposit stake holder.
     /// @param beneficiary The address of ETH receiver.
     /// @param amount The amount of deposit stake to be converted to ETH.
-    /// @param minimumETHAmount The minimum amount of ETH that must be received for the transaction not to revert.
     function withdrawFrom(
         address depositor,
         address payable beneficiary,
-        uint256 amount,
-        uint256 minimumETHAmount
+        uint256 amount
+        // uint256 minimumETHAmount
     ) external returns (uint256);
 
     /// @notice Transfers `amount` deposit stake from caller to `to`.
@@ -271,14 +267,14 @@ interface ISenseistakeServicesContract {
     function withdrawOnBehalfOf(
         //address depositor,
         address payable beneficiary,
-        uint256 amount,
-        uint256 minimumETHAmount
+        uint256 amount
+        // uint256 minimumETHAmount
     ) external returns (uint256);
 
     function withdrawAllOnBehalfOf(
         //address depositor,
-        address payable beneficiary,
-        uint256 minimumETHAmount
+        address payable beneficiary
+        // uint256 minimumETHAmount
     ) external returns (uint256);
     
 }

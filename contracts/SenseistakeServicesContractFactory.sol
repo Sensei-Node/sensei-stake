@@ -187,23 +187,23 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
         override
         returns (uint256)
     {
+        require(msg.value >= _minimumDeposit, "Deposited amount should be greater than minimum deposit");
         uint256 remaining = msg.value;
         address depositor = msg.sender;
 
         for (uint256 i = 0; i < saltValues.length; i++) {
-            if (remaining < _minimumDeposit)
-                break;
-
+            // if (remaining < _minimumDeposit)
+            //     break;
             address proxy = _getDeterministicAddress(_servicesContractImpl, saltValues[i]);
             if (proxy.isContract()) {
                 ISenseistakeServicesContract sc = ISenseistakeServicesContract(payable(proxy));
                 if (sc.getState() == ISenseistakeServicesContract.State.PreDeposit) {
                     uint256 depositAmount = _min(remaining, FULL_DEPOSIT_SIZE - address(sc).balance);
-                    if (depositAmount >= _minimumDeposit) {
-                        sc.depositOnBehalfOf{value: depositAmount}(depositor);
-                        _addDepositServiceContract(address(sc), depositor);
-                        remaining -= depositAmount;
-                    }
+                    // if (depositAmount >= _minimumDeposit) {
+                    sc.depositOnBehalfOf{value: depositAmount}(depositor);
+                    _addDepositServiceContract(address(sc), depositor);
+                    remaining -= depositAmount;
+                    // }
                 }
             }
         }
@@ -337,8 +337,6 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
         return true;
     }
 
-
-
     function withdraw(
        address serviceContractAddress
     ) external override returns (bool) {
@@ -347,7 +345,7 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
         require(_depositServiceContracts[msg.sender][indexSC] == serviceContractAddress, 
         "Client should have deposited");
         ISenseistakeServicesContract sc = ISenseistakeServicesContract(payable(serviceContractAddress));
-        sc.withdrawAllOnBehalfOf(payable(msg.sender), _minimumDeposit);
+        sc.withdrawAllOnBehalfOf(payable(msg.sender));
         // remove from depositor the service contract where he does not have more deposits
         _replaceFromDepositServiceContracts(uint256(indexSC), msg.sender);
          return true;
