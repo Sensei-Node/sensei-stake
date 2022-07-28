@@ -49,6 +49,15 @@ describe('Complete32eth', () => {
     2. withdraw 32 eth
 
   */
+  it('0. should  revert when I try to deposit less than  32  ', async function () {
+    const { salt, sc } = serviceContracts[0];
+    let amount = "5000000000000000000"
+    const tx = await factoryContract.connect(aliceWhale).fundMultipleContracts([salt], {
+      value: amount
+    });
+    // should be revert 
+    
+  })
 
 
   it('1. should deposit 32 or multiple of eths and withdraw ', async function () {
