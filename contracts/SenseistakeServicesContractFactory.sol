@@ -110,8 +110,6 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
         returns (address)
     {
         require (msg.value <= FULL_DEPOSIT_SIZE);
-        // address senseistakeStorageAddress = senseistakeStorage
-        //     .getAddress(keccak256(abi.encodePacked("contract.address", "SenseistakeStorage")));
 
         address senseistakeStorageAddress = address(senseistakeStorage);
 
@@ -324,15 +322,30 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
         //}
     }
 
-    function withdrawAll(
-    ) external override returns (bool) {
+    function withdrawAll() 
+        external 
+        override 
+        returns (bool) 
+    {
         require(_depositServiceContracts[msg.sender].length > 1, "Client should have deposited");
-        // uint256 amount = this.getBalanceOf(msg.sender);
-        // because cannot create dynamic memory arrays
         uint256 totalContracts = _depositServiceContracts[msg.sender].length;
-        for (uint256 i = totalContracts; i < 1; i--) {
-            address addr = _depositServiceContracts[msg.sender][i-1];
-            this.withdraw(addr);
+        int256[] memory removeIndices = new int256[](totalContracts);
+        for (uint256 i = 1; i < totalContracts; i++) {
+            // we start it with -1 so that we can later check all those that are not -1 for removal
+            removeIndices[i] = -1; 
+        }
+        for (uint256 i = 1; i < totalContracts; i++) {
+            address addr = _depositServiceContracts[msg.sender][i];
+            ISenseistakeServicesContract sc = ISenseistakeServicesContract(payable(addr));
+            sc.withdrawAllOnBehalfOf(payable(msg.sender));
+            uint256 idx = _depositServiceContractsIndices[msg.sender][addr];
+            removeIndices[i] = int256(idx);
+        }
+        // remove from depositor the service contract where he does not have more deposits
+        for (uint256 i = totalContracts; i > 1; i--) {
+            if (removeIndices[i-1] != -1) {
+                _replaceFromDepositServiceContracts(uint256(removeIndices[i-1]), msg.sender);
+            }
         }
         return true;
     }
@@ -341,9 +354,11 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
        address serviceContractAddress
     ) external override returns (bool) {
         require(serviceContractAddress != address(0),"Should be a valid service contract");
-        uint256 indexSC =  _depositServiceContractsIndices[msg.sender][serviceContractAddress];
-        require(_depositServiceContracts[msg.sender][indexSC] == serviceContractAddress, 
-        "Client should have deposited");
+        uint256 indexSC = _depositServiceContractsIndices[msg.sender][serviceContractAddress];
+        require(
+            _depositServiceContracts[msg.sender][indexSC] == serviceContractAddress, 
+            "Client should have deposited"
+        );
         ISenseistakeServicesContract sc = ISenseistakeServicesContract(payable(serviceContractAddress));
         sc.withdrawAllOnBehalfOf(payable(msg.sender));
         // remove from depositor the service contract where he does not have more deposits

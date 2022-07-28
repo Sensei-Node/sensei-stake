@@ -264,12 +264,12 @@ interface ISenseistakeServicesContract {
         uint256 addValue
     ) external returns (bool);
 
-    function withdrawOnBehalfOf(
-        //address depositor,
-        address payable beneficiary,
-        uint256 amount
-        // uint256 minimumETHAmount
-    ) external returns (uint256);
+    // function withdrawOnBehalfOf(
+    //     //address depositor,
+    //     address payable beneficiary,
+    //     uint256 amount
+    //     // uint256 minimumETHAmount
+    // ) external returns (uint256);
 
     function withdrawAllOnBehalfOf(
         //address depositor,
@@ -277,4 +277,7 @@ interface ISenseistakeServicesContract {
         // uint256 minimumETHAmount
     ) external returns (uint256);
     
+    function setEthDepositContractAddress(
+        address ethDepositContractAddress
+    ) external;
 }

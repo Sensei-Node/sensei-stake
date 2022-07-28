@@ -99,6 +99,12 @@ module.exports = async ({
         const servicesContract = await SenseistakeServicesContract.attach(contractAddress);
         await servicesContract.setTokenContractAddress(tokenDeployment.address);
 
+        // parametrizing the ethereum deposit contract address
+        const ethDepositContractAddress = deploymentVariables.depositContractAddress[network.config.chainId] ? 
+        deploymentVariables.depositContractAddress[network.config.chainId] : '0x00000000219ab540356cBB839Cbe05303d7705Fa'
+        await servicesContract.setEthDepositContractAddress(ethDepositContractAddress);
+        // TODO: test if a later call to this function does a revert (because of the immutable keyword)
+
         // Allow owner.address in allowance mapping
         const SenseistakeERC20Wrapper = await ethers.getContractFactory(
             'SenseistakeERC20Wrapper'

@@ -47,8 +47,7 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
     uint256 private _totalDeposits;
     uint256 private _operatorClaimable;
 
-    IDepositContract public constant depositContract =
-        IDepositContract(0x00000000219ab540356cBB839Cbe05303d7705Fa);
+    IDepositContract public depositContract;
 
     // for getting the token contact address and then calling the mintTo method
     ISenseistakeERC20Wrapper public tokenContractAddress;
@@ -95,13 +94,22 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         }
     }
 
-    function setTokenContractAddress(address sc) 
+    function setEthDepositContractAddress(address ethDepositContractAddress) 
         external
         override
         onlyOperator
     {
-        require(sc != address(0), "Smart contract should not be address zero");
-        tokenContractAddress = ISenseistakeERC20Wrapper(sc);
+        require(address(depositContract) == address(0), "Already set up ETH deposit contract address");
+        depositContract = IDepositContract(ethDepositContractAddress);
+    }
+
+    function setTokenContractAddress(address _tokenContractAddress) 
+        external
+        override
+        onlyOperator
+    {
+        require(address(tokenContractAddress) == address(0), "Already set up erc20 contract address");
+        tokenContractAddress = ISenseistakeERC20Wrapper(_tokenContractAddress);
     }
 
     function updateExitDate(uint64 newExitDate)
@@ -419,30 +427,30 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         return value; 
     }
 
-    function withdrawOnBehalfOf(
-        //address depositor,
-        address payable beneficiary,
-        uint256 amount
-        // uint256 minimumETHAmount
-    )
-        external
-        override
-        onlyLatestContract("SenseistakeServicesContractFactory", msg.sender)
-        returns (uint256)
-    {
-        require(_state != State.PostDeposit, WITHDRAWALS_NOT_ALLOWED);
-        uint256 spenderAllowance = _allowedWithdrawals[beneficiary][msg.sender];
-        if(spenderAllowance < amount){ revert NotEnoughBalance(); }
-        uint256 newAllowance = spenderAllowance - amount;
-        // Please note that there is no need to require(_deposit <= spenderAllowance)
-        // here because modern versions of Solidity insert underflow checks
-        _allowedWithdrawals[beneficiary][msg.sender] = newAllowance;
-        emit WithdrawalApproval(beneficiary, msg.sender, newAllowance);
+    // function withdrawOnBehalfOf(
+    //     //address depositor,
+    //     address payable beneficiary,
+    //     uint256 amount
+    //     // uint256 minimumETHAmount
+    // )
+    //     external
+    //     override
+    //     onlyLatestContract("SenseistakeServicesContractFactory", msg.sender)
+    //     returns (uint256)
+    // {
+    //     require(_state != State.PostDeposit, WITHDRAWALS_NOT_ALLOWED);
+    //     uint256 spenderAllowance = _allowedWithdrawals[beneficiary][msg.sender];
+    //     if(spenderAllowance < amount){ revert NotEnoughBalance(); }
+    //     uint256 newAllowance = spenderAllowance - amount;
+    //     // Please note that there is no need to require(_deposit <= spenderAllowance)
+    //     // here because modern versions of Solidity insert underflow checks
+    //     _allowedWithdrawals[beneficiary][msg.sender] = newAllowance;
+    //     emit WithdrawalApproval(beneficiary, msg.sender, newAllowance);
 
-        uint256 value = _executeWithdrawal(beneficiary, beneficiary, amount);
-        // require(value >= minimumETHAmount, "Less than minimum amount");
-        return value; 
-    }
+    //     uint256 value = _executeWithdrawal(beneficiary, beneficiary, amount);
+    //     // require(value >= minimumETHAmount, "Less than minimum amount");
+    //     return value; 
+    // }
 
     function withdrawAllOnBehalfOf(
         //address depositor,
@@ -456,13 +464,13 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
     {
         require(_state != State.PostDeposit, WITHDRAWALS_NOT_ALLOWED);
         uint256 spenderAllowance = _allowedWithdrawals[beneficiary][msg.sender];
-        uint256 allDeposit = _deposits[msg.sender];
+        uint256 allDeposit = _deposits[beneficiary];
         if(spenderAllowance < allDeposit){ revert NotEnoughBalance(); }
         // Please note that there is no need to require(_deposit <= spenderAllowance)
         // here because modern versions of Solidity insert underflow checks
         _allowedWithdrawals[beneficiary][msg.sender] = 0;
         emit WithdrawalApproval(beneficiary, msg.sender, 0);
-
+        console.log(allDeposit);
         uint256 value = _executeWithdrawal(beneficiary, beneficiary, allDeposit);
         return value; 
     }

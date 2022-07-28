@@ -10,7 +10,7 @@ module.exports = async ({
     const [deployer] = await ethers.getSigners();
     const storageDeployment = await deployments.get("SenseistakeStorage")
     const tokenContract = await ethers.getContractFactory("SenseistakeERC20Wrapper")
-    const args = ["SenseiNodeCoin", "SNC", deployer.address, storageDeployment.address]
+    const args = ["SenseiNodeETH", "snETH", deployer.address, storageDeployment.address]
     const senseistakeToken = await upgrades.deployProxy(tokenContract, args);
     // log out things
     log("Token name", await senseistakeToken.name())

@@ -46,11 +46,10 @@ describe('TestnetCompleteSeveralSalt', () => {
 
   it('Full deposit, withdraw, transfer test', async function () {
     /*
-      1. User deposita 1 eth en sc1 (factory salt1)
-      2. User deposita 1 eth en sc2 (factory salt2)
-      3. User deposita 1 eth en sc3 (factory salt3)
-      4. User retira 2.5 eth factory
-         == 0.5 (from salt3)
+      1. User deposita 32 eth en sc1 (factory salt1)
+      2. User deposita 32 eth en sc2 (factory salt2)
+      3. User deposita 32 eth en sc3 (factory salt3)
+      4. User retira all eth factory
     */
     const { salt:salt1, sc: sc1 } = serviceContracts[0];
     const { salt:salt2, sc: sc2 } = serviceContracts[1];
@@ -61,7 +60,7 @@ describe('TestnetCompleteSeveralSalt', () => {
       sc: {},
       token: {}
     }
-    let amount = "1000000000000000000" // 1eth
+    let amount = "32000000000000000000" // 1eth
     for(let i = 0 ; i < 3 ; i++ ){
       // 1. Alice deposita 1 eth en sc1 (factory salt1) 
       balances.sc.before_1 = (await factoryContract.getBalanceOf(alice.address)).toString()
@@ -103,13 +102,13 @@ describe('TestnetCompleteSeveralSalt', () => {
       console.log('OK: 3. Alice deposita 1 eth en sc3 (factory salt3) at block', receipt.blockNumber);
 
       // 4. Alice retira 2.5 eth factory
-      let amountWithdraw = "2500000000000000000" // 2.5eth
-      let amounRemaining = "500000000000000000" // 0.5eth
+      let amountWithdraw = "96000000000000000000" // 2.5eth
+      // let amounRemaining = "500000000000000000" // 0.5eth
       balances.sc.before_4 = (await factoryContract.getBalanceOf(alice.address)).toString()
       balances.token.before_4 = (await tokenContract.balanceOf(alice.address)).toString()
       let withdrawAllowance = await factoryContract.connect(alice).increaseWithdrawalAllowance(amountWithdraw);
       receipt = await withdrawAllowance.wait(waitConfirmations[network.config.type]);
-      let withdraw = await factoryContract.connect(alice).withdraw(amountWithdraw);
+      let withdraw = await factoryContract.connect(alice).withdrawAll();
       receipt = await withdraw.wait(waitConfirmations[network.config.type]);
       balances.sc.after_4 = (await factoryContract.getBalanceOf(alice.address)).toString()
       balances.token.after_4 = (await tokenContract.balanceOf(alice.address)).toString()
