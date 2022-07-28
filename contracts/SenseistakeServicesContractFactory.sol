@@ -327,7 +327,7 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
     function withdrawAll(
     ) external override returns (bool) {
         require(_depositServiceContracts[msg.sender].length > 1, "Client should have deposited");
-        uint256 amount = this.getBalanceOf(msg.sender);
+        // uint256 amount = this.getBalanceOf(msg.sender);
         // because cannot create dynamic memory arrays
         uint256 totalContracts = _depositServiceContracts[msg.sender].length;
         for (uint256 i = totalContracts; i < 1; i--) {
