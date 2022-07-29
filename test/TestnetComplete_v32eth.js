@@ -53,7 +53,7 @@ describe('Complete32eth', () => {
   })
 
 
-  it('1. should be able to 32eth or multiples of 32eth and withdraw them', async function () {
+  it('1. should be able to deposit 32eth or (multiples of 32eth) and withdraw them', async function () {
     /*
       1. deposit 32 eth
       2. withdraw 32 eth
@@ -83,7 +83,8 @@ describe('Complete32eth', () => {
     await withdraw.wait(waitConfirmations[network.config.type]);
     balances.sc.after_2 = (await sc.getDeposit(aliceWhale.address)).toString()
     balances.token.after_2 = (await tokenContract.balanceOf(aliceWhale.address)).toString()
-    expect(balances.sc.after_2 - balances.sc.before_2).to.be.equal(parseInt(0));
-    expect(balances.token.after_2 - balances.token.before_2).to.be.equal(parseInt(0));
+    console.log(balances)
+    expect(balances.sc.before_2 - balances.sc.after_2).to.be.equal(parseInt(amount));
+    expect(balances.token.before_2 - balances.token.after_2 ).to.be.equal(parseInt(amount));
   });
 });

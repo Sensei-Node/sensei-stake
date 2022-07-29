@@ -470,7 +470,6 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         // here because modern versions of Solidity insert underflow checks
         _allowedWithdrawals[beneficiary][msg.sender] = 0;
         emit WithdrawalApproval(beneficiary, msg.sender, 0);
-        console.log(allDeposit);
         uint256 value = _executeWithdrawal(beneficiary, beneficiary, allDeposit);
         return value; 
     }
