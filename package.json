@@ -41,6 +41,7 @@
   "dependencies": {
     "@chainsafe/bls-keystore": "^2.0.0",
     "@openzeppelin/hardhat-upgrades": "^1.19.0",
+    "axios": "^0.27.2",
     "pako": "^2.0.4"
   }
 }

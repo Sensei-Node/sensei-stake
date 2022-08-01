@@ -64,7 +64,7 @@ interface ISenseistakeServicesContractFactory {
     /// @param saltValues The salts that are used to deploy services contracts.
     /// when it has more than `MINIMUM_DEPOSIT` ETH of capacity.
     /// @return surplus The amount of returned ETH.
-    function fundMultipleContracts(bytes32[] calldata saltValues) external payable returns (uint256);
+    function fundMultipleContracts(bytes32[] calldata saltValues) external payable returns (address[] memory);
 
     /// @notice Returns the address of the operator.
     function getOperatorAddress() external view returns (address);
@@ -89,4 +89,5 @@ interface ISenseistakeServicesContractFactory {
     function addDepositServiceContract(address serviceContractAddress, address to) external;
     function getDepositServiceContract(address depositor) external view returns (address[] memory);
     function getDepositServiceContractIndex(address depositor, address serviceContractAddress) external view returns (uint256);
+    function getDepositsAt(address serviceContract, address user) external view returns (uint256);
 }

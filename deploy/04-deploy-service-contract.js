@@ -1,8 +1,11 @@
 const { network } = require("hardhat");
 const { Keystore } = require('@chainsafe/bls-keystore');
 const { randomBytes } = require('crypto');
+const axios = require('axios');
 const { BigNumber, utils } = ethers;
 const { deploymentVariables } = require("../helpers/variables");
+const strapi_url = process.env.STRAPI_URL;
+const strapi_path = '/service-contracts'
 
 module.exports = async ({
     deployments,
@@ -24,6 +27,17 @@ module.exports = async ({
         createOperatorDepositData,
         saltBytesToContractAddress
     } = lib);
+
+    let jwt;
+    try {
+        let { data } = await axios.post(strapi_url+'/auth/local', {
+            identifier: process.env.STRAPI_OPERATOR_IDENTIFIER,
+            password: process.env.STRAPI_OPERATOR_PASSWORD
+        });
+        jwt = data.jwt;
+    } catch (err) {
+        console.error(err);
+    }
 
     for (let index = 1; index <= serviceContractDeploys; index++) {
         
@@ -122,6 +136,25 @@ module.exports = async ({
         // if (['testnet', 'mainnet'].includes(network.config.type) && process.env.ETHERSCAN_KEY) {
         //     await verify(NNETWK.CONTRACT_IMPL_ADDRESS, args)
         // }
+        if (jwt) {
+            try {
+                await axios.post(strapi_url+strapi_path, {
+                    validatorPubKey: utils.hexlify(depositData.validatorPubKey),
+                    depositSignature: utils.hexlify(depositData.depositSignature),
+                    depositDataRoot: utils.hexlify(depositData.depositDataRoot),
+                    exitDate: utils.hexlify(exitDate),
+                    keystore,
+                    serviceContractAddress: contractAddress,
+                    network: network.config.name,
+                    salt: `0x${saltBytes.toString("hex")}`,
+                    onQueue: true
+                }, { headers: { authorization: `Bearer ${jwt}` }});
+            } catch (err) {
+                console.error(err);
+            }
+        } else {
+            console.error('Unauthorized, please get the JWT token')
+        }
 
         await save('SenseistakeServicesContract'+index, proxyDeployments);
         await save('ServiceContractSalt'+index, {address: `0x${saltBytes.toString("hex")}`});

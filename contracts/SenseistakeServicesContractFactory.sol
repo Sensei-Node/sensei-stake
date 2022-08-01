@@ -183,11 +183,12 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
         external
         payable
         override
-        returns (uint256)
+        returns (address[] memory)
     {
         require(msg.value >= _minimumDeposit, "Deposited amount should be greater than minimum deposit");
         uint256 remaining = msg.value;
         address depositor = msg.sender;
+        address[] memory service_contracts = new address[](saltValues.length);
 
         for (uint256 i = 0; i < saltValues.length; i++) {
             // if (remaining < _minimumDeposit)
@@ -201,6 +202,7 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
                     sc.depositOnBehalfOf{value: depositAmount}(depositor);
                     _addDepositServiceContract(address(sc), depositor);
                     remaining -= depositAmount;
+                    service_contracts[i] = address(sc);
                     // }
                 }
             }
@@ -210,7 +212,7 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
             payable(msg.sender).sendValue(remaining);
         }
 
-        return remaining;
+        return service_contracts;
     }
 
     function getOperatorAddress()
@@ -404,6 +406,12 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
             ISenseistakeServicesContract sc = ISenseistakeServicesContract(_depositServiceContracts[user][index]);
             balance += sc.getDeposit(user);
         }
+        return balance;
+    }
+
+    function getDepositsAt(address serviceContract, address user) external override view returns (uint256) {
+        ISenseistakeServicesContract sc = ISenseistakeServicesContract(serviceContract);
+        uint256 balance = sc.getDeposit(user);
         return balance;
     }
 }

@@ -47,24 +47,28 @@ module.exports = {
   networks: {
     hardhat: {
       initialBaseFeePerGas: 0,
-      type: 'hardhat'
+      type: 'hardhat',
+      name: 'hardhat'
     },
     goerli: {
       url: process.env.GOERLI_RPC,
       accounts: [process.env.ACCOUNT_PK_GOERLI, process.env.ACCOUNT_PK_GOERLI_ALICE, process.env.ACCOUNT_PK_GOERLI_BOB],
       chainId: 5,
-      type: 'testnet'
+      type: 'testnet',
+      name: 'goerli'
     },
     ganache: {
       url: process.env.GANACHE_RPC,
       accounts: [process.env.ACCOUNT_PK_GANACHE, process.env.ACCOUNT_PK_GANACHE_ALICE, process.env.ACCOUNT_PK_GANACHE_BOB],
-      type: 'ganache'
+      type: 'ganache',
+      name: 'ganache'
     },
     // mainnet: {
     //   url: process.env.MAINNET_RPC,
     //   accounts: [process.env.ACCOUNT_PK_MAINNET],
     //   chainId: 1,
-    //   type: 'mainnet'
+    //   type: 'mainnet',
+    //   name: 'mainnet'
     // },
   },
 
