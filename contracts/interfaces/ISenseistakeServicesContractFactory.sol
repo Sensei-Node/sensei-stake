@@ -19,6 +19,11 @@ pragma solidity ^0.8.0;
 /// @notice Manages the deployment of services contracts
 interface ISenseistakeServicesContractFactory {
     /// @notice Emitted when a proxy contract of the services contract is created
+    event ServiceContractDeposits(
+        address[] serviceContracts
+    );
+
+    /// @notice Emitted when a proxy contract of the services contract is created
     event ContractCreated(
         bytes32 create2Salt
     );
@@ -64,7 +69,7 @@ interface ISenseistakeServicesContractFactory {
     /// @param saltValues The salts that are used to deploy services contracts.
     /// when it has more than `MINIMUM_DEPOSIT` ETH of capacity.
     /// @return surplus The amount of returned ETH.
-    function fundMultipleContracts(bytes32[] calldata saltValues) external payable returns (address[] memory);
+    function fundMultipleContracts(bytes32[] calldata saltValues) external payable returns (uint256);
 
     /// @notice Returns the address of the operator.
     function getOperatorAddress() external view returns (address);
@@ -90,4 +95,6 @@ interface ISenseistakeServicesContractFactory {
     function getDepositServiceContract(address depositor) external view returns (address[] memory);
     function getDepositServiceContractIndex(address depositor, address serviceContractAddress) external view returns (uint256);
     function getDepositsAt(address serviceContract, address user) external view returns (uint256);
+
+    function getWithdrawalAllowance() external view returns (uint256);
 }

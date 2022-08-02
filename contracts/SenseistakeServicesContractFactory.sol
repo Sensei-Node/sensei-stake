@@ -183,7 +183,7 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
         external
         payable
         override
-        returns (address[] memory)
+        returns (uint256)
     {
         require(msg.value >= _minimumDeposit, "Deposited amount should be greater than minimum deposit");
         uint256 remaining = msg.value;
@@ -191,8 +191,8 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
         address[] memory service_contracts = new address[](saltValues.length);
 
         for (uint256 i = 0; i < saltValues.length; i++) {
-            // if (remaining < _minimumDeposit)
-            //     break;
+            if (remaining == 0)
+                break;
             address proxy = _getDeterministicAddress(_servicesContractImpl, saltValues[i]);
             if (proxy.isContract()) {
                 ISenseistakeServicesContract sc = ISenseistakeServicesContract(payable(proxy));
@@ -212,7 +212,8 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
             payable(msg.sender).sendValue(remaining);
         }
 
-        return service_contracts;
+        emit ServiceContractDeposits(service_contracts);
+        return remaining;
     }
 
     function getOperatorAddress()
@@ -386,6 +387,21 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
             return false;
         }
         return true;
+    }
+
+    function getWithdrawalAllowance() 
+        external 
+        view
+        override 
+        returns (uint256) 
+    {
+        uint256 allowance = 0;
+        for (uint256 i = 1; i < _depositServiceContracts[msg.sender].length; i++) {
+            address addr = _depositServiceContracts[msg.sender][i];
+            ISenseistakeServicesContract sc = ISenseistakeServicesContract(payable(addr));
+            allowance += sc.withdrawalAllowance(msg.sender, address(this));
+        }
+        return allowance;
     }
 
     function getLastIndexServiceContract() external override view returns (uint256) {
