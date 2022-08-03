@@ -188,7 +188,6 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
         require(msg.value >= _minimumDeposit, "Deposited amount should be greater than minimum deposit");
         uint256 remaining = msg.value;
         address depositor = msg.sender;
-        address[] memory service_contracts = new address[](saltValues.length);
 
         for (uint256 i = 0; i < saltValues.length; i++) {
             if (remaining == 0)
@@ -202,7 +201,7 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
                     sc.depositOnBehalfOf{value: depositAmount}(depositor);
                     _addDepositServiceContract(address(sc), depositor);
                     remaining -= depositAmount;
-                    service_contracts[i] = address(sc);
+                    emit ServiceContractDeposit(address(sc));
                     // }
                 }
             }
@@ -212,7 +211,7 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
             payable(msg.sender).sendValue(remaining);
         }
 
-        emit ServiceContractDeposits(service_contracts);
+        
         return remaining;
     }
 

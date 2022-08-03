@@ -19,8 +19,8 @@ pragma solidity ^0.8.0;
 /// @notice Manages the deployment of services contracts
 interface ISenseistakeServicesContractFactory {
     /// @notice Emitted when a proxy contract of the services contract is created
-    event ServiceContractDeposits(
-        address[] serviceContracts
+    event ServiceContractDeposit(
+        address indexed serviceContract
     );
 
     /// @notice Emitted when a proxy contract of the services contract is created
