@@ -197,12 +197,12 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
                 ISenseistakeServicesContract sc = ISenseistakeServicesContract(payable(proxy));
                 if (sc.getState() == ISenseistakeServicesContract.State.PreDeposit) {
                     uint256 depositAmount = _min(remaining, FULL_DEPOSIT_SIZE - address(sc).balance);
-                    // if (depositAmount >= _minimumDeposit) {
-                    sc.depositOnBehalfOf{value: depositAmount}(depositor);
-                    _addDepositServiceContract(address(sc), depositor);
-                    remaining -= depositAmount;
-                    emit ServiceContractDeposit(address(sc));
-                    // }
+                    if (depositAmount != 0) {
+                        sc.depositOnBehalfOf{value: depositAmount}(depositor);
+                        _addDepositServiceContract(address(sc), depositor);
+                        remaining -= depositAmount;
+                        emit ServiceContractDeposit(address(sc));
+                    }
                 }
             }
         }
