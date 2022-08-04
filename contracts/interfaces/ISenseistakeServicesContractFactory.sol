@@ -83,18 +83,42 @@ interface ISenseistakeServicesContractFactory {
     /// @notice Returns the minimum deposit amount.
     function getMinimumDeposit() external view returns (uint256);
 
+    /// @notice Get the balance of a address. This looks for in all the service contracts of the user. 
     function getBalanceOf(address user) external view returns (uint256);
+    
+    /// @notice Get the index position in the array of service contracts  
     function getServiceContractListAt(uint256 index) external view returns (address);
+
+    /// @notice Return the service contract list
     function getServiceContractList() external view returns (address[] memory);
+
+    /// @notice  get the last index of the service contract array
     function getLastIndexServiceContract() external view returns (uint256);
+
+    /// @notice make a withdraw the deposit of a service contract address
     function withdraw(address serviceContractAddress) external returns (bool);
+
+    /// @notice withdraw all the deposits made
     function withdrawAll() external returns (bool);
+
+    /// @notice Increase the whitdraw allowance before the withdraw
     function increaseWithdrawalAllowance(uint256 amount) external returns (bool);
+
+     /// @notice transfer a service contract from an address to other address
     function transferDepositServiceContract(address serviceContractAddress, address from, address to) external;
+
+     /// @notice Add a service contract to an array of sc
     function addDepositServiceContract(address serviceContractAddress, address to) external;
+
+    /// @notice returns an array of service contract from a depositors
     function getDepositServiceContract(address depositor) external view returns (address[] memory);
+
+    /// @notice return the index in array of the service contract of a depositor
     function getDepositServiceContractIndex(address depositor, address serviceContractAddress) external view returns (uint256);
+
+    /// @notice get the deposit amount of a service contract of a user/
     function getDepositsAt(address serviceContract, address user) external view returns (uint256);
 
+    /// @notice Return the withdraw allowance of a user
     function getWithdrawalAllowance() external view returns (uint256);
 }

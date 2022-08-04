@@ -251,32 +251,28 @@ interface ISenseistakeServicesContract {
 
     /// @notice Returns the amount of ETH that is withdrawable by `owner`.
     function getWithdrawableAmount(address owner) external view returns (uint256);
-
+    
+    /// @notice Setting the Token Contract SNC address
     function setTokenContractAddress(address tokenAddress) external;
 
+    /// @notice Increase the amount allowance just for the factory could be withdrawn 
     function increaseWithdrawalAllowanceFromFactory(
         address spender,
         uint256 addValue
     ) external returns (bool);
 
+    /// @notice Increase the amount allowance just for the token could be withdrawn 
     function increaseWithdrawalAllowanceFromToken(
         address spender,
         uint256 addValue
     ) external returns (bool);
 
-    // function withdrawOnBehalfOf(
-    //     //address depositor,
-    //     address payable beneficiary,
-    //     uint256 amount
-    //     // uint256 minimumETHAmount
-    // ) external returns (uint256);
-
+    /// @notice Allow withdraw all the deposit on behalf of on 
     function withdrawAllOnBehalfOf(
-        //address depositor,
         address payable beneficiary
-        // uint256 minimumETHAmount
     ) external returns (uint256);
     
+    /// @notice return the deposit contract address 
     function setEthDepositContractAddress(
         address ethDepositContractAddress
     ) external;

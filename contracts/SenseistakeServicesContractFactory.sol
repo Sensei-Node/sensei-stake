@@ -418,8 +418,7 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
     function getBalanceOf(address user) external override view returns (uint256) {
         uint256 balance;
         for (uint256 index = 1; index < _depositServiceContracts[user].length; index++) {
-            ISenseistakeServicesContract sc = ISenseistakeServicesContract(_depositServiceContracts[user][index]);
-            balance += sc.getDeposit(user);
+            balance += this.getDepositsAt(_depositServiceContracts[user][index], user);
         }
         return balance;
     }

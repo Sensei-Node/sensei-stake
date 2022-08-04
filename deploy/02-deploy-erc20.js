@@ -14,7 +14,7 @@ module.exports = async ({
     const senseistakeToken = await upgrades.deployProxy(tokenContract, args);
     // log out things
     log("Token name", await senseistakeToken.name())
-    log("Operator address", await senseistakeToken.getOperatorAddress())
+    //log("Operator address", await senseistakeToken.getOperatorAddress())
     log("SenseistakeERC20Wrapper address:", senseistakeToken.address);
     // save it for other deployments usage
     const artifact = await deployments.getExtendedArtifact('SenseistakeERC20Wrapper');

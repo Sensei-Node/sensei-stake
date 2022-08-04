@@ -30,19 +30,19 @@ interface ISenseistakeERC20Wrapper {
     /// @notice Returns the address of token address contract.
     //function getTokenAddress() external view returns (address);
 
-    /// @notice .
+    /// @notice Mint the amount token to address to
     function mintTo(address to, uint256 amount) external;
 
-    /// @notice .
+    /// @notice Redeem amount token from address to.
     function redeemTo(address to, uint256 amount) external;
 
-    /// @notice .
+    /// @notice Allows the service contract could be mint and redeem tokens.
     function allowServiceContract(address serviceContract) external;
     
-    /// @notice .
-    function getOperatorAddress() external view returns (address);
+    /// @notice Return the operator address.
+    //function getOperatorAddress() external view returns (address);
 
-    /// @notice .
+    /// @notice If the service contract is allow to access to the token 
     function isServiceContractAllowed(address serviceContract) external view returns (bool);
 
     // function increaseWithdrawalAllowance(uint256 amount) external returns (bool);

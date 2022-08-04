@@ -64,14 +64,14 @@ contract SenseistakeERC20Wrapper is SenseistakeBase, IERC20, Initializable, ISen
         initializeSenseistakeStorage(senseistakeStorageAddress);
     }
     
-    function getOperatorAddress()
-        external
-        view
-        override
-        returns (address)
-    {
-        return _operatorAddress;
-    }
+    // function getOperatorAddress()
+    //     external
+    //     view
+    //     override
+    //     returns (address)
+    // {
+    //     return _operatorAddress;
+    // }
 
     function allowServiceContract(address sc) 
         public 
