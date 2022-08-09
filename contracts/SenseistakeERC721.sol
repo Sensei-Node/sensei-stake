@@ -13,7 +13,7 @@ contract SenseistakeERC721 is ERC721, Ownable {
     Counters.Counter private _tokenIdCounter;
     ISenseistakeServicesContract _serviceContract;
 
-    constructor() ERC721("SenseiStakeValidator", "SNSV") {}
+    constructor(string memory name, string memory symbol) ERC721(name, symbol) {}
 
     // function _baseURI() internal pure override returns (string memory) {
     //     return "https://example.com/nft/";

@@ -1,32 +1,26 @@
 const { network } = require("hardhat")
 const { verify } = require("../utils/verify")
+const { deploymentVariables } = require("../helpers/variables");
 
 module.exports = async ({
     deployments,
     upgrades, 
     run
 }) => {
-    const { deploy, log, save } = deployments;
+    const { deploy, log } = deployments;
     const [deployer] = await ethers.getSigners();
-    const storageDeployment = await deployments.get("SenseistakeStorage")
-    const tokenContract = await ethers.getContractFactory("SenseistakeERC721")
-    const args = ["SenseiNodeStakeValidator", "SNSV", deployer.address, storageDeployment.address]
-    const senseistakeToken = await upgrades.deployProxy(tokenContract, args);
-    // log out things
-    log("Token name", await senseistakeToken.name())
-    //log("Operator address", await senseistakeToken.getOperatorAddress())
-    log("SenseistakeERC20Wrapper address:", senseistakeToken.address);
-    // save it for other deployments usage
-    const artifact = await deployments.getExtendedArtifact('SenseistakeERC20Wrapper');
-    let proxyDeployments = {
-        address: senseistakeToken.address,
-        ...artifact
-    }
-    await save('SenseistakeERC20Wrapper', proxyDeployments);
+    const args = ["SenseiStakeValidator", "SNSV"];
+    const senseistakeERC721 = await deploy("SenseistakeERC721", {
+        contract: "SenseistakeERC721",
+        from: deployer.address,
+        args,
+        log: true,
+        waitConfirmations: deploymentVariables.waitConfirmations
+    })
 
     // if (['testnet', 'mainnet'].includes(network.config.type) && process.env.ETHERSCAN_KEY) {
-    //     await verify(senseistakeToken.address, args)
+    //     await verify(senseistakeERC721.address, args)
     // }
 }
 
-module.exports.tags = ["all", "erc20"]
+module.exports.tags = ["all", "erc721"]
