@@ -87,13 +87,13 @@ interface ISenseistakeServicesContractFactory {
     function getBalanceOf(address user) external view returns (uint256);
     
     /// @notice Get the index position in the array of service contracts  
-    function getServiceContractListAt(uint256 index) external view returns (address);
+    // function getServiceContractListAt(uint256 index) external view returns (address);
 
     /// @notice Return the service contract list
-    function getServiceContractList() external view returns (address[] memory);
+    // function getServiceContractList() external view returns (address[] memory);
 
     /// @notice  get the last index of the service contract array
-    function getLastIndexServiceContract() external view returns (uint256);
+    // function getLastIndexServiceContract() external view returns (uint256);
 
     /// @notice make a withdraw the deposit of a service contract address
     function withdraw(address serviceContractAddress) external returns (bool);

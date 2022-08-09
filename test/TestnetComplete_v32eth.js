@@ -24,10 +24,13 @@ describe('Complete32eth', () => {
     // serviceContractIndex = await factoryContract.getLastIndexServiceContract()
     serviceContractIndex = deploymentVariables.servicesToDeploy;
     // get token deployment
-    const tokenDeployment = await deployments.get('SenseistakeERC20Wrapper')
+    const tokenDeployment = await deployments.get('SenseistakeERC721')
     const contrToken = await ethers.getContractFactory(
-      'SenseistakeERC20Wrapper'
+      'SenseistakeERC721'
     );
+    const tokenAmount = {
+      '32000000000000000000': 1,
+    }
     tokenContract = await contrToken.attach(tokenDeployment.address);
     // get all service contracts deployed
     for( let i = 1 ; i <= serviceContractIndex; i++) {
@@ -73,7 +76,7 @@ describe('Complete32eth', () => {
     balances.sc.after_1 = (await sc.getDeposit(aliceWhale.address)).toString()
     balances.token.after_1 = (await tokenContract.balanceOf(aliceWhale.address)).toString()
     expect(balances.sc.after_1 - balances.sc.before_1).to.be.equal(parseInt(amount));
-    expect(balances.token.after_1 - balances.token.before_1).to.be.equal(parseInt(amount));
+    expect(balances.token.after_1 - balances.token.before_1).to.be.equal(tokenAmount[amount]);
 
     balances.sc.before_2 = (await sc.getDeposit(aliceWhale.address)).toString()
     balances.token.before_2 = (await tokenContract.balanceOf(aliceWhale.address)).toString()
@@ -85,6 +88,6 @@ describe('Complete32eth', () => {
     balances.token.after_2 = (await tokenContract.balanceOf(aliceWhale.address)).toString()
     console.log(balances)
     expect(balances.sc.before_2 - balances.sc.after_2).to.be.equal(parseInt(amount));
-    expect(balances.token.before_2 - balances.token.after_2 ).to.be.equal(parseInt(amount));
+    expect(balances.token.before_2 - balances.token.after_2 ).to.be.equal(tokenAmount[amount]);
   });
 });

@@ -23,7 +23,6 @@ import "./libraries/ProxyFactory.sol";
 import "./libraries/Address.sol";
 import "./SenseistakeServicesContract.sol";
 import "./SenseistakeERC20Wrapper.sol";
-import "./SenseistakeERC20Wrapper.sol";
 import "hardhat/console.sol";
 
 contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, ISenseistakeServicesContractFactory {
@@ -40,14 +39,14 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
     address private _operatorAddress;
     uint24 private _commissionRate;
 
-    address private _tokenContractAddr;
+    // address private _tokenContractAddr;
 
     mapping(address => address[]) private _depositServiceContracts;
     mapping(address => mapping(address => uint256)) private _depositServiceContractsIndices;
 
-    uint256 private _lastIndexServiceContract;
+    // uint256 private _lastIndexServiceContract;
 
-    address[] private _serviceContractList;
+    // address[] private _serviceContractList;
 
     modifier onlyOperator() {
         require(msg.sender == _operatorAddress);
@@ -123,8 +122,8 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
             );
 
         address proxy = _createProxyDeterministic(_servicesContractImpl, initData, saltValue);
-        _serviceContractList.push(proxy);
-        _lastIndexServiceContract += 1;
+        // _serviceContractList.push(proxy);
+        // _lastIndexServiceContract += 1;
         emit ContractCreated(saltValue);
 
         if (msg.value > 0) {
@@ -274,13 +273,13 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
         address serviceContractAddress,
         address from,
         address to
-    ) external override onlyLatestContract("SenseistakeERC20Wrapper", msg.sender) {
+    ) external override onlyLatestContract("SenseistakeERC721", msg.sender) {
         // get the index for the service contract
         uint256 index = _depositServiceContractsIndices[from][serviceContractAddress];
         // add it to the other user
         _addDepositServiceContract(serviceContractAddress, to);
         // remove the service contract from original user
-        _replaceFromDepositServiceContracts(index, from);
+        _deleteDepositServiceContract(index, from);
     }
 
     // this method is used when only a part of the amount deposited from a user (in a service contract)
@@ -312,16 +311,8 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
     // for putting the last element in the array of the mapping _depositServiceContractsIndices
     // into a certain index, so that we can have the array length decreased
     function _replaceFromDepositServiceContracts(uint256 index, address user) internal {
-        /*if (index != _depositServiceContracts[user].length - 1) {
-            address last_value = _depositServiceContracts[user][_depositServiceContracts[user].length - 1];
-            delete _depositServiceContractsIndices[user][_depositServiceContracts[user][index]]; // remove index of service contract to be deleted
-            _depositServiceContracts[user].pop(); // remove last element and decrease length
-            _depositServiceContracts[user][index] = last_value; // put last element in desired index
-            _depositServiceContractsIndices[user][last_value] = index; // change also indices mapping
-        } else {*/
-            delete _depositServiceContractsIndices[user][_depositServiceContracts[user][index]];
-            _depositServiceContracts[user].pop();
-        //}
+        delete _depositServiceContractsIndices[user][_depositServiceContracts[user][index]];
+        _depositServiceContracts[user].pop();
     }
 
     function withdrawAll() 
@@ -364,8 +355,25 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
         ISenseistakeServicesContract sc = ISenseistakeServicesContract(payable(serviceContractAddress));
         sc.withdrawAllOnBehalfOf(payable(msg.sender));
         // remove from depositor the service contract where he does not have more deposits
-        _replaceFromDepositServiceContracts(uint256(indexSC), msg.sender);
-         return true;
+        _deleteDepositServiceContract(uint256(indexSC), msg.sender);
+        return true;
+    }
+
+    // this method is used when the whole amount deposited from a user (in a service contract) is deleted
+    function _deleteDepositServiceContract(
+        uint256 index,
+        address user
+    ) internal {
+        if (index != _depositServiceContracts[user].length - 1) {
+            address last_value = _depositServiceContracts[user][_depositServiceContracts[user].length - 1];
+            delete _depositServiceContractsIndices[user][_depositServiceContracts[user][index]]; // remove index of service contract to be deleted
+            _depositServiceContracts[user].pop(); // remove last element and decrease length
+            _depositServiceContracts[user][index] = last_value; // put last element in desired index
+            _depositServiceContractsIndices[user][last_value] = index; // change also indices mapping
+        } else {
+            delete _depositServiceContractsIndices[user][_depositServiceContracts[user][index]];
+            _depositServiceContracts[user].pop();
+        }
     }
 
     function increaseWithdrawalAllowance(
@@ -403,17 +411,17 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
         return allowance;
     }
 
-    function getLastIndexServiceContract() external override view returns (uint256) {
-        return _lastIndexServiceContract;
-    }
+    // function getLastIndexServiceContract() external override view returns (uint256) {
+    //     return _lastIndexServiceContract;
+    // }
 
-    function getServiceContractList() external override view returns (address[] memory) {
-        return _serviceContractList;
-    }
+    // function getServiceContractList() external override view returns (address[] memory) {
+    //     return _serviceContractList;
+    // }
 
-    function getServiceContractListAt(uint256 index) external override view returns (address) {
-        return _serviceContractList[index];
-    }
+    // function getServiceContractListAt(uint256 index) external override view returns (address) {
+    //     return _serviceContractList[index];
+    // }
 
     function getBalanceOf(address user) external override view returns (uint256) {
         uint256 balance;

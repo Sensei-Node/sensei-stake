@@ -244,6 +244,7 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         returns (uint256)
     {
         require(_state != State.PostDeposit, WITHDRAWALS_NOT_ALLOWED);
+        // TODO: cambiar _deposits[msg.sender] por tokenId (ERC721)
         uint256 value = _executeWithdrawal(msg.sender, payable(msg.sender), _deposits[msg.sender]);
         // require(value >= minimumETHAmount, "Less than minimum amount");
         return value;
@@ -258,6 +259,7 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         returns (uint256)
     {
         require(_state != State.PostDeposit, WITHDRAWALS_NOT_ALLOWED);
+        // TODO: cambiar amount por tokenId (ERC721)
         uint256 value = _executeWithdrawal(msg.sender, payable(msg.sender), amount);
         // require(value >= minimumETHAmount, "Less than minimum amount");
         return value;
@@ -273,6 +275,7 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         returns (uint256)
     {
         require(_state != State.PostDeposit, WITHDRAWALS_NOT_ALLOWED);
+        // TODO: cambiar amount por tokenId (ERC721)
         uint256 value = _executeWithdrawal(msg.sender, beneficiary, amount);
         // require(value >= minimumETHAmount, "Less than minimum amount");
         return value;
@@ -423,7 +426,7 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         // here because modern versions of Solidity insert underflow checks
         _allowedWithdrawals[depositor][msg.sender] = newAllowance;
         emit WithdrawalApproval(depositor, msg.sender, newAllowance);
-
+        // TODO: cambiar amount por tokenId (ERC721)
         uint256 value = _executeWithdrawal(depositor, beneficiary, amount);
         // require(value >= minimumETHAmount, "Less than minimum amount");
         return value; 
@@ -472,6 +475,7 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         // here because modern versions of Solidity insert underflow checks
         _allowedWithdrawals[beneficiary][msg.sender] = 0;
         emit WithdrawalApproval(beneficiary, msg.sender, 0);
+        // TODO: cambiar allDeposit por tokenId (ERC721)
         uint256 value = _executeWithdrawal(beneficiary, beneficiary, allDeposit);
         return value; 
     }
@@ -631,7 +635,6 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
 
         uint256 value =  (address(this).balance - _operatorClaimable) / _totalDeposits;
 
-        // TODO luego lo cambio
         tokenContractAddress.burn(tokenId);
 
         // Modern versions of Solidity automatically add underflow checks,

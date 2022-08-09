@@ -5,50 +5,62 @@ import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "./SenseistakeBase.sol";
 import "./interfaces/ISenseistakeServicesContract.sol";
+import "./interfaces/ISenseistakeServicesContractFactory.sol";
 
-contract SenseistakeERC721 is ERC721, Ownable {
+contract SenseistakeERC721 is ERC721, Ownable, SenseistakeBase {
     using Counters for Counters.Counter;
 
     Counters.Counter private _tokenIdCounter;
-    // Mapping from token ID to owner address
     mapping(uint256 => address) private _serviceContracts;
+    // TODO: evaluate costs involved in defining address global or interface global
+    // address public _serviceFactoryAddress;
+    ISenseistakeServicesContractFactory factory;
 
-    constructor(string memory name, string memory symbol) ERC721(name, symbol) {}
+    constructor(string memory name, string memory symbol) ERC721(name, symbol) {
+        // _serviceFactoryAddress = getContractAddress("SenseistakeServicesContractFactory");
+        factory = ISenseistakeServicesContractFactory(getContractAddress("SenseistakeServicesContractFactory"));
+    }
 
     // function _baseURI() internal pure override returns (string memory) {
     //     return "https://example.com/nft/";
     // }
 
+    // TODO: agregar factory transfer/remove ownership
     function _afterTokenTransfer(
         address from,
         address to,
         uint256 tokenId
-    )  internal virtual override(ERC721)  {
+    ) internal virtual override(ERC721)  {
         super._afterTokenTransfer(from, to, tokenId);
-        if(to == address(0)){
-            //burn
+        // ISenseistakeServicesContractFactory factory = ISenseistakeServicesContractFactory(_serviceFactoryAddress);
+        // transfer case only, do things in factory
+        if (to != address(0) && from != address(0)) {
+            // only for transfer we need to handle service-contranct and factory mappings 
+            // (because operation starts in this contract)
+            factory.transferDepositServiceContract(_serviceContracts[tokenId], from, to);
+        }
+        if (to == address(0)) {
+            // burn, does not need to remove mappings in factory (because operation starts in factory)
             delete _serviceContracts[tokenId];
-        }else{
-            // mint y transfer
+        } else {
+            // mint && transfer
             _serviceContracts[tokenId] = to;
         }
-
     }
 
      //function safeMint(address to, string memory uri) public onlyOwner {
-     function safeMint(address to) public onlyOwner returns (uint256){
-        
-         uint256 tokenId = _tokenIdCounter.current();
-         _tokenIdCounter.increment();
-         _safeMint(to, tokenId);
-         //_setTokenURI(tokenId, uri);
-         return tokenId;
-     }
+    function safeMint(address to) public onlyLatestContract("SenseistakeServicesContract", msg.sender) {
+        uint256 tokenId = _tokenIdCounter.current();
+        _tokenIdCounter.increment();
+        _safeMint(to, tokenId);
+        //_setTokenURI(tokenId, uri);
+    }
 
-     function burn(uint tokenId) public {
+    function burn(uint tokenId) public {
         _burn(tokenId);
-     }
+    }
 
     // The following functions are overrides required by Solidity 
     //  function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
