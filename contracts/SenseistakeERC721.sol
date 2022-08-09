@@ -11,7 +11,8 @@ contract SenseistakeERC721 is ERC721, Ownable {
     using Counters for Counters.Counter;
 
     Counters.Counter private _tokenIdCounter;
-    ISenseistakeServicesContract _serviceContract;
+    // Mapping from token ID to owner address
+    mapping(uint256 => address) private _serviceContracts;
 
     constructor(string memory name, string memory symbol) ERC721(name, symbol) {}
 
@@ -19,26 +20,40 @@ contract SenseistakeERC721 is ERC721, Ownable {
     //     return "https://example.com/nft/";
     // }
 
+    function _afterTokenTransfer(
+        address from,
+        address to,
+        uint256 tokenId
+    )  internal virtual override(ERC721)  {
+        super._afterTokenTransfer(from, to, tokenId);
+        if(to == address(0)){
+            //burn
+            delete _serviceContracts[tokenId];
+        }else{
+            // mint y transfer
+            _serviceContracts[tokenId] = to;
+        }
+
+    }
+
      //function safeMint(address to, string memory uri) public onlyOwner {
-     function safeMint(address to, address serviceContractAddress) public onlyOwner returns (uint256){
+     function safeMint(address to) public onlyOwner returns (uint256){
         
          uint256 tokenId = _tokenIdCounter.current();
          _tokenIdCounter.increment();
          _safeMint(to, tokenId);
          //_setTokenURI(tokenId, uri);
-         _setServiceContract(ISenseistakeServicesContract(serviceContractAddress));
          return tokenId;
      }
 
-    // The following functions are overrides required by Solidity.
+     function burn(uint tokenId) public {
+        _burn(tokenId);
+     }
 
-    // function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
-    //      super._burn(tokenId);
-    // }
-
-    function _setServiceContract(ISenseistakeServicesContract serviceContract) private  {
-        _serviceContract = serviceContract;
-    }
+    // The following functions are overrides required by Solidity 
+    //  function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
+    //       super._burn(tokenId);
+    //  }
 
     // function tokenURI(uint256 tokenId)
     //     public

@@ -20,7 +20,6 @@ import "./interfaces/deposit_contract.sol";
 import "./interfaces/ISenseistakeServicesContract.sol";
 import * as ERC721Contract  from "./SenseistakeERC721.sol";
 import "./libraries/Address.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
 
 import "hardhat/console.sol";
 
@@ -623,24 +622,24 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
     function _executeWithdrawal(
         address depositor,
         address payable beneficiary,
-        uint256 amount
+        uint256 tokenId
     )
         internal
         returns (uint256)
     {
-        require(amount > 0, "Amount shouldn't be zero");
+        require(tokenId > 0, "Amount shouldn't be zero");
 
-        uint256 value = amount * (address(this).balance - _operatorClaimable) / _totalDeposits;
+        uint256 value =  (address(this).balance - _operatorClaimable) / _totalDeposits;
 
         // TODO luego lo cambio
-        //tokenContractAddress.redeemTo(depositor, amount);
+        tokenContractAddress.burn(tokenId);
 
         // Modern versions of Solidity automatically add underflow checks,
         // so we don't need to `require(_deposits[_depositor] < _deposit` here:
-        _deposits[depositor] -= amount;
-        _totalDeposits -= amount;
+        _deposits[depositor] = 0;
+        _totalDeposits = 0;
 
-        emit Withdrawal(depositor, beneficiary, amount, value);
+        emit Withdrawal(depositor, beneficiary, value);
         beneficiary.sendValue(value);
 
         return value;
@@ -661,7 +660,7 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         _deposits[depositor] += acceptedDeposit;
         _totalDeposits += acceptedDeposit;
 
-        tokenContractAddress.safeMint(depositor, address(this));
+        tokenContractAddress.safeMint(depositor);
 
         emit Deposit(depositor, acceptedDeposit);
         

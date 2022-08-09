@@ -57,12 +57,10 @@ interface ISenseistakeServicesContract {
     /// @notice Emitted when `owner`'s ETH are withdrawan to `to`.
     /// @param owner The address of deposit stake owner.
     /// @param to The address of ETH beneficiary.
-    /// @param amount The amount of deposit stake to be converted to ETH.
     /// @param value The amount of withdrawn ETH.
     event Withdrawal(
         address indexed owner,
         address indexed to,
-        uint256 amount,
         uint256 value
     );
 
