@@ -92,7 +92,6 @@ describe('Complete64eth', () => {
      balances.sc1.after_2 = (await sc1.getDeposit(aliceWhale.address)).toString()
      balances.sc2.after_2 = (await sc2.getDeposit(aliceWhale.address)).toString()
      balances.token.after_2 = (await tokenContract.balanceOf(aliceWhale.address)).toString()
-     console.log(balances)
      expect(balances.sc1.before_2 - balances.sc1.after_2).to.be.equal(parseInt(amountRemining));
      expect(balances.sc2.before_2 - balances.sc2.after_2).to.be.equal(parseInt(0));
      expect(balances.token.before_2 - balances.token.after_2 ).to.be.equal(parseInt(amountRemining));     

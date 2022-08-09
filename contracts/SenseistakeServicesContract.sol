@@ -18,8 +18,10 @@ pragma solidity 0.8.4;
 import "./SenseistakeBase.sol";
 import "./interfaces/deposit_contract.sol";
 import "./interfaces/ISenseistakeServicesContract.sol";
-import "./interfaces/ISenseistakeERC20Wrapper.sol";
+import * as ERC721Contract  from "./SenseistakeERC721.sol";
 import "./libraries/Address.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
+
 import "hardhat/console.sol";
 
 contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesContract {
@@ -50,7 +52,8 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
     IDepositContract public depositContract;
 
     // for getting the token contact address and then calling the mintTo method
-    ISenseistakeERC20Wrapper public tokenContractAddress;
+    //ISenseistakeERC20Wrapper public tokenContractAddress;
+    ERC721Contract.SenseistakeERC721 public tokenContractAddress;
 
     modifier onlyOperator() {
         require(
@@ -109,7 +112,7 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         onlyOperator
     {
         require(address(tokenContractAddress) == address(0), "Already set up erc20 contract address");
-        tokenContractAddress = ISenseistakeERC20Wrapper(_tokenContractAddress);
+        tokenContractAddress = ERC721Contract.SenseistakeERC721(_tokenContractAddress);
     }
 
     function updateExitDate(uint64 newExitDate)
@@ -629,7 +632,8 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
 
         uint256 value = amount * (address(this).balance - _operatorClaimable) / _totalDeposits;
 
-        tokenContractAddress.redeemTo(depositor, amount);
+        // TODO luego lo cambio
+        //tokenContractAddress.redeemTo(depositor, amount);
 
         // Modern versions of Solidity automatically add underflow checks,
         // so we don't need to `require(_deposits[_depositor] < _deposit` here:
@@ -657,7 +661,7 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         _deposits[depositor] += acceptedDeposit;
         _totalDeposits += acceptedDeposit;
 
-        tokenContractAddress.mintTo(depositor, acceptedDeposit);
+        tokenContractAddress.safeMint(depositor, address(this));
 
         emit Deposit(depositor, acceptedDeposit);
         
