@@ -13,11 +13,11 @@ module.exports = async ({
     const storageContract = await contr.attach(storageDeployment.address);
     console.log("... Seteando transfer.erc20 == disabled ...");
     // disabling transfers
-    const contractDeployment = await deployments.get("SenseistakeERC20Wrapper")
+    const contractDeployment = await deployments.get("SenseistakeERC721")
     const tx = await storageContract.setBool(
         keccak256(ethers.utils.solidityPack(["string", "address"], ["transfer", contractDeployment.address])),
         true
     );
 }
 
-module.exports.tags = ["all", "disable-erc20-transfer"]
+module.exports.tags = ["disable-erc20-transfer"]

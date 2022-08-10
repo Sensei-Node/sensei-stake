@@ -18,7 +18,8 @@ module.exports = async ({
     const serviceContractDeploys = deploymentVariables.servicesToDeploy;
 
     const factoryDeployment = await deployments.get("SenseistakeServicesContractFactory");
-    const tokenDeployment = await deployments.get("SenseistakeERC20Wrapper");
+    const tokenDeployment = await deployments.get("SenseistakeERC721");
+    console.log(tokenDeployment)
 
     const lib = await import('../lib/senseistake-services-contract.mjs');
     ({
@@ -63,7 +64,7 @@ module.exports = async ({
         const factoryContract = await FactoryContract.attach(factoryDeployment.address);
 
         const NNETWK = {
-            ERC20_TOKEN_ADDRESS: tokenDeployment.address,
+            //ERC20_TOKEN_ADDRESS: tokenDeployment.address,
             FACTORY_ADDRESS: factoryDeployment.address,
             CONTRACT_IMPL_ADDRESS: await factoryContract.getServicesContractImpl()
         }
@@ -120,11 +121,12 @@ module.exports = async ({
         // TODO: test if a later call to this function does a revert (because of the immutable keyword)
 
         // Allow owner.address in allowance mapping
-        const SenseistakeERC20Wrapper = await ethers.getContractFactory(
-            'SenseistakeERC20Wrapper'
-        );
-        ERC20 = await SenseistakeERC20Wrapper.attach(tokenDeployment.address);
-        await ERC20.allowServiceContract(servicesContract.address);
+        // TODO : creo que esto ya no se necesita
+        // const SenseistakeERC721 = await ethers.getContractFactory(
+        //     'SenseistakeERC721'
+        // );
+        // ERC721 = await SenseistakeERC721.attach(tokenDeployment.address);
+        // await ERC721.allowServiceContract(servicesContract.address);
 
         // save it for other deployments usage
         const artifact = await deployments.getExtendedArtifact('SenseistakeServicesContract');

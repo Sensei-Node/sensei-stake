@@ -18,10 +18,30 @@ contract SenseistakeERC721 is ERC721, Ownable, SenseistakeBase {
     // address public _serviceFactoryAddress;
     ISenseistakeServicesContractFactory factory;
 
+    address private _operatorAddress;
+
     constructor(string memory name, string memory symbol) ERC721(name, symbol) {
         // _serviceFactoryAddress = getContractAddress("SenseistakeServicesContractFactory");
-        factory = ISenseistakeServicesContractFactory(getContractAddress("SenseistakeServicesContractFactory"));
+        _operatorAddress = msg.sender;
     }
+
+    modifier onlyOperator() {
+        require(
+            msg.sender == _operatorAddress,
+            "Caller is not the operator"
+        );
+        _;
+    }
+
+    //TODO ver por que onlyOperator no me funciona
+    function setFactory(address _factory) 
+        external
+        onlyOperator
+    {
+        require(address(factory) == address(0), "Already set up a factory contract address");
+        factory =  ISenseistakeServicesContractFactory(_factory);
+    }
+
 
     // function _baseURI() internal pure override returns (string memory) {
     //     return "https://example.com/nft/";

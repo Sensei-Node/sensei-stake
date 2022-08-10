@@ -4,8 +4,6 @@ const { deploymentVariables } = require("../helpers/variables");
 
 module.exports = async ({
     deployments,
-    upgrades, 
-    run
 }) => {
     const { deploy, log } = deployments;
     const [deployer] = await ethers.getSigners();
@@ -17,6 +15,8 @@ module.exports = async ({
         log: true,
         waitConfirmations: deploymentVariables.waitConfirmations
     })
+
+    //await senseistakeERC721.setFactory()
 
     // if (['testnet', 'mainnet'].includes(network.config.type) && process.env.ETHERSCAN_KEY) {
     //     await verify(senseistakeERC721.address, args)
