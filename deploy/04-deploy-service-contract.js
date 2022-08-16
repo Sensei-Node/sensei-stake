@@ -74,7 +74,8 @@ module.exports = async ({
             operatorPrivKey, contractAddress);
 
         // 3 hours from now
-        const exitDate = BigNumber.from(new Date().getTime() + 10000000);
+        const exitDate = BigNumber.from(parseInt((new Date().getTime() + 6000000000) / 1000));
+        console.log('exit date', exitDate.toString())
 
         let commitment = createOperatorCommitment(
             contractAddress,
