@@ -96,7 +96,7 @@ interface ISenseistakeServicesContractFactory {
     // function getLastIndexServiceContract() external view returns (uint256);
 
     /// @notice make a withdraw the deposit of a service contract address
-    function withdraw(address serviceContractAddress) external returns (bool);
+    //function withdraw(address serviceContractAddress) external returns (bool);
 
     /// @notice withdraw all the deposits made
     function withdrawAll() external returns (bool);

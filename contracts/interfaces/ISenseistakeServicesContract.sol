@@ -130,24 +130,24 @@ interface ISenseistakeServicesContract {
     /// @notice Withdraws all the ETH of `msg.sender`.
     /// @dev It can only be called when the contract state is not `PostDeposit`.
     /// Emits a {Withdrawal} event.
-    function withdrawAll() external returns (uint256);
+    //function withdrawAll() external returns (uint256);
 
     /// @notice Withdraws the ETH of `msg.sender` which is corresponding to the `amount` of deposit stake.
     /// @dev It can only be called when the contract state is not `PostDeposit`.
     /// Emits a {Withdrawal} event.
     /// @param amount The amount of deposit stake to be converted to ETH.
-    function withdraw(uint256 amount) external returns (uint256);
+    //function withdraw(uint256 amount) external returns (uint256);
 
     /// @notice Withdraws the ETH of `msg.sender` which is corresponding to the `amount` of deposit stake to a specified address.
     /// @dev It can only be called when the contract state is not `PostDeposit`.
     /// Emits a {Withdrawal} event.
     /// @param amount The amount of deposit stake to be converted to ETH.
     /// @param beneficiary The address of ETH receiver.
-    function withdrawTo(
+    /*function withdrawTo(
         uint256 amount,
         address payable beneficiary
         // uint256 minimumETHAmount
-    ) external returns (uint256);
+    ) external returns (uint256);*/
 
     /// @notice Sets `amount` as the allowance of `spender` over the caller's deposit stake.
     /// @dev Emits an {Approval} event.
@@ -191,12 +191,12 @@ interface ISenseistakeServicesContract {
     /// @param depositor The address of deposit stake holder.
     /// @param beneficiary The address of ETH receiver.
     /// @param amount The amount of deposit stake to be converted to ETH.
-    function withdrawFrom(
+    /*function withdrawFrom(
         address depositor,
         address payable beneficiary,
         uint256 amount
         // uint256 minimumETHAmount
-    ) external returns (uint256);
+    ) external returns (uint256);*/
 
     /// @notice Transfers `amount` deposit stake from caller to `to`.
     /// @dev Emits a {Transfer} event.

@@ -34,6 +34,10 @@ abstract contract SenseistakeBase {
     * @dev Throws if called by any sender that doesn't match one of the supplied contract or is the latest version of that contract
     */
     modifier onlyLatestContract(string memory _contractName, address _contractAddress) {
+        //TODO Esto hay que mejorarlo y no dejar el "1" harcoded
+        if(keccak256(abi.encodePacked(_contractName)) == keccak256(abi.encodePacked("SenseistakeServicesContract"))){
+            _contractName = string(abi.encodePacked(_contractName, "1"));
+        }
         require(_contractAddress == getAddress(keccak256(abi.encodePacked("contract.address", _contractName))), "Invalid or outdated contract");
         _;
     }

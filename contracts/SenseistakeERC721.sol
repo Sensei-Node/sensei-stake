@@ -4,15 +4,11 @@ pragma solidity 0.8.4;
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
 import "./SenseistakeBase.sol";
 import "./interfaces/ISenseistakeServicesContract.sol";
 import "./interfaces/ISenseistakeServicesContractFactory.sol";
 
 contract SenseistakeERC721 is ERC721, Ownable, SenseistakeBase {
-    using Counters for Counters.Counter;
-
-    Counters.Counter private _tokenIdCounter;
     mapping(uint256 => address) private _serviceContracts;
     // TODO: evaluate costs involved in defining address global or interface global
     // address public _serviceFactoryAddress;
@@ -20,9 +16,14 @@ contract SenseistakeERC721 is ERC721, Ownable, SenseistakeBase {
 
     address private _operatorAddress;
 
-    constructor(string memory name, string memory symbol) ERC721(name, symbol) {
+    constructor(
+        string memory name, 
+        string memory symbol/*, 
+        address senseistakeStorageAddress*/) ERC721(name, symbol) {
         // _serviceFactoryAddress = getContractAddress("SenseistakeServicesContractFactory");
+        
         _operatorAddress = msg.sender;
+        //initializeSenseistakeStorage(senseistakeStorageAddress);
     }
 
     modifier onlyOperator() {
@@ -31,6 +32,11 @@ contract SenseistakeERC721 is ERC721, Ownable, SenseistakeBase {
             "Caller is not the operator"
         );
         _;
+    }
+
+
+    function setStorageAddress(address senseistakeStorageAddress) external {
+        initializeSenseistakeStorage(senseistakeStorageAddress);
     }
 
     //TODO ver por que onlyOperator no me funciona
@@ -71,9 +77,9 @@ contract SenseistakeERC721 is ERC721, Ownable, SenseistakeBase {
     }
 
      //function safeMint(address to, string memory uri) public onlyOwner {
-    function safeMint(address to) public onlyLatestContract("SenseistakeServicesContract", msg.sender) {
-        uint256 tokenId = _tokenIdCounter.current();
-        _tokenIdCounter.increment();
+    // TODO Remove for test the onlyLatestContract
+    function safeMint(address to, uint256 tokenId) public onlyLatestContract("SenseistakeServicesContract", msg.sender) {
+        console.log("tokenID", tokenId);
         _safeMint(to, tokenId);
         //_setTokenURI(tokenId, uri);
     }

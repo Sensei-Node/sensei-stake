@@ -19,7 +19,7 @@ module.exports = async ({
 
     const factoryDeployment = await deployments.get("SenseistakeServicesContractFactory");
     const tokenDeployment = await deployments.get("SenseistakeERC721");
-    console.log(tokenDeployment)
+    //console.log(tokenDeployment)
 
     const lib = await import('../lib/senseistake-services-contract.mjs');
     ({
@@ -158,7 +158,7 @@ module.exports = async ({
         } else {
             console.error('Unauthorized, please get the JWT token')
         }
-
+        console.log('SenseistakeServicesContract'+index)
         await save('SenseistakeServicesContract'+index, proxyDeployments);
         await save('ServiceContractSalt'+index, {address: `0x${saltBytes.toString("hex")}`});
     }

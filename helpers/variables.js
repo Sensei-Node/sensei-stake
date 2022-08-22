@@ -2,7 +2,7 @@ const { network } = require("hardhat");
 require('dotenv').config({ path: require('find-config')('.env') })
 
 const deploymentVariables = {
-    servicesToDeploy: ['testnet', 'mainnet'].includes(network.config.type) ? 2 : 3,
+    servicesToDeploy: ['testnet', 'mainnet'].includes(network.config.type) ? 2 : 2,
     depositContractAddress: {
         1: '0xff50ed3d0ec03aC01D4C79aAd74928BFF48a7b2b',
         5: '0x00000000219ab540356cBB839Cbe05303d7705Fa'

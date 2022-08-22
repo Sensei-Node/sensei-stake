@@ -60,6 +60,7 @@ module.exports = async ({
             keccak256(ethers.utils.solidityPack(["string", "string"], ["contract.address", contract_name])),
             contractDeployment.address
         );
+        console.log(contract_name, contractDeployment.address, keccak256(ethers.utils.solidityPack(["string", "string"], ["contract.address", contract_name])))
         if (['testnet', 'mainnet'].includes(network.config.type)) {
             await tx.wait(1);
         }

@@ -20,6 +20,7 @@ import "./interfaces/deposit_contract.sol";
 import "./interfaces/ISenseistakeServicesContract.sol";
 import * as ERC721Contract  from "./SenseistakeERC721.sol";
 import "./libraries/Address.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
 
 import "hardhat/console.sol";
 
@@ -53,6 +54,10 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
     // for getting the token contact address and then calling the mintTo method
     //ISenseistakeERC20Wrapper public tokenContractAddress;
     ERC721Contract.SenseistakeERC721 public tokenContractAddress;
+
+    uint256 private tokenId;
+    using Counters for Counters.Counter;
+    Counters.Counter private _tokenIdCounter;
 
     modifier onlyOperator() {
         require(
@@ -238,19 +243,20 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
     string private constant WITHDRAWALS_NOT_ALLOWED =
         "Not allowed when validator is active";
 
-    function withdrawAll(/*uint256 minimumETHAmount*/)
+    //function withdrawAll(/*uint256 minimumETHAmount*/)
+    /*function withdrawAll()
         external
         override
         returns (uint256)
     {
         require(_state != State.PostDeposit, WITHDRAWALS_NOT_ALLOWED);
         // TODO: cambiar _deposits[msg.sender] por tokenId (ERC721)
-        uint256 value = _executeWithdrawal(msg.sender, payable(msg.sender), _deposits[msg.sender]);
+        uint256 value = _executeWithdrawal(msg.sender, payable(msg.sender), address(this).balance);
         // require(value >= minimumETHAmount, "Less than minimum amount");
         return value;
-    }
+    }*/
 
-    function withdraw(
+    /*function withdraw(
         uint256 amount
         // uint256 minimumETHAmount
     )
@@ -263,9 +269,9 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         uint256 value = _executeWithdrawal(msg.sender, payable(msg.sender), amount);
         // require(value >= minimumETHAmount, "Less than minimum amount");
         return value;
-    }
+    }*/
 
-    function withdrawTo(
+    /*function withdrawTo(
         uint256 amount,
         address payable beneficiary
         // uint256 minimumETHAmount
@@ -279,7 +285,7 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         uint256 value = _executeWithdrawal(msg.sender, beneficiary, amount);
         // require(value >= minimumETHAmount, "Less than minimum amount");
         return value;
-    }
+    }*/
 
     function approve(
         address spender,
@@ -409,7 +415,7 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         return true;
     }
 
-    function withdrawFrom(
+    /*function withdrawFrom(
         address depositor,
         address payable beneficiary,
         uint256 amount
@@ -430,7 +436,7 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         uint256 value = _executeWithdrawal(depositor, beneficiary, amount);
         // require(value >= minimumETHAmount, "Less than minimum amount");
         return value; 
-    }
+    }*/
 
     // function withdrawOnBehalfOf(
     //     //address depositor,
@@ -625,16 +631,17 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
 
     function _executeWithdrawal(
         address depositor,
-        address payable beneficiary,
-        uint256 tokenId
-    )
+        address payable beneficiary, 
+        uint256 amount
+    ) 
         internal
         returns (uint256)
     {
-        require(tokenId > 0, "Amount shouldn't be zero");
+        require(amount  == 32 ether, "Amount should be 32");
 
-        uint256 value =  (address(this).balance - _operatorClaimable) / _totalDeposits;
-
+        //uint256 value =  (address(this).balance - _operatorClaimable) / _totalDeposits;
+        uint256 value =  (amount - _operatorClaimable) / _totalDeposits;
+        console.log("tokenId", tokenId);
         tokenContractAddress.burn(tokenId);
 
         // Modern versions of Solidity automatically add underflow checks,
@@ -662,8 +669,9 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
 
         _deposits[depositor] += acceptedDeposit;
         _totalDeposits += acceptedDeposit;
-
-        tokenContractAddress.safeMint(depositor);
+        _tokenIdCounter.increment();
+        tokenId = _tokenIdCounter.current();
+        tokenContractAddress.safeMint(depositor, tokenId);
 
         emit Deposit(depositor, acceptedDeposit);
         

@@ -202,6 +202,7 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
                         remaining -= depositAmount;
                         emit ServiceContractDeposit(address(sc));
                     }
+                    
                 }
             }
         }
@@ -343,7 +344,7 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
         return true;
     }
 
-    function withdraw(
+    /*function withdraw(
        address serviceContractAddress
     ) external override returns (bool) {
         require(serviceContractAddress != address(0),"Should be a valid service contract");
@@ -357,7 +358,7 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
         // remove from depositor the service contract where he does not have more deposits
         _deleteDepositServiceContract(uint256(indexSC), msg.sender);
         return true;
-    }
+    }*/
 
     // this method is used when the whole amount deposited from a user (in a service contract) is deleted
     function _deleteDepositServiceContract(
