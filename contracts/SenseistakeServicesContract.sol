@@ -20,7 +20,6 @@ import "./interfaces/deposit_contract.sol";
 import "./interfaces/ISenseistakeServicesContract.sol";
 import * as ERC721Contract  from "./SenseistakeERC721.sol";
 import "./libraries/Address.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
 
 import "hardhat/console.sol";
 
@@ -55,9 +54,8 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
     //ISenseistakeERC20Wrapper public tokenContractAddress;
     ERC721Contract.SenseistakeERC721 public tokenContractAddress;
 
-    uint256 private tokenId;
-    using Counters for Counters.Counter;
-    Counters.Counter private _tokenIdCounter;
+    uint256 private _tokenId;
+
 
     modifier onlyOperator() {
         require(
@@ -99,6 +97,15 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         if (_state == State.PreDeposit) {
             revert("Plain Ether transfer not allowed");
         }
+    }
+
+    //TODO agregar que solo el factory pueda acceder
+    function setTokenId(uint256 tokenId) 
+        external
+        override
+    {
+        require(_tokenId == 0, "Already set up tokenId contract address");
+        _tokenId = tokenId;
     }
 
     function setEthDepositContractAddress(address ethDepositContractAddress) 
@@ -641,8 +648,8 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
 
         //uint256 value =  (address(this).balance - _operatorClaimable) / _totalDeposits;
         uint256 value =  (amount - _operatorClaimable) / _totalDeposits;
-        console.log("tokenId", tokenId);
-        tokenContractAddress.burn(tokenId);
+        console.log("tokenId", _tokenId);
+        tokenContractAddress.burn(_tokenId);
 
         // Modern versions of Solidity automatically add underflow checks,
         // so we don't need to `require(_deposits[_depositor] < _deposit` here:
@@ -669,9 +676,8 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
 
         _deposits[depositor] += acceptedDeposit;
         _totalDeposits += acceptedDeposit;
-        _tokenIdCounter.increment();
-        tokenId = _tokenIdCounter.current();
-        tokenContractAddress.safeMint(depositor, tokenId);
+        console.log("_handleDeposit tokenId", _tokenId);
+        tokenContractAddress.safeMint(depositor, _tokenId);
 
         emit Deposit(depositor, acceptedDeposit);
         

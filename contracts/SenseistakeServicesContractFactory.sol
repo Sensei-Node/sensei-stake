@@ -21,6 +21,7 @@ import "./interfaces/ISenseistakeServicesContract.sol";
 import "./interfaces/ISenseistakeServicesContractFactory.sol";
 import "./libraries/ProxyFactory.sol";
 import "./libraries/Address.sol";
+import "@openzeppelin/contracts/utils/Counters.sol";
 import "./SenseistakeServicesContract.sol";
 import "./SenseistakeERC20Wrapper.sol";
 import "hardhat/console.sol";
@@ -38,6 +39,9 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
     address payable private _servicesContractImpl;
     address private _operatorAddress;
     uint24 private _commissionRate;
+
+    using Counters for Counters.Counter;
+    Counters.Counter private _tokenIdCounter;
 
     // address private _tokenContractAddr;
 
@@ -197,6 +201,11 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
                 if (sc.getState() == ISenseistakeServicesContract.State.PreDeposit) {
                     uint256 depositAmount = _min(remaining, FULL_DEPOSIT_SIZE - address(sc).balance);
                     if (depositAmount != 0) {
+                        _tokenIdCounter.increment();
+                        console.log("1TokenId in fundMultipleContracts", _tokenIdCounter.current() );
+                        uint256 tokenId = _tokenIdCounter.current();
+                        sc.setTokenId(tokenId);
+                        console.log("after setTokenId ", tokenId);
                         sc.depositOnBehalfOf{value: depositAmount}(depositor);
                         _addDepositServiceContract(address(sc), depositor);
                         remaining -= depositAmount;

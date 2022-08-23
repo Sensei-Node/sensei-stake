@@ -274,4 +274,7 @@ interface ISenseistakeServicesContract {
     function setEthDepositContractAddress(
         address ethDepositContractAddress
     ) external;
+
+    /// @notice Setting the TokenId
+    function setTokenId(uint256 tokenId) external;
 }

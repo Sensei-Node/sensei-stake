@@ -7,8 +7,9 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "./SenseistakeBase.sol";
 import "./interfaces/ISenseistakeServicesContract.sol";
 import "./interfaces/ISenseistakeServicesContractFactory.sol";
+import "@openzeppelin/contracts/utils/Strings.sol";
 
-contract SenseistakeERC721 is ERC721, Ownable, SenseistakeBase {
+contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable, SenseistakeBase {
     mapping(uint256 => address) private _serviceContracts;
     // TODO: evaluate costs involved in defining address global or interface global
     // address public _serviceFactoryAddress;
@@ -77,9 +78,11 @@ contract SenseistakeERC721 is ERC721, Ownable, SenseistakeBase {
     }
 
      //function safeMint(address to, string memory uri) public onlyOwner {
-    // TODO Remove for test the onlyLatestContract
-    function safeMint(address to, uint256 tokenId) public onlyLatestContract("SenseistakeServicesContract", msg.sender) {
-        console.log("tokenID", tokenId);
+    // TODO Check if the require could replace the only  the onlyLatestContract
+    function safeMint(address to, uint256 tokenId) public /*onlyLatestContract("SenseistakeServicesContract", msg.sender)*/ {
+        require(msg.sender ==
+        getAddress(keccak256(abi.encodePacked("contract.address", "SenseistakeServicesContract" , Strings.toString(tokenId)))), "The msg.sender must be previously stored");
+        
         _safeMint(to, tokenId);
         //_setTokenURI(tokenId, uri);
     }
@@ -88,17 +91,19 @@ contract SenseistakeERC721 is ERC721, Ownable, SenseistakeBase {
         _burn(tokenId);
     }
 
-    // The following functions are overrides required by Solidity 
-    //  function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
-    //       super._burn(tokenId);
-    //  }
+    //The following functions are overrides required by Solidity 
+     function _burn(uint256 tokenId) internal override(ERC721, ERC721URIStorage) {
+          super._burn(tokenId);
+     }
 
-    // function tokenURI(uint256 tokenId)
-    //     public
-    //     view
-    //     override(ERC721, ERC721URIStorage)
-    //     returns (string memory)
-    // {
-    //     return super.tokenURI(tokenId);
-    // }
+    function tokenURI(uint256 tokenId)
+        public
+        view
+        override(ERC721, ERC721URIStorage)
+        returns (string memory)
+    {
+        return super.tokenURI(tokenId);
+    }
+
+    
 }

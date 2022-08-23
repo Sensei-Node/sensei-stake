@@ -57,20 +57,18 @@ describe('Complete32ethNFT', () => {
     await expect(tx).to.be.revertedWith('Deposited amount should be greater than minimum deposit');
   })
 
-
-  it('1. should be able to deposit 32eth or (multiples of 32eth) and withdraw them', async function () {
+  let balances = {
+    sc: {},
+    sc2: {},
+    token: {}
+  }
+  it('1,2. should be able to deposit 32eth or (multiples of 32eth) and withdraw them', async function () {
     /*
       1. deposit 32 eth
       2. withdraw 32 eth
-      3. deposit 62 eth
-      4. withdraw 64 eth
     */
     const { salt, sc } = serviceContracts[0];
-    const { salt:salt2, sc:sc2 } = serviceContracts[1];
-    let balances = {
-      sc: {},
-      token: {}
-    }
+    
     let amount = "32000000000000000000"
     console.log("1. Deposit 32 eth")
     balances.sc.before_1 = (await sc.getDeposit(aliceWhale.address)).toString()
@@ -97,23 +95,49 @@ describe('Complete32ethNFT', () => {
     expect(balances.sc.before_2 - balances.sc.after_2).to.be.equal(parseInt(amount));
     expect(balances.token.before_2 - balances.token.after_2 ).to.be.equal(tokenAmount[amount]);
     
-    /*console.log("3. Deposit 64 eth")
-    amount = "64000000000000000000"
-    balances.sc.before_3 = (await sc.getDeposit(aliceWhale.address)).toString()
-    balances.token.before_3 = (await tokenContract.balanceOf(aliceWhale.address)).toString()
-    console.log(balances)
-    const tx2 = await factoryContract.connect(aliceWhale).fundMultipleContracts([salt,salt2], {
-      value: amount
-    });
-    console.log(balances)
-    await tx2.wait(waitConfirmations[network.config.type]);
-    balances.sc.after_3 = (await sc.getDeposit(aliceWhale.address)).toString()
-    balances.token.after_3 = (await tokenContract.balanceOf(aliceWhale.address)).toString()
-    expect(balances.sc.after_3 - balances.sc.before_3).to.be.equal(parseInt(amount));
-    expect(balances.token.after_3 - balances.token.before_3).to.be.equal(tokenAmount[amount]);
-    
 
-    console.log("3. Withdraw 64 eth")
-    */
+    });
+    it('3,4. should be able to deposit 32eth or (multiples of 32eth) and withdraw them', async function () {
+      /*
+      3. deposit 62 eth
+      4. withdraw 64 eth
+      */
+      const { salt, sc } = serviceContracts[0];
+      const { salt:salt2, sc:sc2 } = serviceContracts[1];
+
+      console.log("3. Deposit 64 eth")
+      amount = "64000000000000000000"
+      balances.sc.before_3 = (await sc.getDeposit(aliceWhale.address)).toString()
+      balances.sc2.before_3 = (await sc2.getDeposit(aliceWhale.address)).toString()
+      balances.token.before_3 = (await tokenContract.balanceOf(aliceWhale.address)).toString()
+      console.log(balances)
+      const tx2 = await factoryContract.connect(aliceWhale).fundMultipleContracts([salt,salt2], {
+        value: amount
+      });
+      console.log(balances)
+      await tx2.wait(waitConfirmations[network.config.type]);
+      balances.sc.after_3 = (await sc.getDeposit(aliceWhale.address)).toString()
+      balances.sc2.after_3 = (await sc2.getDeposit(aliceWhale.address)).toString()
+      balances.token.after_3 = (await tokenContract.balanceOf(aliceWhale.address)).toString()
+      expect(balances.sc.after_3 - balances.sc.before_3).to.be.equal(parseInt(amount/2));
+      expect(balances.sc2.after_3 - balances.sc2.before_3).to.be.equal(parseInt(amount/2));
+      expect(balances.token.after_3 - balances.token.before_3).to.be.equal(tokenAmount[amount]);
+      console.log(balances)
+
+      console.log("4. Withdraw 64 eth")
+      balances.sc.before_4 = (await sc.getDeposit(aliceWhale.address)).toString()
+      balances.sc2.before_4 = (await sc2.getDeposit(aliceWhale.address)).toString()
+      balances.token.before_4 = (await tokenContract.balanceOf(aliceWhale.address)).toString()
+      const withdrawAllowance = await factoryContract.connect(aliceWhale).increaseWithdrawalAllowance(amount);
+      const withdraw = await factoryContract.connect(aliceWhale).withdrawAll();
+      await withdraw.wait(waitConfirmations[network.config.type]);
+      balances.sc.after_4 = (await sc.getDeposit(aliceWhale.address)).toString()
+      balances.sc2.after_4 = (await sc2.getDeposit(aliceWhale.address)).toString()
+      balances.token.after_4 = (await tokenContract.balanceOf(aliceWhale.address)).toString()
+
+      expect((parseInt(balances.sc.before_4) + parseInt(balances.sc2.before_4))  - 
+      (parseInt(balances.sc.after_4) + parseInt(balances.sc2.after_4))).to.be.equal(parseInt(amount));
+      expect(balances.token.before_4 - balances.token.after_4 ).to.be.equal(tokenAmount[amount]);
+      
   });
 });
