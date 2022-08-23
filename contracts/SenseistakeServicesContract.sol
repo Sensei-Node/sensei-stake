@@ -55,6 +55,7 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
     ERC721Contract.SenseistakeERC721 public tokenContractAddress;
 
     uint256 private _tokenId;
+    string private _tokenURI;
 
 
     modifier onlyOperator() {
@@ -104,10 +105,19 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         external
         override
     {
-        require(_tokenId == 0, "Already set up tokenId contract address");
+        require(_tokenId == 0, "Already set up tokenId");
         _tokenId = tokenId;
     }
 
+
+    //TODO agregar que solo el factory pueda acceder
+    function setTokenURI(string memory tokenURL) 
+        external
+        override
+    {
+        //require(_tokenURL == 0, "Already set up tokenUrl");
+        _tokenURI = tokenURL;
+    }
     function setEthDepositContractAddress(address ethDepositContractAddress) 
         external
         override
@@ -677,8 +687,10 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         _deposits[depositor] += acceptedDeposit;
         _totalDeposits += acceptedDeposit;
         console.log("_handleDeposit tokenId", _tokenId);
+        
         tokenContractAddress.safeMint(depositor, _tokenId);
-
+        tokenContractAddress.setTokenURI(_tokenId, _tokenURI);
+        
         emit Deposit(depositor, acceptedDeposit);
         
         if (surplus > 0) {

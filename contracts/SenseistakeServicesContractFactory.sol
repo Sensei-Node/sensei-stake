@@ -191,6 +191,8 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
         require(msg.value >= _minimumDeposit, "Deposited amount should be greater than minimum deposit");
         uint256 remaining = msg.value;
         address depositor = msg.sender;
+        //TODO ver donde lo cargamos la url del nft
+        string memory tokenURI = "https://www.aisland.store/img/cryptocurrencies/ethereum.png";
 
         for (uint256 i = 0; i < saltValues.length; i++) {
             if (remaining == 0)
@@ -205,6 +207,7 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
                         console.log("1TokenId in fundMultipleContracts", _tokenIdCounter.current() );
                         uint256 tokenId = _tokenIdCounter.current();
                         sc.setTokenId(tokenId);
+                        sc.setTokenURI(tokenURI);
                         console.log("after setTokenId ", tokenId);
                         sc.depositOnBehalfOf{value: depositAmount}(depositor);
                         _addDepositServiceContract(address(sc), depositor);
