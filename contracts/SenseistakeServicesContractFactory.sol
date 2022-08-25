@@ -21,7 +21,7 @@ import "./interfaces/ISenseistakeServicesContract.sol";
 import "./interfaces/ISenseistakeServicesContractFactory.sol";
 import "./libraries/ProxyFactory.sol";
 import "./libraries/Address.sol";
-import "@openzeppelin/contracts/utils/Counters.sol";
+// import "@openzeppelin/contracts/utils/Counters.sol";
 import "./SenseistakeServicesContract.sol";
 import "./SenseistakeERC20Wrapper.sol";
 import "hardhat/console.sol";
@@ -40,8 +40,8 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
     address private _operatorAddress;
     uint24 private _commissionRate;
 
-    using Counters for Counters.Counter;
-    Counters.Counter private _tokenIdCounter;
+    // using Counters for Counters.Counter;
+    // Counters.Counter private _tokenIdCounter;
 
     // address private _tokenContractAddr;
 
@@ -192,7 +192,7 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
         uint256 remaining = msg.value;
         address depositor = msg.sender;
         //TODO ver donde lo cargamos la url del nft
-        string memory tokenURI = "https://gist.githubusercontent.com/fhofman/8edcd8ef2e68e556eff04cd071d37856/raw/aefe6acc1b4165861e4aecca73acc4faaf6d8b11/gistfile1.txt";
+        // string memory tokenURI = "https://gist.githubusercontent.com/fhofman/8edcd8ef2e68e556eff04cd071d37856/raw/aefe6acc1b4165861e4aecca73acc4faaf6d8b11/gistfile1.txt";
 
         for (uint256 i = 0; i < saltValues.length; i++) {
             if (remaining == 0)
@@ -203,12 +203,12 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
                 if (sc.getState() == ISenseistakeServicesContract.State.PreDeposit) {
                     uint256 depositAmount = _min(remaining, FULL_DEPOSIT_SIZE - address(sc).balance);
                     if (depositAmount != 0) {
-                        _tokenIdCounter.increment();
-                        console.log("1TokenId in fundMultipleContracts", _tokenIdCounter.current() );
-                        uint256 tokenId = _tokenIdCounter.current();
-                        sc.setTokenId(tokenId);
-                        sc.setTokenURI(tokenURI);
-                        console.log("after setTokenId ", tokenId);
+                        // _tokenIdCounter.increment();
+                        // console.log("1TokenId in fundMultipleContracts", _tokenIdCounter.current() );
+                        // uint256 tokenId = _tokenIdCounter.current();
+                        // sc.setTokenId(tokenId);
+                        // sc.setTokenURI(tokenURI);
+                        // console.log("after setTokenId ", tokenId);
                         sc.depositOnBehalfOf{value: depositAmount}(depositor);
                         _addDepositServiceContract(address(sc), depositor);
                         remaining -= depositAmount;

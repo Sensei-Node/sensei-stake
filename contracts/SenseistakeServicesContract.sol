@@ -55,8 +55,7 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
     ERC721Contract.SenseistakeERC721 public tokenContractAddress;
 
     uint256 private _tokenId;
-    string private _tokenURI;
-
+    // string private _tokenURI;
 
     modifier onlyOperator() {
         require(
@@ -100,25 +99,25 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         }
     }
 
-    //TODO agregar que solo el factory pueda acceder
-    function setTokenId(uint256 tokenId) 
-        external
-        override
-    {
-        require(_tokenId == 0, "Already set up tokenId");
-        _tokenId = tokenId;
-    }
+    // //TODO agregar que solo el factory pueda acceder
+    // function setTokenId(uint256 tokenId) 
+    //     external
+    //     override
+    // {
+    //     require(_tokenId == 0, "Already set up tokenId");
+    //     _tokenId = tokenId;
+    // }
 
+    // //TODO agregar que solo el factory pueda acceder
+    // function setTokenURI(string memory tokenURL) 
+    //     external
+    //     override
+    // {
+    //     //TODO esto debe estar descomentado
+    //     //require(_tokenURL == 0, "Already set up tokenUrl");
+    //     _tokenURI = tokenURL;
+    // }
 
-    //TODO agregar que solo el factory pueda acceder
-    function setTokenURI(string memory tokenURL) 
-        external
-        override
-    {
-        //TODO esto debe estar descomentado
-        //require(_tokenURL == 0, "Already set up tokenUrl");
-        _tokenURI = tokenURL;
-    }
     function setEthDepositContractAddress(address ethDepositContractAddress) 
         external
         override
@@ -261,7 +260,8 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
     string private constant WITHDRAWALS_NOT_ALLOWED =
         "Not allowed when validator is active";
 
-    //function withdrawAll(/*uint256 minimumETHAmount*/)
+    // TODO: before finishing delete this method. IS NOT SAFE does not work.
+    // TODO: just for being able to retrieve locked funds for testing.
     function withdrawAll()
         external
         override
@@ -659,8 +659,7 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
 
         //uint256 value =  (address(this).balance - _operatorClaimable) / _totalDeposits;
         uint256 value =  (amount - _operatorClaimable) / _totalDeposits;
-        console.log("tokenId", _tokenId);
-        tokenContractAddress.burn(_tokenId);
+        tokenContractAddress.burn();
 
         // Modern versions of Solidity automatically add underflow checks,
         // so we don't need to `require(_deposits[_depositor] < _deposit` here:
@@ -687,10 +686,8 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
 
         _deposits[depositor] += acceptedDeposit;
         _totalDeposits += acceptedDeposit;
-        console.log("_handleDeposit tokenId", _tokenId);
         
-        tokenContractAddress.safeMint(depositor, _tokenId);
-        tokenContractAddress.setTokenURI(_tokenId, _tokenURI);
+        tokenContractAddress.safeMint(depositor);
         
         emit Deposit(depositor, acceptedDeposit);
         

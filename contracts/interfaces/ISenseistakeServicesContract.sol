@@ -276,7 +276,6 @@ interface ISenseistakeServicesContract {
     ) external;
 
     /// @notice Setting the TokenId
-    function setTokenId(uint256 tokenId) external;
-    function setTokenURI(string memory tokenId) external;
-    
+    // function setTokenId(uint256 tokenId) external;
+    // function setTokenURI(string memory tokenId) external;
 }

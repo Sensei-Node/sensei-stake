@@ -25,10 +25,10 @@ abstract contract SenseistakeBase {
     // /**
     // * @dev Throws if called by any sender that doesn't match a Sensei Node network contract
     // */
-    // modifier onlyLatestNetworkContract() {
-    //     require(getBool(keccak256(abi.encodePacked("contract.exists", msg.sender))), "Invalid or outdated network contract");
-    //     _;
-    // }
+    modifier onlyLatestNetworkContract() {
+        require(getBool(keccak256(abi.encodePacked("contract.exists", msg.sender))), "Invalid or outdated network contract");
+        _;
+    }
 
     /**
     * @dev Throws if called by any sender that doesn't match one of the supplied contract or is the latest version of that contract
