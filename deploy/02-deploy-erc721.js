@@ -18,9 +18,9 @@ module.exports = async ({
     })
     const storageDeployment = await deployments.get("SenseistakeStorage")
 
-    // if (['testnet', 'mainnet'].includes(network.config.type) && process.env.ETHERSCAN_KEY) {
-    //     await verify(senseistakeERC721.address, args)
-    // }
+    if (['testnet', 'mainnet'].includes(network.config.type) && process.env.ETHERSCAN_KEY) {
+        await verify(senseistakeERC721.address, args)
+    }
 }
 
 module.exports.tags = ["all", "erc721"]

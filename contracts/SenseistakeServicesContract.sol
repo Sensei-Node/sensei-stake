@@ -115,6 +115,7 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         external
         override
     {
+        //TODO esto debe estar descomentado
         //require(_tokenURL == 0, "Already set up tokenUrl");
         _tokenURI = tokenURL;
     }
@@ -261,7 +262,7 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         "Not allowed when validator is active";
 
     //function withdrawAll(/*uint256 minimumETHAmount*/)
-    /*function withdrawAll()
+    function withdrawAll()
         external
         override
         returns (uint256)
@@ -271,7 +272,7 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         uint256 value = _executeWithdrawal(msg.sender, payable(msg.sender), address(this).balance);
         // require(value >= minimumETHAmount, "Less than minimum amount");
         return value;
-    }*/
+    }
 
     /*function withdraw(
         uint256 amount

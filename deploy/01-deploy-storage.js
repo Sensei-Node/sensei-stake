@@ -18,9 +18,9 @@ module.exports = async ({
         waitConfirmations: deploymentVariables.waitConfirmations
     })
 
-    // if (['testnet', 'mainnet'].includes(network.config.type) && process.env.ETHERSCAN_KEY) {
-    //     await verify(senseistakeStorage.address, args)
-    // }
+    if (['testnet', 'mainnet'].includes(network.config.type) && process.env.ETHERSCAN_KEY) {
+        await verify(senseistakeStorage.address, args)
+    }
 }
 
 module.exports.tags = ["all", "storage","erc721"]

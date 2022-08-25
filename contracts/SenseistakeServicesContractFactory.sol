@@ -192,7 +192,7 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
         uint256 remaining = msg.value;
         address depositor = msg.sender;
         //TODO ver donde lo cargamos la url del nft
-        string memory tokenURI = "https://www.aisland.store/img/cryptocurrencies/ethereum.png";
+        string memory tokenURI = "https://gist.githubusercontent.com/fhofman/8edcd8ef2e68e556eff04cd071d37856/raw/aefe6acc1b4165861e4aecca73acc4faaf6d8b11/gistfile1.txt";
 
         for (uint256 i = 0; i < saltValues.length; i++) {
             if (remaining == 0)

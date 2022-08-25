@@ -28,9 +28,9 @@ module.exports = async ({
     await ERC721.connect(deployer).setStorageAddress(storageDeployment.address);
 
 
-    // if (['testnet', 'mainnet'].includes(network.config.type) && process.env.ETHERSCAN_KEY) {
-    //     await verify(senseistakeFactory.address, args)
-    // }
+    if (['testnet', 'mainnet'].includes(network.config.type) && process.env.ETHERSCAN_KEY) {
+        await verify(senseistakeFactory.address, args)
+    }
 }
 
 module.exports.tags = ["all", "factory"]

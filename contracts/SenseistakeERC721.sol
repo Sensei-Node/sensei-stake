@@ -105,7 +105,7 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable, SenseistakeBase
         return super.tokenURI(tokenId);
     }
 
-
+    //TODO SEGURIZAR
     function setTokenURI(uint256 tokenId, string memory _tokenURI) public {
         super._setTokenURI( tokenId, _tokenURI);
     }
