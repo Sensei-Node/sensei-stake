@@ -23,4 +23,4 @@ module.exports = async ({
     }
 }
 
-module.exports.tags = ["all", "storage","erc721"]
+module.exports.tags = ["all", "storage", "erc721"]

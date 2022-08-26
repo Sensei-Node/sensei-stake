@@ -259,11 +259,11 @@ interface ISenseistakeServicesContract {
         uint256 addValue
     ) external returns (bool);
 
-    /// @notice Increase the amount allowance just for the token could be withdrawn 
-    function increaseWithdrawalAllowanceFromToken(
-        address spender,
-        uint256 addValue
-    ) external returns (bool);
+    // /// @notice Increase the amount allowance just for the token could be withdrawn 
+    // function increaseWithdrawalAllowanceFromToken(
+    //     address spender,
+    //     uint256 addValue
+    // ) external returns (bool);
 
     /// @notice Allow withdraw all the deposit on behalf of on 
     function withdrawAllOnBehalfOf(

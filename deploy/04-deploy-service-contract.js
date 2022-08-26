@@ -73,8 +73,8 @@ module.exports = async ({
         const depositData = createOperatorDepositData(
             operatorPrivKey, contractAddress);
 
-        // 3 hours from now
-        const exitDate = BigNumber.from(parseInt((new Date().getTime() + 6000000000) / 1000));
+        // ~4 months from now
+        const exitDate = BigNumber.from(parseInt((new Date().getTime() + 9000000000) / 1000));
         console.log('exit date', exitDate.toString())
 
         let commitment = createOperatorCommitment(
@@ -121,14 +121,6 @@ module.exports = async ({
         await servicesContract.setEthDepositContractAddress(ethDepositContractAddress);
         // TODO: test if a later call to this function does a revert (because of the immutable keyword)
 
-        // Allow owner.address in allowance mapping
-        // TODO : creo que esto ya no se necesita
-        // const SenseistakeERC721 = await ethers.getContractFactory(
-        //     'SenseistakeERC721'
-        // );
-        // ERC721 = await SenseistakeERC721.attach(tokenDeployment.address);
-        // await ERC721.allowServiceContract(servicesContract.address);
-
         // save it for other deployments usage
         const artifact = await deployments.getExtendedArtifact('SenseistakeServicesContract');
         let proxyDeployments = {
@@ -136,9 +128,6 @@ module.exports = async ({
             ...artifact
         }
 
-        // if (['testnet', 'mainnet'].includes(network.config.type) && process.env.ETHERSCAN_KEY) {
-        //     await verify(NNETWK.CONTRACT_IMPL_ADDRESS, args)
-        // }
         if (jwt) {
             try {
                 await axios.post(strapi_url+strapi_path, {

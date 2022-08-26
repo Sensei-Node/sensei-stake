@@ -17,20 +17,16 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable, SenseistakeBase
     using Counters for Counters.Counter;
     Counters.Counter private _tokenIdCounter;
 
-    // TODO: evaluate costs involved in defining address global or interface global
-    // address public _serviceFactoryAddress;
-    ISenseistakeServicesContractFactory factory;
-
+    address private _factoryAddress;
     address private _operatorAddress;
 
     constructor(
         string memory name, 
-        string memory symbol/*, 
-        address senseistakeStorageAddress*/) ERC721(name, symbol) {
-        // _serviceFactoryAddress = getContractAddress("SenseistakeServicesContractFactory");
-        
+        string memory symbol,
+        address storageDeploymentAddress
+    ) ERC721(name, symbol) {
+        initializeSenseistakeStorage(storageDeploymentAddress);
         _operatorAddress = msg.sender;
-        //initializeSenseistakeStorage(senseistakeStorageAddress);
     }
 
     modifier onlyOperator() {
@@ -41,20 +37,16 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable, SenseistakeBase
         _;
     }
 
-    function setStorageAddress(address senseistakeStorageAddress) external {
-        initializeSenseistakeStorage(senseistakeStorageAddress);
-    }
-
     function setFactory(address _factory) 
         external
         onlyOperator
     {
-        require(address(factory) == address(0), "Already set up a factory contract address");
-        factory =  ISenseistakeServicesContractFactory(_factory);
+        require(_factoryAddress == address(0), "Already set up a factory contract address");
+        _factoryAddress = _factory;
     }
 
     function _baseURI() internal view virtual override returns (string memory) {
-        return "ipfs://QmXWnYeFgc6CZwzTUzNdbSrt6WRqU1ZUPk3YyJnqRLsKp8";
+        return "ipfs://QmXWnYeFgc6CZwzTUzNdbSrt6WRqU1ZUPk3YyJnqRLsKp8/";
     }
 
     function _afterTokenTransfer(
@@ -63,25 +55,25 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable, SenseistakeBase
         uint256 tokenId
     ) internal virtual override(ERC721)  {
         super._afterTokenTransfer(from, to, tokenId);
-        // ISenseistakeServicesContractFactory factory = ISenseistakeServicesContractFactory(_serviceFactoryAddress);
         // transfer
         if (to != address(0) && from != address(0)) {
             // only for transfer we need to handle service-contranct and factory mappings 
             // (because operation starts in this contract)
-            // factory.transferDepositServiceContract(_tokenServiceContract[tokenId], from, to);
+            // ISenseistakeServicesContractFactory(_factoryAddress).transferDepositServiceContract(_tokenServiceContract[tokenId], from, to);
             // _serviceContractToken[_tokenServiceContract[tokenId]] = tokenId;
-            return;
+            revert("Transfers not allowed yet!");
         }
-        // burn
+        // burn, does not need to remove mappings in factory 
+        // (because operation starts in factory)
         address serviceContract = msg.sender;
         string memory serviceContractName = getContractName(serviceContract);
         require(serviceContract == getContractAddress(serviceContractName), "Invalid or outdated contract");
         if (to == address(0) && from != address(0)) {
-            // burn, does not need to remove mappings in factory (because operation starts in factory)
             delete _serviceContractToken[_tokenServiceContract[tokenId]];
             delete _tokenServiceContract[tokenId];
         } 
-        // mint
+        // mint, does not need to remove mappings in factory 
+        // (because operation starts in factory)
         if (to != address(0) && from == address(0)) {
             _tokenServiceContract[tokenId] = serviceContract;
             _serviceContractToken[serviceContract] = tokenId;
@@ -89,11 +81,10 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable, SenseistakeBase
     }
 
     function safeMint(address to) public onlyLatestNetworkContract {
-        uint256 tokenId = _tokenIdCounter.current();
         _tokenIdCounter.increment();
+        uint256 tokenId = _tokenIdCounter.current();
         _safeMint(to, tokenId);
-        string memory uri = ERC721.tokenURI(tokenId);
-        _setTokenURI(tokenId, uri);
+        _setTokenURI(tokenId, _baseURI());
     }
 
     function burn() public onlyLatestNetworkContract {

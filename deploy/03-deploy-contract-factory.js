@@ -23,10 +23,8 @@ module.exports = async ({
 
     const tokenDeployment = await deployments.get("SenseistakeERC721");
     const SenseistakeERC721 = await ethers.getContractFactory('SenseistakeERC721');
-    ERC721 = await SenseistakeERC721.attach(tokenDeployment.address);
+    const ERC721 = await SenseistakeERC721.attach(tokenDeployment.address);
     await ERC721.connect(deployer).setFactory(senseistakeFactory.address);
-    await ERC721.connect(deployer).setStorageAddress(storageDeployment.address);
-
 
     if (['testnet', 'mainnet'].includes(network.config.type) && process.env.ETHERSCAN_KEY) {
         await verify(senseistakeFactory.address, args)

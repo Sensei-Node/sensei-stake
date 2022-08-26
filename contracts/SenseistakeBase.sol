@@ -68,7 +68,7 @@ abstract contract SenseistakeBase {
     )
         internal
     {
-        require(address(senseistakeStorage) == address(0), "Cannot re-initialize.");
+        require(address(senseistakeStorage) == address(0), "Cannot re-initialize storage address setup");
         senseistakeStorage = ISenseistakeStorage(_senseistakeStorageAddress);
     }
 
