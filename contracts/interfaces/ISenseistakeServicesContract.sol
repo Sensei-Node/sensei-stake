@@ -130,7 +130,7 @@ interface ISenseistakeServicesContract {
     /// @notice Withdraws all the ETH of `msg.sender`.
     /// @dev It can only be called when the contract state is not `PostDeposit`.
     /// Emits a {Withdrawal} event.
-    function withdrawAll() external returns (uint256);
+    // function withdrawAll() external returns (uint256);
 
     /// @notice Withdraws the ETH of `msg.sender` which is corresponding to the `amount` of deposit stake.
     /// @dev It can only be called when the contract state is not `PostDeposit`.
