@@ -20,6 +20,8 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable, SenseistakeBase
     address private _factoryAddress;
     address private _operatorAddress;
 
+    string private _baseUri = "https://ipfs.io/ipfs/QmSiQuffUmDf3TsNRGApBiMkgTc8cLipAVcWM4V7kdTyBo?filename=";
+
     constructor(
         string memory name, 
         string memory symbol,
@@ -45,9 +47,9 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable, SenseistakeBase
         _factoryAddress = _factory;
     }
 
-    function _baseURI() internal view virtual override returns (string memory) {
-        return "ipfs://QmXWnYeFgc6CZwzTUzNdbSrt6WRqU1ZUPk3YyJnqRLsKp8/";
-    }
+    // function _baseURI() internal view virtual override returns (string memory) {
+    //     return "https://ipfs.io/ipfs/QmSiQuffUmDf3TsNRGApBiMkgTc8cLipAVcWM4V7kdTyBo?filename=";
+    // }
 
     function _afterTokenTransfer(
         address from,
@@ -84,7 +86,8 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable, SenseistakeBase
         _tokenIdCounter.increment();
         uint256 tokenId = _tokenIdCounter.current();
         _safeMint(to, tokenId);
-        _setTokenURI(tokenId, _baseURI());
+        // concatenation of base uri and id
+        _setTokenURI(tokenId, string(abi.encodePacked(_baseUri, Strings.toString(tokenId))));
     }
 
     function burn() public onlyLatestNetworkContract {

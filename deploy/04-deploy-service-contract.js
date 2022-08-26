@@ -64,18 +64,17 @@ module.exports = async ({
         const factoryContract = await FactoryContract.attach(factoryDeployment.address);
 
         const NNETWK = {
-            //ERC20_TOKEN_ADDRESS: tokenDeployment.address,
             FACTORY_ADDRESS: factoryDeployment.address,
             CONTRACT_IMPL_ADDRESS: await factoryContract.getServicesContractImpl()
         }
         const contractAddress = saltBytesToContractAddress(saltBytes, NNETWK);
 
-        const depositData = createOperatorDepositData(
-            operatorPrivKey, contractAddress);
+        const depositData = createOperatorDepositData(operatorPrivKey, contractAddress);
 
+        const exitDate = BigNumber.from(new Date(2024).getTime());
         // ~4 months from now
-        const exitDate = BigNumber.from(parseInt((new Date().getTime() + 9000000000) / 1000));
-        console.log('exit date', exitDate.toString())
+        // const exitDate = BigNumber.from(parseInt((new Date().getTime() + 9000000000) / 1000));
+        console.log('exit date dec:', exitDate.toString(), '- bignum:', exitDate)
 
         let commitment = createOperatorCommitment(
             contractAddress,
@@ -150,6 +149,11 @@ module.exports = async ({
         console.log('SenseistakeServicesContract'+index)
         await save('SenseistakeServicesContract'+index, proxyDeployments);
         await save('ServiceContractSalt'+index, {address: `0x${saltBytes.toString("hex")}`});
+
+        await save('SSvalidatorPubKey'+index, utils.hexlify(depositData.validatorPubKey));
+        await save('SSdepositSignature'+index, utils.hexlify(depositData.depositSignature));
+        await save('SSdepositDataRoot'+index, utils.hexlify(depositData.depositDataRoot));
+        await save('SSexitDate'+index, utils.hexlify(exitDate));
     }
 }
 

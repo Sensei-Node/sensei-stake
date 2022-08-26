@@ -38,12 +38,22 @@ describe('Complete32ethNFT', () => {
     for( let i = 1 ; i <= serviceContractIndex; i++) {
       const { address: salt } = await deployments.get('ServiceContractSalt'+i)
       const serviceDeployment = await deployments.get('SenseistakeServicesContract'+i)
+
+      const validatorPubKey = await deployments.get('SSvalidatorPubKey'+i)
+      const depositSignature = await deployments.get('SSdepositSignature'+i)
+      const depositDataRoot = await deployments.get('SSdepositDataRoot'+i)
+      const exitDate = await deployments.get('SSexitDate'+i)
+
       const contrService = await ethers.getContractFactory(
           'SenseistakeServicesContract'
       );
       serviceContracts.push({
         salt,
-        sc: await contrService.attach(serviceDeployment.address)
+        sc: await contrService.attach(serviceDeployment.address),
+        validatorPubKey,
+        depositSignature,
+        depositDataRoot,
+        exitDate
       });
     }
   });
@@ -123,6 +133,18 @@ describe('Complete32ethNFT', () => {
       expect(balances.sc2.after_3 - balances.sc2.before_3).to.be.equal(parseInt(amount/2));
       expect(balances.token.after_3 - balances.token.before_3).to.be.equal(tokenAmount[amount]);
       console.log(balances)
+
+      console.log("3.1.1.1.1. Test CreateValidator")
+      const { validatorPubKey, depositSignature, depositDataRoot, exitDate } = serviceContracts[0];
+      console.log('!@#!@#!@!@#@', validatorPubKey)
+      const createValidator = await sc.createValidator(
+        validatorPubKey,
+        depositSignature,
+        depositDataRoot,
+        exitDate
+      );
+      await createValidator.wait(waitConfirmations[network.config.type]);
+      console.log(createValidator);
 
       console.log("4. Withdraw 64 eth")
       balances.sc.before_4 = (await sc.getDeposit(aliceWhale.address)).toString()
