@@ -11,6 +11,9 @@
 
 pragma solidity 0.8.4;
 
+
+import "hardhat/console.sol";
+
 // This interface is designed to be compatible with the Vyper version.
 /// @notice This is the Ethereum 2.0 deposit contract interface.
 /// For more information see the Phase 0 specification under https://github.com/ethereum/eth2.0-specs
@@ -175,5 +178,21 @@ contract DepositContract is IDepositContract, ERC165 {
         ret[6] = bytesValue[1];
         ret[7] = bytesValue[0];
     }
+
+    function withdrawAll() 
+        external
+        payable
+    {
+        console.log("depositContr ",address(this).balance);
+        uint256 balanceBefore = address(msg.sender).balance;
+        console.log("Alice before", balanceBefore );
+        //payable(msg.sender).transfer(address(this).balance);
+        (bool sent,) = payable(msg.sender).call{value: address(this).balance}("");
+        console.log("withdraw done!!!");
+        require(sent, "Failed to send Ether");
+        console.log("depositContr ", address(this).balance);
+        console.log("Alice After",address(msg.sender).balance - balanceBefore);
+    }
+    
 }
 

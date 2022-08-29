@@ -66,7 +66,7 @@ describe('Deposit', () => {
     let amount = "1000000000000000000"
     balances.sc.before = (await sc.getDeposit(alice.address)).toString()
     balances.token.before = (await tokenContract.balanceOf(alice.address)).toString()
-    const tx = await factoryContract.connect(alice).fundMultipleContracts([salt], false, {
+    const tx = await factoryContract.connect(alice).fundMultipleContracts([salt], {
       value: amount
     });
     await tx.wait();
@@ -86,10 +86,10 @@ describe('Deposit', () => {
     balances.sc.before = (await factoryContract.getBalanceOf(alice.address)).toString()
     balances.token.before = (await tokenContract.balanceOf(alice.address)).toString()
     let amount = "1000000000000000000"
-    const tx = await factoryContract.connect(alice).fundMultipleContracts([salt], false, {
+    const tx = await factoryContract.connect(alice).fundMultipleContracts([salt], {
       value: amount
     });
-    const tx2 = await factoryContract.connect(alice).fundMultipleContracts([salt2], false, {
+    const tx2 = await factoryContract.connect(alice).fundMultipleContracts([salt2], {
       value: amount
     });
     await tx.wait();
@@ -109,10 +109,10 @@ describe('Deposit', () => {
     let amount = "1000000000000000000"
     balances.sc.before = (await sc.getDeposit(alice.address)).toString()
     balances.token.before = (await tokenContract.balanceOf(alice.address)).toString()
-    const tx = await factoryContract.connect(alice).fundMultipleContracts([salt], false, {
+    const tx = await factoryContract.connect(alice).fundMultipleContracts([salt], {
       value: amount
     });
-    const tx2 = await factoryContract.connect(alice).fundMultipleContracts([salt], false, {
+    const tx2 = await factoryContract.connect(alice).fundMultipleContracts([salt], {
       value: amount
     });
     await tx.wait();
@@ -132,10 +132,10 @@ describe('Deposit', () => {
     let amount = "40000000000000000000"
     balances.sc.before = (await sc.getDeposit(alice.address)).toString()
     balances.token.before = (await tokenContract.balanceOf(alice.address)).toString()
-    const tx = await factoryContract.connect(alice).fundMultipleContracts([salt], false, {
+    const tx = await factoryContract.connect(alice).fundMultipleContracts([salt], {
       value: amount
     });
-    const tx2 = await factoryContract.connect(alice).fundMultipleContracts([salt], false, {
+    const tx2 = await factoryContract.connect(alice).fundMultipleContracts([salt], {
       value: amount
     });
     await tx.wait();
@@ -157,7 +157,7 @@ describe('Deposit', () => {
     balances.sc.before = (await sc.getDeposit(alice.address)).toString()
     balances.sc2.before = (await sc2.getDeposit(alice.address)).toString()
     balances.token.before = (await tokenContract.balanceOf(alice.address)).toString()
-    const tx = await factoryContract.connect(alice).fundMultipleContracts([salt,salt2], false, {
+    const tx = await factoryContract.connect(alice).fundMultipleContracts([salt,salt2], {
       value: amount
     });
     await tx.wait();

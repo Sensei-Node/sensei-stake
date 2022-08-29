@@ -18,8 +18,9 @@ pragma solidity 0.8.4;
 import "./SenseistakeBase.sol";
 import "./interfaces/deposit_contract.sol";
 import "./interfaces/ISenseistakeServicesContract.sol";
-import "./interfaces/ISenseistakeERC20Wrapper.sol";
+import * as ERC721Contract  from "./SenseistakeERC721.sol";
 import "./libraries/Address.sol";
+
 import "hardhat/console.sol";
 
 contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesContract {
@@ -47,11 +48,11 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
     uint256 private _totalDeposits;
     uint256 private _operatorClaimable;
 
-    IDepositContract public constant depositContract =
-        IDepositContract(0x00000000219ab540356cBB839Cbe05303d7705Fa);
+    // for being able to deposit to the ethereum deposit contracts
+    address public depositContractAddress;
 
-    // for getting the token contact address and then calling the mintTo method
-    ISenseistakeERC20Wrapper public tokenContractAddress;
+    // for getting the token contact address and then calling mint/burn methods
+    address public tokenContractAddress;
 
     modifier onlyOperator() {
         require(
@@ -95,13 +96,22 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         }
     }
 
-    function setTokenContractAddress(address sc) 
+    function setEthDepositContractAddress(address ethDepositContractAddress) 
         external
         override
         onlyOperator
     {
-        require(sc != address(0), "Smart contract should not be address zero");
-        tokenContractAddress = ISenseistakeERC20Wrapper(sc);
+        require(depositContractAddress == address(0), "Already set up ETH deposit contract address");
+        depositContractAddress = ethDepositContractAddress;
+    }
+
+    function setTokenContractAddress(address _tokenContractAddress) 
+        external
+        override
+        onlyOperator
+    {
+        require(tokenContractAddress == address(0), "Already set up token contract address");
+        tokenContractAddress = _tokenContractAddress;
     }
 
     function updateExitDate(uint64 newExitDate)
@@ -150,7 +160,7 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
 
         _exitDate = exitDate;
 
-        depositContract.deposit{value: DEPOSIT_AMOUNT_FOR_CREATE_VALIDATOR}(
+        IDepositContract(depositContractAddress).deposit{value: DEPOSIT_AMOUNT_FOR_CREATE_VALIDATOR}(
             validatorPubKey,
             abi.encodePacked(uint96(0x010000000000000000000000), address(this)),
             depositSignature,
@@ -228,45 +238,18 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
     string private constant WITHDRAWALS_NOT_ALLOWED =
         "Not allowed when validator is active";
 
-    function withdrawAll(uint256 minimumETHAmount)
-        external
-        override
-        returns (uint256)
-    {
-        require(_state != State.PostDeposit, WITHDRAWALS_NOT_ALLOWED);
-        uint256 value = _executeWithdrawal(msg.sender, payable(msg.sender), _deposits[msg.sender]);
-        require(value >= minimumETHAmount, "Less than minimum amount");
-        return value;
-    }
-
-    function withdraw(
-        uint256 amount,
-        uint256 minimumETHAmount
-    )
-        external
-        override
-        returns (uint256)
-    {
-        require(_state != State.PostDeposit, WITHDRAWALS_NOT_ALLOWED);
-        uint256 value = _executeWithdrawal(msg.sender, payable(msg.sender), amount);
-        require(value >= minimumETHAmount, "Less than minimum amount");
-        return value;
-    }
-
-    function withdrawTo(
-        uint256 amount,
-        address payable beneficiary,
-        uint256 minimumETHAmount
-    )
-        external
-        override
-        returns (uint256)
-    {
-        require(_state != State.PostDeposit, WITHDRAWALS_NOT_ALLOWED);
-        uint256 value = _executeWithdrawal(msg.sender, beneficiary, amount);
-        require(value >= minimumETHAmount, "Less than minimum amount");
-        return value;
-    }
+    // TODO: before finishing delete this method. IS NOT SAFE does not work.
+    // TODO: just for being able to retrieve locked funds for testing.
+    // function withdrawAll()
+    //     external
+    //     override
+    //     returns (uint256)
+    // {
+    //     require(_state != State.PostDeposit, WITHDRAWALS_NOT_ALLOWED);
+    //     uint256 value = _executeWithdrawal(msg.sender, payable(msg.sender), _deposits[msg.sender]);
+    //     // uint256 value = _executeWithdrawal(msg.sender, payable(msg.sender), address(this).balance);
+    //     return value;
+    // }
 
     function approve(
         address spender,
@@ -343,7 +326,6 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
 
     function increaseWithdrawalAllowanceFromFactory(
         address spender,
-        //address beneficiary,
         uint256 addedValue
     )
         external
@@ -355,18 +337,18 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         return true;
     }
 
-    function increaseWithdrawalAllowanceFromToken(
-        address spender,
-        uint256 addedValue
-    )
-        external
-        override
-        onlyLatestContract("SenseistakeERC20Wrapper", msg.sender)
-        returns (bool)
-    {
-        _approveWithdrawal(spender, msg.sender, _allowedWithdrawals[spender][msg.sender] + addedValue);
-        return true;
-    }
+    // function increaseWithdrawalAllowanceFromToken(
+    //     address spender,
+    //     uint256 addedValue
+    // )
+    //     external
+    //     override
+    //     onlyLatestContract("SenseistakeERC20Wrapper", msg.sender)
+    //     returns (bool)
+    // {
+    //     _approveWithdrawal(spender, msg.sender, _allowedWithdrawals[spender][msg.sender] + addedValue);
+    //     return true;
+    // }
 
     // TODO: perhaps do the same with decreaseWithdrawalAllowanceFromFactory
     // TODO: perhaps do the same with decreaseWithdrawalAllowanceFromToken
@@ -396,34 +378,8 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         return true;
     }
 
-    function withdrawFrom(
-        address depositor,
-        address payable beneficiary,
-        uint256 amount,
-        uint256 minimumETHAmount
-    )
-        external
-        override
-        returns (uint256)
-    {
-        require(_state != State.PostDeposit, WITHDRAWALS_NOT_ALLOWED);
-        uint256 spenderAllowance = _allowedWithdrawals[depositor][msg.sender];
-        uint256 newAllowance = spenderAllowance - amount;
-        // Please note that there is no need to require(_deposit <= spenderAllowance)
-        // here because modern versions of Solidity insert underflow checks
-        _allowedWithdrawals[depositor][msg.sender] = newAllowance;
-        emit WithdrawalApproval(depositor, msg.sender, newAllowance);
-
-        uint256 value = _executeWithdrawal(depositor, beneficiary, amount);
-        require(value >= minimumETHAmount, "Less than minimum amount");
-        return value; 
-    }
-
-    function withdrawOnBehalfOf(
-        //address depositor,
-        address payable beneficiary,
-        uint256 amount,
-        uint256 minimumETHAmount
+    function withdrawAllOnBehalfOf(
+        address payable beneficiary
     )
         external
         override
@@ -432,15 +388,13 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
     {
         require(_state != State.PostDeposit, WITHDRAWALS_NOT_ALLOWED);
         uint256 spenderAllowance = _allowedWithdrawals[beneficiary][msg.sender];
-        if(spenderAllowance < amount){ revert NotEnoughBalance(); }
-        uint256 newAllowance = spenderAllowance - amount;
+        uint256 allDeposit = _deposits[beneficiary];
+        if(spenderAllowance < allDeposit){ revert NotEnoughBalance(); }
         // Please note that there is no need to require(_deposit <= spenderAllowance)
         // here because modern versions of Solidity insert underflow checks
-        _allowedWithdrawals[beneficiary][msg.sender] = newAllowance;
-        emit WithdrawalApproval(beneficiary, msg.sender, newAllowance);
-
-        uint256 value = _executeWithdrawal(beneficiary, beneficiary, amount);
-        require(value >= minimumETHAmount, "Less than minimum amount");
+        _allowedWithdrawals[beneficiary][msg.sender] = 0;
+        emit WithdrawalApproval(beneficiary, msg.sender, 0);
+        uint256 value = _executeWithdrawal(beneficiary, payable(beneficiary), allDeposit);
         return value; 
     }
 
@@ -456,27 +410,27 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         return true;
     }
 
-    function transferDepositFrom(
-        address from,
-        address to,
-        uint256 amount
-    )
-        external
-        override
-        returns (bool)
-    {
-        uint256 spenderAllowance = _allowedWithdrawals[from][msg.sender];
-        if(spenderAllowance < amount){ revert NotEnoughBalance(); }
-        uint256 newAllowance = spenderAllowance - amount;
-        // Please note that there is no need to require(_deposit <= spenderAllowance)
-        // here because modern versions of Solidity insert underflow checks
-        _allowedWithdrawals[from][msg.sender] = newAllowance;
-        emit WithdrawalApproval(from, msg.sender, newAllowance);
+    // function transferDepositFrom(
+    //     address from,
+    //     address to,
+    //     uint256 amount
+    // )
+    //     external
+    //     override
+    //     returns (bool)
+    // {
+    //     uint256 spenderAllowance = _allowedWithdrawals[from][msg.sender];
+    //     if(spenderAllowance < amount){ revert NotEnoughBalance(); }
+    //     uint256 newAllowance = spenderAllowance - amount;
+    //     // Please note that there is no need to require(_deposit <= spenderAllowance)
+    //     // here because modern versions of Solidity insert underflow checks
+    //     _allowedWithdrawals[from][msg.sender] = newAllowance;
+    //     emit WithdrawalApproval(from, msg.sender, newAllowance);
 
-        _transfer(from, to, amount);
+    //     _transfer(from, to, amount);
 
-        return true;
-    }
+    //     return true;
+    // }
 
     function withdrawalAllowance(
         address depositor,
@@ -589,27 +543,28 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
 
     function _executeWithdrawal(
         address depositor,
-        address payable beneficiary,
+        address payable beneficiary, 
         uint256 amount
-    )
+    ) 
         internal
         returns (uint256)
     {
         require(amount > 0, "Amount shouldn't be zero");
+        // uint256 value =  (address(this).balance - _operatorClaimable) / _totalDeposits;
 
-        uint256 value = amount * (address(this).balance - _operatorClaimable) / _totalDeposits;
-
-        tokenContractAddress.redeemTo(depositor, amount);
+        // require(amount == 32 ether, "Amount should be 32");
+        // uint256 value = _deposits[depositor] * (address(this).balance - _operatorClaimable) / _totalDeposits;
+        ERC721Contract.SenseistakeERC721(tokenContractAddress).burn();
 
         // Modern versions of Solidity automatically add underflow checks,
         // so we don't need to `require(_deposits[_depositor] < _deposit` here:
-        _deposits[depositor] -= amount;
-        _totalDeposits -= amount;
+        _deposits[depositor] = 0;
+        _totalDeposits = 0;
 
-        emit Withdrawal(depositor, beneficiary, amount, value);
-        beneficiary.sendValue(value);
+        emit Withdrawal(depositor, beneficiary, amount);
+        beneficiary.sendValue(amount);
 
-        return value;
+        return amount;
     }
 
     // NOTE: This throws (on underflow) if the contract's balance was more than
@@ -627,8 +582,8 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         _deposits[depositor] += acceptedDeposit;
         _totalDeposits += acceptedDeposit;
 
-        tokenContractAddress.mintTo(depositor, acceptedDeposit);
-
+        ERC721Contract.SenseistakeERC721(tokenContractAddress).safeMint(depositor);
+        
         emit Deposit(depositor, acceptedDeposit);
         
         if (surplus > 0) {

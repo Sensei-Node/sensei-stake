@@ -14,3 +14,7 @@ artifacts
 app
 deployments
 keystore.json
+forge-cache
+out
+yarn-error.log
+.vscode/

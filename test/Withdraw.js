@@ -45,7 +45,7 @@ describe('Withdraw', () => {
     const { salt, sc } = serviceContracts[0];
     // first do the deposit
     let amount = "1000000000000000000"
-    const tx = await factoryContract.connect(alice).fundMultipleContracts([salt], false, {
+    const tx = await factoryContract.connect(alice).fundMultipleContracts([salt], {
       value: amount
     });
     // then test the withdrawals
@@ -70,10 +70,10 @@ describe('Withdraw', () => {
     const { salt: salt2, sc: sc2 } = serviceContracts[1];
     // first do the deposit
     let amount = "1000000000000000000"
-    const tx = await factoryContract.connect(alice).fundMultipleContracts([salt], false, {
+    const tx = await factoryContract.connect(alice).fundMultipleContracts([salt], {
       value: amount
     });
-    const tx2 = await factoryContract.connect(alice).fundMultipleContracts([salt2], false, {
+    const tx2 = await factoryContract.connect(alice).fundMultipleContracts([salt2], {
       value: amount
     });
     // then test the withdrawals
@@ -98,7 +98,7 @@ describe('Withdraw', () => {
     const { salt, sc } = serviceContracts[0];
     // first do the deposit
     let amount = "2000000000000000000"
-    const tx = await factoryContract.connect(alice).fundMultipleContracts([salt], false, {
+    const tx = await factoryContract.connect(alice).fundMultipleContracts([salt], {
       value: amount
     });
     // then test the withdrawals
@@ -124,10 +124,10 @@ describe('Withdraw', () => {
     const { salt: salt2, sc: sc2 } = serviceContracts[1];
     // first do the deposit
     let amount = "2000000000000000000"
-    const tx = await factoryContract.connect(alice).fundMultipleContracts([salt], false, {
+    const tx = await factoryContract.connect(alice).fundMultipleContracts([salt], {
       value: amount
     });
-    const tx2 = await factoryContract.connect(alice).fundMultipleContracts([salt2], false, {
+    const tx2 = await factoryContract.connect(alice).fundMultipleContracts([salt2], {
       value: amount
     });
     // then test the withdrawals
@@ -154,7 +154,7 @@ describe('Withdraw', () => {
     const { salt: salt2, sc: sc2 } = serviceContracts[1];
     // first do the deposit
     let amount = "2000000000000000000"
-    const tx = await factoryContract.connect(alice).fundMultipleContracts([salt], false, {
+    const tx = await factoryContract.connect(alice).fundMultipleContracts([salt], {
       value: amount
     });
     let withdraw_amount = "3000000000000000000"

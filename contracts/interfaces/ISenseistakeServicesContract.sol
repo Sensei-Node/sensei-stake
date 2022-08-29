@@ -57,12 +57,10 @@ interface ISenseistakeServicesContract {
     /// @notice Emitted when `owner`'s ETH are withdrawan to `to`.
     /// @param owner The address of deposit stake owner.
     /// @param to The address of ETH beneficiary.
-    /// @param amount The amount of deposit stake to be converted to ETH.
     /// @param value The amount of withdrawn ETH.
     event Withdrawal(
         address indexed owner,
         address indexed to,
-        uint256 amount,
         uint256 value
     );
 
@@ -132,27 +130,24 @@ interface ISenseistakeServicesContract {
     /// @notice Withdraws all the ETH of `msg.sender`.
     /// @dev It can only be called when the contract state is not `PostDeposit`.
     /// Emits a {Withdrawal} event.
-    /// @param minimumETHAmount The minimum amount of ETH that must be received for the transaction not to revert.
-    function withdrawAll(uint256 minimumETHAmount) external returns (uint256);
+    // function withdrawAll() external returns (uint256);
 
     /// @notice Withdraws the ETH of `msg.sender` which is corresponding to the `amount` of deposit stake.
     /// @dev It can only be called when the contract state is not `PostDeposit`.
     /// Emits a {Withdrawal} event.
     /// @param amount The amount of deposit stake to be converted to ETH.
-    /// @param minimumETHAmount The minimum amount of ETH that must be received for the transaction not to revert.
-    function withdraw(uint256 amount, uint256 minimumETHAmount) external returns (uint256);
+    //function withdraw(uint256 amount) external returns (uint256);
 
     /// @notice Withdraws the ETH of `msg.sender` which is corresponding to the `amount` of deposit stake to a specified address.
     /// @dev It can only be called when the contract state is not `PostDeposit`.
     /// Emits a {Withdrawal} event.
     /// @param amount The amount of deposit stake to be converted to ETH.
     /// @param beneficiary The address of ETH receiver.
-    /// @param minimumETHAmount The minimum amount of ETH that must be received for the transaction not to revert.
-    function withdrawTo(
+    /*function withdrawTo(
         uint256 amount,
-        address payable beneficiary,
-        uint256 minimumETHAmount
-    ) external returns (uint256);
+        address payable beneficiary
+        // uint256 minimumETHAmount
+    ) external returns (uint256);*/
 
     /// @notice Sets `amount` as the allowance of `spender` over the caller's deposit stake.
     /// @dev Emits an {Approval} event.
@@ -196,26 +191,25 @@ interface ISenseistakeServicesContract {
     /// @param depositor The address of deposit stake holder.
     /// @param beneficiary The address of ETH receiver.
     /// @param amount The amount of deposit stake to be converted to ETH.
-    /// @param minimumETHAmount The minimum amount of ETH that must be received for the transaction not to revert.
-    function withdrawFrom(
+    /*function withdrawFrom(
         address depositor,
         address payable beneficiary,
-        uint256 amount,
-        uint256 minimumETHAmount
-    ) external returns (uint256);
+        uint256 amount
+        // uint256 minimumETHAmount
+    ) external returns (uint256);*/
 
     /// @notice Transfers `amount` deposit stake from caller to `to`.
     /// @dev Emits a {Transfer} event.
     function transferDeposit(address to, uint256 amount) external returns (bool);
 
-    /// @notice Transfers `amount` deposit stake from `from` to `to`.
-    /// @dev Emits a {Transfer} event.
-    /// Emits an {Approval} event indicating the updated allowance.
-    function transferDepositFrom(
-        address from,
-        address to,
-        uint256 amount
-    ) external returns (bool);
+    // /// @notice Transfers `amount` deposit stake from `from` to `to`.
+    // /// @dev Emits a {Transfer} event.
+    // /// Emits an {Approval} event indicating the updated allowance.
+    // function transferDepositFrom(
+    //     address from,
+    //     address to,
+    //     uint256 amount
+    // ) external returns (bool);
 
     /// @notice Transfers operator claimable commission fee to the operator address.
     /// @dev Emits a {Claim} event.
@@ -255,23 +249,33 @@ interface ISenseistakeServicesContract {
 
     /// @notice Returns the amount of ETH that is withdrawable by `owner`.
     function getWithdrawableAmount(address owner) external view returns (uint256);
-
+    
+    /// @notice Setting the Token Contract SNC address
     function setTokenContractAddress(address tokenAddress) external;
 
+    /// @notice Increase the amount allowance just for the factory could be withdrawn 
     function increaseWithdrawalAllowanceFromFactory(
         address spender,
         uint256 addValue
     ) external returns (bool);
 
-    function increaseWithdrawalAllowanceFromToken(
-        address spender,
-        uint256 addValue
-    ) external returns (bool);
+    // /// @notice Increase the amount allowance just for the token could be withdrawn 
+    // function increaseWithdrawalAllowanceFromToken(
+    //     address spender,
+    //     uint256 addValue
+    // ) external returns (bool);
 
-    function withdrawOnBehalfOf(
-        //address depositor,
-        address payable beneficiary,
-        uint256 amount,
-        uint256 minimumETHAmount
+    /// @notice Allow withdraw all the deposit on behalf of on 
+    function withdrawAllOnBehalfOf(
+        address payable beneficiary
     ) external returns (uint256);
+    
+    /// @notice return the deposit contract address 
+    function setEthDepositContractAddress(
+        address ethDepositContractAddress
+    ) external;
+
+    /// @notice Setting the TokenId
+    // function setTokenId(uint256 tokenId) external;
+    // function setTokenURI(string memory tokenId) external;
 }

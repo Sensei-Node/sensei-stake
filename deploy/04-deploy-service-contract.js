@@ -1,8 +1,11 @@
 const { network } = require("hardhat");
 const { Keystore } = require('@chainsafe/bls-keystore');
 const { randomBytes } = require('crypto');
+const axios = require('axios');
 const { BigNumber, utils } = ethers;
 const { deploymentVariables } = require("../helpers/variables");
+const strapi_url = process.env.STRAPI_URL;
+const strapi_path = '/service-contracts'
 
 module.exports = async ({
     deployments,
@@ -15,7 +18,7 @@ module.exports = async ({
     const serviceContractDeploys = deploymentVariables.servicesToDeploy;
 
     const factoryDeployment = await deployments.get("SenseistakeServicesContractFactory");
-    const tokenDeployment = await deployments.get("SenseistakeERC20Wrapper");
+    const tokenDeployment = await deployments.get("SenseistakeERC721");
 
     const lib = await import('../lib/senseistake-services-contract.mjs');
     ({
@@ -24,6 +27,17 @@ module.exports = async ({
         createOperatorDepositData,
         saltBytesToContractAddress
     } = lib);
+
+    let jwt;
+    try {
+        let { data } = await axios.post(strapi_url+'/auth/local', {
+            identifier: process.env.STRAPI_OPERATOR_IDENTIFIER,
+            password: process.env.STRAPI_OPERATOR_PASSWORD
+        });
+        jwt = data.jwt;
+    } catch (err) {
+        console.error(err);
+    }
 
     for (let index = 1; index <= serviceContractDeploys; index++) {
         
@@ -49,17 +63,17 @@ module.exports = async ({
         const factoryContract = await FactoryContract.attach(factoryDeployment.address);
 
         const NNETWK = {
-            ERC20_TOKEN_ADDRESS: tokenDeployment.address,
             FACTORY_ADDRESS: factoryDeployment.address,
             CONTRACT_IMPL_ADDRESS: await factoryContract.getServicesContractImpl()
         }
         const contractAddress = saltBytesToContractAddress(saltBytes, NNETWK);
 
-        const depositData = createOperatorDepositData(
-            operatorPrivKey, contractAddress);
+        const depositData = createOperatorDepositData(operatorPrivKey, contractAddress, network.config.type);
 
-        // 3 hours from now
-        const exitDate = BigNumber.from(new Date().getTime() + 10000000);
+        const exitDate = BigNumber.from(new Date(2024).getTime());
+        // ~4 months from now
+        // const exitDate = BigNumber.from(parseInt((new Date().getTime() + 9000000000) / 1000));
+        console.log('exit date dec:', exitDate.toString(), '- bignum:', exitDate)
 
         let commitment = createOperatorCommitment(
             contractAddress,
@@ -99,12 +113,16 @@ module.exports = async ({
         const servicesContract = await SenseistakeServicesContract.attach(contractAddress);
         await servicesContract.setTokenContractAddress(tokenDeployment.address);
 
-        // Allow owner.address in allowance mapping
-        const SenseistakeERC20Wrapper = await ethers.getContractFactory(
-            'SenseistakeERC20Wrapper'
-        );
-        ERC20 = await SenseistakeERC20Wrapper.attach(tokenDeployment.address);
-        await ERC20.allowServiceContract(servicesContract.address);
+        // parametrizing the ethereum deposit contract address
+        let ethDepositContractAddress;
+        try {
+            ethDepositContractAddress = await deployments.get("DepositContract");
+        } catch(err) {
+            ethDepositContractAddress = deploymentVariables.depositContractAddress[network.config.chainId] ? 
+            { address: deploymentVariables.depositContractAddress[network.config.chainId] } : { address: '0x00000000219ab540356cBB839Cbe05303d7705Fa' }
+        }
+        await servicesContract.setEthDepositContractAddress(ethDepositContractAddress.address);
+        // TODO: test if a later call to this function does a revert (because of the immutable keyword)
 
         // save it for other deployments usage
         const artifact = await deployments.getExtendedArtifact('SenseistakeServicesContract');
@@ -113,12 +131,32 @@ module.exports = async ({
             ...artifact
         }
 
-        // if (['testnet', 'mainnet'].includes(network.config.type) && process.env.ETHERSCAN_KEY) {
-        //     await verify(NNETWK.CONTRACT_IMPL_ADDRESS, args)
-        // }
-
+        if (jwt) {
+            try {
+                await axios.post(strapi_url+strapi_path, {
+                    validatorPubKey: utils.hexlify(depositData.validatorPubKey),
+                    depositSignature: utils.hexlify(depositData.depositSignature),
+                    depositDataRoot: utils.hexlify(depositData.depositDataRoot),
+                    exitDate: utils.hexlify(exitDate),
+                    keystore,
+                    serviceContractAddress: contractAddress,
+                    network: network.config.name,
+                    salt: `0x${saltBytes.toString("hex")}`,
+                    onQueue: true
+                }, { headers: { authorization: `Bearer ${jwt}` }});
+            } catch (err) {
+                console.error(err);
+            }
+        } else {
+            console.error('Unauthorized, please get the JWT token')
+        }
+        console.log('SenseistakeServicesContract'+index)
         await save('SenseistakeServicesContract'+index, proxyDeployments);
         await save('ServiceContractSalt'+index, {address: `0x${saltBytes.toString("hex")}`});
+        await save('SSvalidatorPubKey'+index, {address: utils.hexlify(depositData.validatorPubKey)});
+        await save('SSdepositSignature'+index, {address: utils.hexlify(depositData.depositSignature)});
+        await save('SSdepositDataRoot'+index, {address: utils.hexlify(depositData.depositDataRoot)});
+        await save('SSexitDate'+index, {address: utils.hexlify(exitDate)});
     }
 }
 

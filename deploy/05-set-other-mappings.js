@@ -31,7 +31,7 @@ module.exports = async ({
     // const factoryContract = await FactoryContract.attach(factoryDeployment.address);
     // const serviceContractIndex = await factoryContract.getLastIndexServiceContract();
     const serviceContractIndex = deploymentVariables.servicesToDeploy;
-    const contracts = ['SenseistakeStorage','SenseistakeERC20Wrapper', 'SenseistakeServicesContractFactory']
+    const contracts = ['SenseistakeStorage','SenseistakeERC721', 'SenseistakeServicesContractFactory']
     for( let i = 1 ; i <= serviceContractIndex; i++) {
         contracts.push("SenseistakeServicesContract"+i)
     }
@@ -60,6 +60,7 @@ module.exports = async ({
             keccak256(ethers.utils.solidityPack(["string", "string"], ["contract.address", contract_name])),
             contractDeployment.address
         );
+        console.log(contract_name, contractDeployment.address, keccak256(ethers.utils.solidityPack(["string", "string"], ["contract.address", contract_name])))
         if (['testnet', 'mainnet'].includes(network.config.type)) {
             await tx.wait(1);
         }
@@ -72,7 +73,7 @@ module.exports = async ({
     }
 
     // disabling transfers
-    const contractDeployment = await deployments.get("SenseistakeERC20Wrapper")
+    const contractDeployment = await deployments.get("SenseistakeERC721")
     tx = await storageContract.setBool(
         keccak256(ethers.utils.solidityPack(["string", "address"], ["contract.exists", contractDeployment.address])),
         true

@@ -4,14 +4,15 @@ const { deploymentVariables } = require("../helpers/variables");
 
 module.exports = async ({
     deployments,
-    upgrades, 
-    run
 }) => {
     const { deploy, log } = deployments;
     const [deployer] = await ethers.getSigners();
-    const args = [];
-    const senseistakeStorage = await deploy("SenseistakeStorage", {
-        contract: "SenseistakeStorage",
+    
+    const storageDeployment = await deployments.get("SenseistakeStorage")
+
+    const args = ["SenseiStakeValidator", "SNSV", storageDeployment.address];
+    const senseistakeERC721 = await deploy("SenseistakeERC721", {
+        contract: "SenseistakeERC721",
         from: deployer.address,
         args,
         log: true,
@@ -19,8 +20,8 @@ module.exports = async ({
     })
 
     // if (['testnet', 'mainnet'].includes(network.config.type) && process.env.ETHERSCAN_KEY) {
-    //     await verify(senseistakeStorage.address, args)
+    //     await verify(senseistakeERC721.address, args)
     // }
 }
 
-module.exports.tags = ["all", "storage", "erc721"]
+module.exports.tags = ["all", "erc721"]

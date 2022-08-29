@@ -19,6 +19,11 @@ pragma solidity ^0.8.0;
 /// @notice Manages the deployment of services contracts
 interface ISenseistakeServicesContractFactory {
     /// @notice Emitted when a proxy contract of the services contract is created
+    event ServiceContractDeposit(
+        address indexed serviceContract
+    );
+
+    /// @notice Emitted when a proxy contract of the services contract is created
     event ContractCreated(
         bytes32 create2Salt
     );
@@ -62,10 +67,9 @@ interface ISenseistakeServicesContractFactory {
     /// @dev The surplus will be returned to caller if all services contracts are filled up.
     /// Using salt instead of address to prevent depositing into malicious contracts.
     /// @param saltValues The salts that are used to deploy services contracts.
-    /// @param force If set to `false` then it will only deposit into a services contract 
     /// when it has more than `MINIMUM_DEPOSIT` ETH of capacity.
     /// @return surplus The amount of returned ETH.
-    function fundMultipleContracts(bytes32[] calldata saltValues, bool force) external payable returns (uint256);
+    function fundMultipleContracts(bytes32[] calldata saltValues) external payable returns (uint256);
 
     /// @notice Returns the address of the operator.
     function getOperatorAddress() external view returns (address);
@@ -79,14 +83,42 @@ interface ISenseistakeServicesContractFactory {
     /// @notice Returns the minimum deposit amount.
     function getMinimumDeposit() external view returns (uint256);
 
+    /// @notice Get the balance of a address. This looks for in all the service contracts of the user. 
     function getBalanceOf(address user) external view returns (uint256);
-    function getServiceContractListAt(uint256 index) external view returns (address);
-    function getServiceContractList() external view returns (address[] memory);
-    function getLastIndexServiceContract() external view returns (uint256);
-    function withdraw(uint256 amount) external returns (bool);
+    
+    /// @notice Get the index position in the array of service contracts  
+    // function getServiceContractListAt(uint256 index) external view returns (address);
+
+    /// @notice Return the service contract list
+    // function getServiceContractList() external view returns (address[] memory);
+
+    /// @notice  get the last index of the service contract array
+    // function getLastIndexServiceContract() external view returns (uint256);
+
+    /// @notice make a withdraw the deposit of a service contract address
+    //function withdraw(address serviceContractAddress) external returns (bool);
+
+    /// @notice withdraw all the deposits made
+    function withdrawAll() external returns (bool);
+
+    /// @notice Increase the whitdraw allowance before the withdraw
     function increaseWithdrawalAllowance(uint256 amount) external returns (bool);
+
+     /// @notice transfer a service contract from an address to other address
     function transferDepositServiceContract(address serviceContractAddress, address from, address to) external;
+
+     /// @notice Add a service contract to an array of sc
     function addDepositServiceContract(address serviceContractAddress, address to) external;
+
+    /// @notice returns an array of service contract from a depositors
     function getDepositServiceContract(address depositor) external view returns (address[] memory);
+
+    /// @notice return the index in array of the service contract of a depositor
     function getDepositServiceContractIndex(address depositor, address serviceContractAddress) external view returns (uint256);
+
+    /// @notice get the deposit amount of a service contract of a user/
+    function getDepositsAt(address serviceContract, address user) external view returns (uint256);
+
+    /// @notice Return the withdraw allowance of a user
+    function getWithdrawalAllowance() external view returns (uint256);
 }

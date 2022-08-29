@@ -49,7 +49,6 @@ contract SenseistakeStorage is ISenseistakeStorage {
         _;
     }
 
-
     /// @dev Construct SenseinodeStorage
     constructor() {
         // Set the guardian upon deployment

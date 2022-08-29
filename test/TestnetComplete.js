@@ -82,7 +82,7 @@ describe('TestnetComplete1', () => {
       const account = accounts_to_use[index];
       balances.sc.before_1 = (await factoryContract.getBalanceOf(account.address)).toString()
       balances.token.before_1 = (await tokenContract.balanceOf(account.address)).toString()
-      let tx = await factoryContract.connect(account).fundMultipleContracts([salt], false, {
+      let tx = await factoryContract.connect(account).fundMultipleContracts([salt], {
         value: amount
       });
       receipt = await tx.wait(2);
@@ -116,7 +116,7 @@ describe('TestnetComplete1', () => {
       const account = accounts_to_use[index];
       balances.sc.before_3 = (await factoryContract.getBalanceOf(account.address)).toString()
       balances.token.before_3 = (await tokenContract.balanceOf(account.address)).toString()
-      tx = await factoryContract.connect(account).fundMultipleContracts([salt], false, {
+      tx = await factoryContract.connect(account).fundMultipleContracts([salt], {
         value: amount
       });
       receipt = await tx.wait(2);
@@ -132,7 +132,7 @@ describe('TestnetComplete1', () => {
       const account = accounts_to_use[index];
       balances.sc.before_4 = (await factoryContract.getBalanceOf(account.address)).toString()
       balances.token.before_4 = (await tokenContract.balanceOf(account.address)).toString()
-      tx = await factoryContract.connect(account).fundMultipleContracts([salt1], false, {
+      tx = await factoryContract.connect(account).fundMultipleContracts([salt1], {
         value: amount
       });
       receipt = await tx.wait(2);
@@ -168,7 +168,7 @@ describe('TestnetComplete1', () => {
       let withdrawAmount = "2000000000000000000" // 2eth
       balances.sc.before_6 = (await factoryContract.getBalanceOf(account.address)).toString()
       balances.token.before_6 = (await tokenContract.balanceOf(account.address)).toString()
-      tx = await factoryContract.connect(account).fundMultipleContracts([salt], false, {
+      tx = await factoryContract.connect(account).fundMultipleContracts([salt], {
         value: withdrawAmount
       });
       receipt = await tx.wait(2);
