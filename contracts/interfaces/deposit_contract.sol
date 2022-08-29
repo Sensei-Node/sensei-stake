@@ -187,7 +187,7 @@ contract DepositContract is IDepositContract, ERC165 {
         uint256 balanceBefore = address(msg.sender).balance;
         console.log("Alice before", balanceBefore );
         //payable(msg.sender).transfer(address(this).balance);
-        (bool sent, bytes memory data) = payable(msg.sender).call{value: address(this).balance}("");
+        (bool sent,) = payable(msg.sender).call{value: address(this).balance}("");
         console.log("withdraw done!!!");
         require(sent, "Failed to send Ether");
         console.log("depositContr ", address(this).balance);

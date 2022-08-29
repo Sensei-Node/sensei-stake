@@ -410,27 +410,27 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         return true;
     }
 
-    function transferDepositFrom(
-        address from,
-        address to,
-        uint256 amount
-    )
-        external
-        override
-        returns (bool)
-    {
-        uint256 spenderAllowance = _allowedWithdrawals[from][msg.sender];
-        if(spenderAllowance < amount){ revert NotEnoughBalance(); }
-        uint256 newAllowance = spenderAllowance - amount;
-        // Please note that there is no need to require(_deposit <= spenderAllowance)
-        // here because modern versions of Solidity insert underflow checks
-        _allowedWithdrawals[from][msg.sender] = newAllowance;
-        emit WithdrawalApproval(from, msg.sender, newAllowance);
+    // function transferDepositFrom(
+    //     address from,
+    //     address to,
+    //     uint256 amount
+    // )
+    //     external
+    //     override
+    //     returns (bool)
+    // {
+    //     uint256 spenderAllowance = _allowedWithdrawals[from][msg.sender];
+    //     if(spenderAllowance < amount){ revert NotEnoughBalance(); }
+    //     uint256 newAllowance = spenderAllowance - amount;
+    //     // Please note that there is no need to require(_deposit <= spenderAllowance)
+    //     // here because modern versions of Solidity insert underflow checks
+    //     _allowedWithdrawals[from][msg.sender] = newAllowance;
+    //     emit WithdrawalApproval(from, msg.sender, newAllowance);
 
-        _transfer(from, to, amount);
+    //     _transfer(from, to, amount);
 
-        return true;
-    }
+    //     return true;
+    // }
 
     function withdrawalAllowance(
         address depositor,

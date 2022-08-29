@@ -61,15 +61,14 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable, SenseistakeBase
         if (to != address(0) && from != address(0)) {
             // only for transfer we need to handle service-contranct and factory mappings 
             // (because operation starts in this contract)
-            // ISenseistakeServicesContractFactory(_factoryAddress).transferDepositServiceContract(_tokenServiceContract[tokenId], from, to);
-            // _serviceContractToken[_tokenServiceContract[tokenId]] = tokenId;
-            revert("Transfers not allowed yet!");
+            return ISenseistakeServicesContractFactory(_factoryAddress).transferDepositServiceContract(_tokenServiceContract[tokenId], from, to);
         }
-        // burn, does not need to remove mappings in factory 
-        // (because operation starts in factory)
+        // check that sender is valid service contract
         address serviceContract = msg.sender;
         string memory serviceContractName = getContractName(serviceContract);
         require(serviceContract == getContractAddress(serviceContractName), "Invalid or outdated contract");
+        // burn, does not need to remove mappings in factory 
+        // (because operation starts in factory)
         if (to == address(0) && from != address(0)) {
             delete _serviceContractToken[_tokenServiceContract[tokenId]];
             delete _tokenServiceContract[tokenId];
@@ -107,5 +106,13 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable, SenseistakeBase
         returns (string memory)
     {
         return super.tokenURI(tokenId);
+    }
+
+    function getTokenId(address serviceContract)
+        public
+        view
+        returns (uint256)
+    {
+        return _serviceContractToken[serviceContract];
     }
 }

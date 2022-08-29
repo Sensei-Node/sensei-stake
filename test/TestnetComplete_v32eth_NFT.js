@@ -134,6 +134,24 @@ describe('Complete32ethNFT', () => {
       expect(balances.token.after_3 - balances.token.before_3).to.be.equal(tokenAmount[amount]);
       console.log(balances)
 
+      console.log("3.1.32.12.312.2 Transfer to bob")
+      const depositsServiceContracts = await factoryContract.getDepositServiceContract(aliceWhale.address);
+      console.log('BEFORE TRANSFER ALICE', depositsServiceContracts);
+      console.log('BEFORE TRANSFER BOB', await factoryContract.getDepositServiceContract(bob.address));
+      console.log('BALANCE OF erc721 ALICE BEFORE TRANSFER', (await tokenContract.balanceOf(aliceWhale.address)).toString())
+      console.log('BALANCE OF erc721 BOB BEFORE TRANSFER', (await tokenContract.balanceOf(bob.address)).toString())
+      
+      // we will just use the first one in this test case
+      const servContrDep = depositsServiceContracts[1];
+      const tokenId = await tokenContract.getTokenId(servContrDep);
+      console.log('TOKEN ID TO TRANSFER', tokenId)
+      await tokenContract.connect(aliceWhale).transferFrom(aliceWhale.address, bob.address, tokenId);
+
+      console.log('AFTER TRANSFER ALICe', await factoryContract.getDepositServiceContract(aliceWhale.address));
+      console.log('AFTER TRANSFER BOB', await factoryContract.getDepositServiceContract(bob.address));
+      console.log('BALANCE OF erc721 ALICE AFTER TRANSFER', (await tokenContract.balanceOf(aliceWhale.address)).toString())
+      console.log('BALANCE OF erc721 BOB AFTER TRANSFER', (await tokenContract.balanceOf(bob.address)).toString())
+
       console.log("3.1.1.1.1. Test CreateValidator")
       const { validatorPubKey, depositSignature, depositDataRoot, exitDate } = serviceContracts[0];
       const createValidator = await sc.createValidator(
@@ -157,9 +175,6 @@ describe('Complete32ethNFT', () => {
       console.log(balanceAliceBefore.toString(), balanceAliceAfter.toString())
       console.log("AFTER ", ethers.utils.formatEther(balanceAliceAfter.sub(balanceAliceBefore)));
 
-
-
- 
       // console.log("4. Withdraw 64 eth")
       // balances.sc.before_4 = (await sc.getDeposit(aliceWhale.address)).toString()
       // balances.sc2.before_4 = (await sc2.getDeposit(aliceWhale.address)).toString()
