@@ -19,7 +19,6 @@ module.exports = async ({
 
     const factoryDeployment = await deployments.get("SenseistakeServicesContractFactory");
     const tokenDeployment = await deployments.get("SenseistakeERC721");
-    //console.log(tokenDeployment)
 
     const lib = await import('../lib/senseistake-services-contract.mjs');
     ({
@@ -69,7 +68,7 @@ module.exports = async ({
         }
         const contractAddress = saltBytesToContractAddress(saltBytes, NNETWK);
 
-        const depositData = createOperatorDepositData(operatorPrivKey, contractAddress);
+        const depositData = createOperatorDepositData(operatorPrivKey, contractAddress, network.config.type);
 
         const exitDate = BigNumber.from(new Date(2024).getTime());
         // ~4 months from now
