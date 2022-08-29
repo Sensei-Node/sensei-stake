@@ -39,10 +39,10 @@ describe('Complete32ethNFT', () => {
       const { address: salt } = await deployments.get('ServiceContractSalt'+i)
       const serviceDeployment = await deployments.get('SenseistakeServicesContract'+i)
 
-      const validatorPubKey = await deployments.get('SSvalidatorPubKey'+i)
-      const depositSignature = await deployments.get('SSdepositSignature'+i)
-      const depositDataRoot = await deployments.get('SSdepositDataRoot'+i)
-      const exitDate = await deployments.get('SSexitDate'+i)
+      const {address: validatorPubKey} = await deployments.get('SSvalidatorPubKey'+i)
+      const {address: depositSignature} = await deployments.get('SSdepositSignature'+i)
+      const {address: depositDataRoot} = await deployments.get('SSdepositDataRoot'+i)
+      const {address: exitDate} = await deployments.get('SSexitDate'+i)
 
       const contrService = await ethers.getContractFactory(
           'SenseistakeServicesContract'
@@ -136,7 +136,6 @@ describe('Complete32ethNFT', () => {
 
       console.log("3.1.1.1.1. Test CreateValidator")
       const { validatorPubKey, depositSignature, depositDataRoot, exitDate } = serviceContracts[0];
-      console.log('!@#!@#!@!@#@', validatorPubKey)
       const createValidator = await sc.createValidator(
         validatorPubKey,
         depositSignature,
@@ -144,8 +143,7 @@ describe('Complete32ethNFT', () => {
         exitDate
       );
       await createValidator.wait(waitConfirmations[network.config.type]);
-      console.log(createValidator);
-
+ 
       console.log("4. Withdraw 64 eth")
       balances.sc.before_4 = (await sc.getDeposit(aliceWhale.address)).toString()
       balances.sc2.before_4 = (await sc2.getDeposit(aliceWhale.address)).toString()

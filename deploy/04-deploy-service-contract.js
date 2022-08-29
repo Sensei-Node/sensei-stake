@@ -115,9 +115,14 @@ module.exports = async ({
         await servicesContract.setTokenContractAddress(tokenDeployment.address);
 
         // parametrizing the ethereum deposit contract address
-        const ethDepositContractAddress = deploymentVariables.depositContractAddress[network.config.chainId] ? 
-        deploymentVariables.depositContractAddress[network.config.chainId] : '0x00000000219ab540356cBB839Cbe05303d7705Fa'
-        await servicesContract.setEthDepositContractAddress(ethDepositContractAddress);
+        let ethDepositContractAddress;
+        try {
+            ethDepositContractAddress = await deployments.get("DepositContract");
+        } catch(err) {
+            ethDepositContractAddress = deploymentVariables.depositContractAddress[network.config.chainId] ? 
+            { address: deploymentVariables.depositContractAddress[network.config.chainId] } : { address: '0x00000000219ab540356cBB839Cbe05303d7705Fa' }
+        }
+        await servicesContract.setEthDepositContractAddress(ethDepositContractAddress.address);
         // TODO: test if a later call to this function does a revert (because of the immutable keyword)
 
         // save it for other deployments usage
@@ -149,11 +154,10 @@ module.exports = async ({
         console.log('SenseistakeServicesContract'+index)
         await save('SenseistakeServicesContract'+index, proxyDeployments);
         await save('ServiceContractSalt'+index, {address: `0x${saltBytes.toString("hex")}`});
-
-        await save('SSvalidatorPubKey'+index, utils.hexlify(depositData.validatorPubKey));
-        await save('SSdepositSignature'+index, utils.hexlify(depositData.depositSignature));
-        await save('SSdepositDataRoot'+index, utils.hexlify(depositData.depositDataRoot));
-        await save('SSexitDate'+index, utils.hexlify(exitDate));
+        await save('SSvalidatorPubKey'+index, {address: utils.hexlify(depositData.validatorPubKey)});
+        await save('SSdepositSignature'+index, {address: utils.hexlify(depositData.depositSignature)});
+        await save('SSdepositDataRoot'+index, {address: utils.hexlify(depositData.depositDataRoot)});
+        await save('SSexitDate'+index, {address: utils.hexlify(exitDate)});
     }
 }
 
