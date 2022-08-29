@@ -143,21 +143,39 @@ describe('Complete32ethNFT', () => {
         exitDate
       );
       await createValidator.wait(waitConfirmations[network.config.type]);
- 
-      console.log("4. Withdraw 64 eth")
-      balances.sc.before_4 = (await sc.getDeposit(aliceWhale.address)).toString()
-      balances.sc2.before_4 = (await sc2.getDeposit(aliceWhale.address)).toString()
-      balances.token.before_4 = (await tokenContract.balanceOf(aliceWhale.address)).toString()
-      const withdrawAllowance = await factoryContract.connect(aliceWhale).increaseWithdrawalAllowance(amount);
-      const withdraw = await factoryContract.connect(aliceWhale).withdrawAll();
-      await withdraw.wait(waitConfirmations[network.config.type]);
-      balances.sc.after_4 = (await sc.getDeposit(aliceWhale.address)).toString()
-      balances.sc2.after_4 = (await sc2.getDeposit(aliceWhale.address)).toString()
-      balances.token.after_4 = (await tokenContract.balanceOf(aliceWhale.address)).toString()
 
-      expect((parseInt(balances.sc.before_4) + parseInt(balances.sc2.before_4))  - 
-      (parseInt(balances.sc.after_4) + parseInt(balances.sc2.after_4))).to.be.equal(parseInt(amount));
-      expect(balances.token.before_4 - balances.token.after_4 ).to.be.equal(tokenAmount[amount]);
+      const ethDepositContractAddress = await deployments.get("DepositContract");
+      const depositContractDeployment = await ethers.getContractFactory(
+        'DepositContract'
+      );
+
+      const depositContract = await depositContractDeployment.attach(ethDepositContractAddress.address);
+      
+      const provider = ethers.getDefaultProvider();
+      let balanceAlice = await provider.getBalance(aliceWhale.address)
+      console.log("BEFORE ",ethers.utils.formatEther(balanceAlice));
+      console.log(await depositContract.get_deposit_count()) 
+      await depositContract.connect(aliceWhale).withdrawAll()
+      balanceAlice = await provider.getBalance(aliceWhale.address)
+      console.log("AFTER ",ethers.utils.formatEther(balanceAlice));
+
+
+
+ 
+      // console.log("4. Withdraw 64 eth")
+      // balances.sc.before_4 = (await sc.getDeposit(aliceWhale.address)).toString()
+      // balances.sc2.before_4 = (await sc2.getDeposit(aliceWhale.address)).toString()
+      // balances.token.before_4 = (await tokenContract.balanceOf(aliceWhale.address)).toString()
+      // const withdrawAllowance = await factoryContract.connect(aliceWhale).increaseWithdrawalAllowance(amount);
+      // const withdraw = await factoryContract.connect(aliceWhale).withdrawAll();
+      // await withdraw.wait(waitConfirmations[network.config.type]);
+      // balances.sc.after_4 = (await sc.getDeposit(aliceWhale.address)).toString()
+      // balances.sc2.after_4 = (await sc2.getDeposit(aliceWhale.address)).toString()
+      // balances.token.after_4 = (await tokenContract.balanceOf(aliceWhale.address)).toString()
+
+      // expect((parseInt(balances.sc.before_4) + parseInt(balances.sc2.before_4))  - 
+      // (parseInt(balances.sc.after_4) + parseInt(balances.sc2.after_4))).to.be.equal(parseInt(amount));
+      // expect(balances.token.before_4 - balances.token.after_4 ).to.be.equal(tokenAmount[amount]);
       
   });
 });
