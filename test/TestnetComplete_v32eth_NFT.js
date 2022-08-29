@@ -151,13 +151,11 @@ describe('Complete32ethNFT', () => {
 
       const depositContract = await depositContractDeployment.attach(ethDepositContractAddress.address);
       
-      const provider = ethers.getDefaultProvider();
-      let balanceAlice = await provider.getBalance(aliceWhale.address)
-      console.log("BEFORE ",ethers.utils.formatEther(balanceAlice));
-      console.log(await depositContract.get_deposit_count()) 
+      let balanceAliceBefore = await ethers.provider.getBalance(aliceWhale.address)
       await depositContract.connect(aliceWhale).withdrawAll()
-      balanceAlice = await provider.getBalance(aliceWhale.address)
-      console.log("AFTER ",ethers.utils.formatEther(balanceAlice));
+      let balanceAliceAfter = await ethers.provider.getBalance(aliceWhale.address)
+      console.log(balanceAliceBefore.toString(), balanceAliceAfter.toString())
+      console.log("AFTER ", ethers.utils.formatEther(balanceAliceAfter.sub(balanceAliceBefore)));
 
 
 
