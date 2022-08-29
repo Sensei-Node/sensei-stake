@@ -7,8 +7,8 @@ module.exports = async ({
     upgrades, 
     run
 }) => {
-    const { deploy, log } = deployments;
-    const [deployer] = await ethers.getSigners();
+    // const { deploy, log } = deployments;
+    // const [deployer] = await ethers.getSigners();
 
     const args = [];
 
