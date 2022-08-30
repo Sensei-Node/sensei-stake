@@ -62,6 +62,14 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         _;
     }
 
+    modifier onlyDepositor() {
+        require(
+            _deposits[msg.sender] == 32 ether,
+            "Caller is not the depositor"
+        );
+        _;
+    }
+
     modifier initializer() {
         require(
             _state == State.NotInitialized,
@@ -140,7 +148,7 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
     )
         external
         override
-        onlyOperator
+        onlyDepositor
     {
 
         require(_state == State.PreDeposit, "Validator has been created");
@@ -166,6 +174,8 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
             depositSignature,
             depositDataRoot
         );
+
+        ERC721Contract.SenseistakeERC721(tokenContractAddress).safeMint(msg.sender);
 
         emit ValidatorDeposited(validatorPubKey);
     }
@@ -550,11 +560,6 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         returns (uint256)
     {
         require(amount > 0, "Amount shouldn't be zero");
-        // uint256 value =  (address(this).balance - _operatorClaimable) / _totalDeposits;
-
-        // require(amount == 32 ether, "Amount should be 32");
-        // uint256 value = _deposits[depositor] * (address(this).balance - _operatorClaimable) / _totalDeposits;
-        ERC721Contract.SenseistakeERC721(tokenContractAddress).burn();
 
         // Modern versions of Solidity automatically add underflow checks,
         // so we don't need to `require(_deposits[_depositor] < _deposit` here:
@@ -563,6 +568,10 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
 
         emit Withdrawal(depositor, beneficiary, amount);
         beneficiary.sendValue(amount);
+
+        if (_state == State.Withdrawn) {
+            ERC721Contract.SenseistakeERC721(tokenContractAddress).burn();
+        }
 
         return amount;
     }
@@ -582,7 +591,7 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         _deposits[depositor] += acceptedDeposit;
         _totalDeposits += acceptedDeposit;
 
-        ERC721Contract.SenseistakeERC721(tokenContractAddress).safeMint(depositor);
+        // ERC721Contract.SenseistakeERC721(tokenContractAddress).safeMint(depositor);
         
         emit Deposit(depositor, acceptedDeposit);
         

@@ -132,6 +132,8 @@ module.exports = async ({
         }
 
         if (jwt) {
+            const _date = parseInt((new Date().getTime()) / 1000);
+            const keystoreName = `keystore-m_12381_3600_0_0_0-${_date}`
             try {
                 await axios.post(strapi_url+strapi_path, {
                     validatorPubKey: utils.hexlify(depositData.validatorPubKey),
@@ -139,6 +141,7 @@ module.exports = async ({
                     depositDataRoot: utils.hexlify(depositData.depositDataRoot),
                     exitDate: utils.hexlify(exitDate),
                     keystore,
+                    keystoreName,
                     serviceContractAddress: contractAddress,
                     network: network.config.name,
                     salt: `0x${saltBytes.toString("hex")}`,
