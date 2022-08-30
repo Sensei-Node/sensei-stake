@@ -82,28 +82,30 @@ describe('Complete32ethNFT', () => {
     let amount = "32000000000000000000"
     console.log("1. Deposit 32 eth")
     balances.sc.before_1 = (await sc.getDeposit(aliceWhale.address)).toString()
-    balances.token.before_1 = (await tokenContract.balanceOf(aliceWhale.address)).toString()
+    // balances.token.before_1 = (await tokenContract.balanceOf(aliceWhale.address)).toString()
     const tx = await factoryContract.connect(aliceWhale).fundMultipleContracts([salt], {
       value: amount
     });
     await tx.wait(waitConfirmations[network.config.type]);
     balances.sc.after_1 = (await sc.getDeposit(aliceWhale.address)).toString()
-    balances.token.after_1 = (await tokenContract.balanceOf(aliceWhale.address)).toString()
+    // balances.token.after_1 = (await tokenContract.balanceOf(aliceWhale.address)).toString()
     expect(balances.sc.after_1 - balances.sc.before_1).to.be.equal(parseInt(amount));
-    expect(balances.token.after_1 - balances.token.before_1).to.be.equal(tokenAmount[amount]);
+    // expect(balances.token.after_1 - balances.token.before_1).to.be.equal(tokenAmount[amount]);
 
 
     console.log("2.Withdraw 32 eth")
     balances.sc.before_2 = (await sc.getDeposit(aliceWhale.address)).toString()
-    balances.token.before_2 = (await tokenContract.balanceOf(aliceWhale.address)).toString()
+    // balances.token.before_2 = (await tokenContract.balanceOf(aliceWhale.address)).toString()
     const withdrawAllowance = await factoryContract.connect(aliceWhale).increaseWithdrawalAllowance(amount);
     const withdraw = await factoryContract.connect(aliceWhale).withdrawAll();
     await withdraw.wait(waitConfirmations[network.config.type]);
     balances.sc.after_2 = (await sc.getDeposit(aliceWhale.address)).toString()
-    balances.token.after_2 = (await tokenContract.balanceOf(aliceWhale.address)).toString()
+    // balances.token.after_2 = (await tokenContract.balanceOf(aliceWhale.address)).toString()
     
+    console.log('ASDASDASDDASADDASADSD----------------------------', balances.sc.before_2 - balances.sc.after_2)
     expect(balances.sc.before_2 - balances.sc.after_2).to.be.equal(parseInt(amount));
-    expect(balances.token.before_2 - balances.token.after_2 ).to.be.equal(tokenAmount[amount]);
+    
+    // expect(balances.token.before_2 - balances.token.after_2 ).to.be.equal(tokenAmount[amount]);
     
 
     });
@@ -119,7 +121,7 @@ describe('Complete32ethNFT', () => {
       amount = "64000000000000000000"
       balances.sc.before_3 = (await sc.getDeposit(aliceWhale.address)).toString()
       balances.sc2.before_3 = (await sc2.getDeposit(aliceWhale.address)).toString()
-      balances.token.before_3 = (await tokenContract.balanceOf(aliceWhale.address)).toString()
+      // balances.token.before_3 = (await tokenContract.balanceOf(aliceWhale.address)).toString()
       console.log(balances)
       const tx2 = await factoryContract.connect(aliceWhale).fundMultipleContracts([salt,salt2], {
         value: amount
@@ -128,13 +130,23 @@ describe('Complete32ethNFT', () => {
       await tx2.wait(waitConfirmations[network.config.type]);
       balances.sc.after_3 = (await sc.getDeposit(aliceWhale.address)).toString()
       balances.sc2.after_3 = (await sc2.getDeposit(aliceWhale.address)).toString()
-      balances.token.after_3 = (await tokenContract.balanceOf(aliceWhale.address)).toString()
+      // balances.token.after_3 = (await tokenContract.balanceOf(aliceWhale.address)).toString()
       expect(balances.sc.after_3 - balances.sc.before_3).to.be.equal(parseInt(amount/2));
       expect(balances.sc2.after_3 - balances.sc2.before_3).to.be.equal(parseInt(amount/2));
-      expect(balances.token.after_3 - balances.token.before_3).to.be.equal(tokenAmount[amount]);
+      // expect(balances.token.after_3 - balances.token.before_3).to.be.equal(tokenAmount[amount]);
       console.log(balances)
 
-      console.log("3.1.32.12.312.2 Transfer to bob")
+      console.log("3.1.1.1.1. Test CreateValidator")
+      const { validatorPubKey, depositSignature, depositDataRoot, exitDate } = serviceContracts[0];
+      const createValidator = await sc.connect(aliceWhale).createValidator(
+        validatorPubKey,
+        depositSignature,
+        depositDataRoot,
+        exitDate
+      );
+      await createValidator.wait(waitConfirmations[network.config.type]);
+
+      console.log("3.2.32.12.312.2 Transfer to bob")
       const depositsServiceContracts = await factoryContract.getDepositServiceContract(aliceWhale.address);
       console.log('BEFORE TRANSFER ALICE', depositsServiceContracts);
       console.log('BEFORE TRANSFER BOB', await factoryContract.getDepositServiceContract(bob.address));
@@ -152,15 +164,6 @@ describe('Complete32ethNFT', () => {
       console.log('BALANCE OF erc721 ALICE AFTER TRANSFER', (await tokenContract.balanceOf(aliceWhale.address)).toString())
       console.log('BALANCE OF erc721 BOB AFTER TRANSFER', (await tokenContract.balanceOf(bob.address)).toString())
 
-      console.log("3.1.1.1.1. Test CreateValidator")
-      const { validatorPubKey, depositSignature, depositDataRoot, exitDate } = serviceContracts[0];
-      const createValidator = await sc.createValidator(
-        validatorPubKey,
-        depositSignature,
-        depositDataRoot,
-        exitDate
-      );
-      await createValidator.wait(waitConfirmations[network.config.type]);
 
       const ethDepositContractAddress = await deployments.get("DepositContract");
       const depositContractDeployment = await ethers.getContractFactory(

@@ -1,6 +1,8 @@
 const { network } = require("hardhat")
 const { verify } = require("../utils/verify")
 const { deploymentVariables } = require("../helpers/variables");
+const strapi_url = process.env.STRAPI_URL;
+const strapi_path = '/erc-721'
 
 module.exports = async ({
     deployments,
@@ -18,6 +20,20 @@ module.exports = async ({
         log: true,
         waitConfirmations: deploymentVariables.waitConfirmations
     })
+
+    let jwt;
+    try {
+        let { data } = await axios.post(strapi_url+'/auth/local', {
+            identifier: process.env.STRAPI_OPERATOR_IDENTIFIER,
+            password: process.env.STRAPI_OPERATOR_PASSWORD
+        });
+        jwt = data.jwt;
+            await axios.put(strapi_url+strapi_path, {
+                address: senseistakeERC721.address
+            }, { headers: { authorization: `Bearer ${jwt}` }});
+    } catch (err) {
+        console.error(err);
+    }
 
     // if (['testnet', 'mainnet'].includes(network.config.type) && process.env.ETHERSCAN_KEY) {
     //     await verify(senseistakeERC721.address, args)

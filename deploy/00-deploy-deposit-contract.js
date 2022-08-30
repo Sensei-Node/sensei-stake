@@ -7,8 +7,8 @@ module.exports = async ({
     upgrades, 
     run
 }) => {
-     const { deploy, log } = deployments;
-     const [deployer] = await ethers.getSigners();
+    const { deploy, log } = deployments;
+    const [deployer] = await ethers.getSigners();
 
     const args = [];
 
@@ -19,6 +19,10 @@ module.exports = async ({
         log: true,
         waitConfirmations: deploymentVariables.waitConfirmations
     })
+
+    // if (['testnet', 'mainnet'].includes(network.config.type) && process.env.ETHERSCAN_KEY) {
+    //     await verify(senseistakeService.address, args)
+    // }
 }
 
 module.exports.tags = ["all", "deposit_contract"]
