@@ -1,5 +1,10 @@
 # Sensei Stake ETH 2.0
 
+## Description 
+
+This project is a non-custodial staking platform to Ethereum 2. When you create a validator you receive a NFT refering to your new validator. 
+
+
 ## Useful commands 
 
 ```shell
@@ -9,8 +14,46 @@ npx hardhat deploy --network goerli
 
 you can use tags to deploy diferent part of the deploy --tags XXX 
 ```
- 
+
 ---
+## Deploy details
+
+The deploy was made using [hardhat-deplpy plugin](https://github.com/wighawag/hardhat-deploy "hardhat-deplpy plugin").
+
+Is orgranized in 7 files described in following: 
+
+`00-deploy-deposit-contract.js` (tags : "all", "deposit_contract" )
+
+Deploy the deposit service contract in case we want to test using our deposit contract.
+
+`00-deploy-service-implementation.js`  (tags: "all", "service_implementation")
+
+Use this deploy when you need to use the ServiceContract in verified way and interact in etherscan.
+
+`01-deploy-storage.js` (tags:  "all", "storage", "erc721" )
+
+Deploy the storage contract. This contract stores all the address of all the contract. 
+
+`02-deploy-erc721.js` (tags:  "all", "erc721" )
+
+Deploy the ERC721 contract.
+
+`03-deploy-contract-factory.js` (tags:  "all", "factory" )
+
+Desploy the factory contract. 
+Add the factory to ERC20.
+
+`04-deploy-service-contract.js` (tags:  "all", "service-contract" )
+
+This deploy uses some method from  `lib/senseistake-services-contract.mjs`.
+- * This deploy create the clone of service contract using a proxy
+- * create the deposit data with pubkey, depositSignature, and depositDataRoot to be able for the validator creation. 
+- All this information is stored in the backend
+
+`05-set-other-mappings.js` (tags:  "all", "mappings" )
+
+Set all the addresses to storage contract.
+Set all the name sof every cotracts address.---
 
 ## Step By Step Deploy
 
@@ -92,3 +135,8 @@ The service contract will have no eth after run it and keep it in the deposit ad
 ### Create a validator
 
 ![Create a Validator - SenseiStake.drawio.png](createValidator.png)
+
+
+
+## Complete diagram of all process
+![Complete Diagram - SenseiStake.drawio.png](diagramaUIsenseistakeNFT.png)
