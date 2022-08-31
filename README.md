@@ -3,19 +3,20 @@
 ## Useful commands 
 
 ```shell
-npx hardhat compile
+npx hardhat compile (the compile run in all the other calls before test or deploy)
 npx hardhat test
-npx hardhat run scripts/deploy-factory.js --network goerli
-npx hardhat run scripts/deploy-service-contract.js --network goerli
-```
+npx hardhat deploy --network goerli 
 
+you can use tags to deploy diferent part of the deploy --tags XXX 
+```
+ 
 ---
 
 ## Step By Step Deploy
 
 - `npx hardhat compile`
 - `cp .env.default .env` and update its values
-- `npx hardhat run scripts/deploy-factory.js --network goerli`
+- `npx hardhat deploy --network goerli`
 
 This gives us the factory and the service impl addresses and we have to modify in the senseistake-services-contract.mjs in lines 25 and 26.
 
