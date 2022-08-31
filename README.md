@@ -80,3 +80,15 @@ The service contract will have no eth after run it and keep it in the deposit ad
 - If the operator wants to withdraw its earnings (collected fees of clients), it can do it calling the function ``operatorClaim``.
 
 ![Service Contract DTE - SenseiStake.drawio.png](dte.png)
+
+## Sequence diagrams 
+
+### Deposit 32 eth
+
+![Deposit 32Eth - SenseiStake.drawio.png](deposit32Eth.png)
+
+
+
+### Create a validator
+
+![Create a Validator - SenseiStake.drawio.png](createValidator.png)
