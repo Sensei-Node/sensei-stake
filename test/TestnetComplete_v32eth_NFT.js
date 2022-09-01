@@ -146,13 +146,15 @@ describe('Complete32ethNFT', () => {
       );
       await createValidator.wait(waitConfirmations[network.config.type]);
 
+      console.log((await factoryContract.getBalanceOf(aliceWhale.address)).toString())
+      console.log((await factoryContract.getDepositOf(aliceWhale.address)).toString())
+
       console.log("3.2.32.12.312.2 Transfer to bob")
       const depositsServiceContracts = await factoryContract.getDepositServiceContract(aliceWhale.address);
       console.log('BEFORE TRANSFER ALICE', depositsServiceContracts);
       console.log('BEFORE TRANSFER BOB', await factoryContract.getDepositServiceContract(bob.address));
       console.log('BALANCE OF erc721 ALICE BEFORE TRANSFER', (await tokenContract.balanceOf(aliceWhale.address)).toString())
       console.log('BALANCE OF erc721 BOB BEFORE TRANSFER', (await tokenContract.balanceOf(bob.address)).toString())
-      
       // we will just use the first one in this test case
       const servContrDep = depositsServiceContracts[1];
       const tokenId = await tokenContract.getTokenId(servContrDep);
@@ -164,6 +166,12 @@ describe('Complete32ethNFT', () => {
       console.log('BALANCE OF erc721 ALICE AFTER TRANSFER', (await tokenContract.balanceOf(aliceWhale.address)).toString())
       console.log('BALANCE OF erc721 BOB AFTER TRANSFER', (await tokenContract.balanceOf(bob.address)).toString())
 
+      console.log('tb',(await factoryContract.getBalanceOf(aliceWhale.address)).toString())
+      console.log('tb',(await factoryContract.getDepositOf(aliceWhale.address)).toString())
+
+      console.log('tbb',(await factoryContract.getBalanceOf(bob.address)).toString())
+      console.log('tbb',(await factoryContract.getDepositOf(bob.address)).toString())
+      console.log('bob deposits', (await sc.getDeposit(bob.address)).toString())
 
       const ethDepositContractAddress = await deployments.get("DepositContract");
       const depositContractDeployment = await ethers.getContractFactory(

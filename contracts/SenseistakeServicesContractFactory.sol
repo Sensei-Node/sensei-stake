@@ -277,6 +277,9 @@ contract SenseistakeServicesContractFactory is SenseistakeBase, ProxyFactory, IS
         _addDepositServiceContract(serviceContractAddress, to);
         // remove the service contract from original user
         _deleteDepositServiceContract(index, from);
+        // transfer ownership of deposit in service contract
+        ISenseistakeServicesContract sc = ISenseistakeServicesContract(serviceContractAddress);
+        sc.transferDepositFrom(from, to, sc.getDeposit(from));
     }
 
     // this method is used when only a part of the amount deposited from a user (in a service contract)

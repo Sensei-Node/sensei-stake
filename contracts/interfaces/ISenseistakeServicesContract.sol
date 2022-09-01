@@ -202,14 +202,14 @@ interface ISenseistakeServicesContract {
     /// @dev Emits a {Transfer} event.
     function transferDeposit(address to, uint256 amount) external returns (bool);
 
-    // /// @notice Transfers `amount` deposit stake from `from` to `to`.
-    // /// @dev Emits a {Transfer} event.
-    // /// Emits an {Approval} event indicating the updated allowance.
-    // function transferDepositFrom(
-    //     address from,
-    //     address to,
-    //     uint256 amount
-    // ) external returns (bool);
+    /// @notice Transfers `amount` deposit stake from `from` to `to`.
+    /// @dev Emits a {Transfer} event.
+    /// Emits an {Approval} event indicating the updated allowance.
+    function transferDepositFrom(
+        address from,
+        address to,
+        uint256 amount
+    ) external returns (bool);
 
     /// @notice Transfers operator claimable commission fee to the operator address.
     /// @dev Emits a {Claim} event.
