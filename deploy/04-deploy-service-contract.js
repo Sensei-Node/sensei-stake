@@ -133,28 +133,31 @@ module.exports = async ({
             ...artifact
         }
 
-        if (jwt) {
-            const _date = parseInt((new Date().getTime()) / 1000);
-            const keystoreName = `keystore-m_12381_3600_0_0_0-${_date}`
-            try {
-                await axios.post(strapi_url+strapi_path, {
-                    validatorPubKey: utils.hexlify(depositData.validatorPubKey),
-                    depositSignature: utils.hexlify(depositData.depositSignature),
-                    depositDataRoot: utils.hexlify(depositData.depositDataRoot),
-                    exitDate: utils.hexlify(exitDate),
-                    keystore,
-                    keystoreName,
-                    serviceContractAddress: contractAddress,
-                    network: network.config.name,
-                    salt: `0x${saltBytes.toString("hex")}`,
-                    onQueue: true
-                }, { headers: { authorization: `Bearer ${jwt}` }});
-            } catch (err) {
-                console.error(err);
+        if (['testnet', 'mainnet'].includes(network.config.type)) {
+            if (jwt) {
+                const _date = parseInt((new Date().getTime()) / 1000);
+                const keystoreName = `keystore-m_12381_3600_0_0_0-${_date}.json`
+                try {
+                    await axios.post(strapi_url+strapi_path, {
+                        validatorPubKey: utils.hexlify(depositData.validatorPubKey),
+                        depositSignature: utils.hexlify(depositData.depositSignature),
+                        depositDataRoot: utils.hexlify(depositData.depositDataRoot),
+                        exitDate: utils.hexlify(exitDate),
+                        keystore,
+                        keystoreName,
+                        serviceContractAddress: contractAddress,
+                        network: network.config.name,
+                        salt: `0x${saltBytes.toString("hex")}`,
+                        onQueue: true
+                    }, { headers: { authorization: `Bearer ${jwt}` }});
+                } catch (err) {
+                    console.error(err);
+                }
+            } else {
+                console.error('Unauthorized, please get the JWT token')
             }
-        } else {
-            console.error('Unauthorized, please get the JWT token')
         }
+
         console.log('SenseistakeServicesContract'+index)
         await save('SenseistakeServicesContract'+index, proxyDeployments);
         await save('ServiceContractSalt'+index, {address: `0x${saltBytes.toString("hex")}`});
