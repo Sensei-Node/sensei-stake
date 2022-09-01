@@ -85,6 +85,9 @@ interface ISenseistakeServicesContractFactory {
 
     /// @notice Get the balance of a address. This looks for in all the service contracts of the user. 
     function getBalanceOf(address user) external view returns (uint256);
+
+    /// @notice Get the deposits of a address. This looks for in all the service contracts of the user. 
+    function getDepositOf(address user) external view returns (uint256);
     
     /// @notice Get the index position in the array of service contracts  
     // function getServiceContractListAt(uint256 index) external view returns (address);

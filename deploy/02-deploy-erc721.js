@@ -1,6 +1,7 @@
 const { network } = require("hardhat")
 const { verify } = require("../utils/verify")
 const { deploymentVariables } = require("../helpers/variables");
+const axios = require('axios');
 const strapi_url = process.env.STRAPI_URL;
 const strapi_path = '/erc-721'
 

@@ -117,7 +117,9 @@ module.exports = async ({
         let ethDepositContractAddress;
         try {
             ethDepositContractAddress = await deployments.get("DepositContract");
+            console.log(`\n\n\n --- UTILIZA DEPOSIT CONTRACT PROPIO: ${ethDepositContractAddress.address} --- \n\n\n`);
         } catch(err) {
+            console.log('\n\n\n --- NO UTILIZA DEPOSIT CONTRACT PROPIO, USA EL DE LA RED --- \n\n\n');
             ethDepositContractAddress = deploymentVariables.depositContractAddress[network.config.chainId] ? 
             { address: deploymentVariables.depositContractAddress[network.config.chainId] } : { address: '0x00000000219ab540356cBB839Cbe05303d7705Fa' }
         }

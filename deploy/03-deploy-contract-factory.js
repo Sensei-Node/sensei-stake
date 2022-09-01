@@ -1,6 +1,7 @@
 const { network } = require("hardhat")
 const { verify } = require("../utils/verify")
 const { deploymentVariables } = require("../helpers/variables");
+const axios = require('axios');
 const strapi_url = process.env.STRAPI_URL;
 const strapi_path = '/contract-factory'
 
@@ -42,9 +43,9 @@ module.exports = async ({
         console.error(err);
     }
 
-    // if (['testnet', 'mainnet'].includes(network.config.type) && process.env.ETHERSCAN_KEY) {
-    //     await verify(senseistakeFactory.address, args)
-    // }
+    if (['testnet', 'mainnet'].includes(network.config.type) && process.env.ETHERSCAN_KEY) {
+        await verify(senseistakeFactory.address, args)
+    }
 }
 
 module.exports.tags = ["all", "factory"]
