@@ -18,3 +18,4 @@ forge-cache
 out
 yarn-error.log
 .vscode/
+deploySingle.log
