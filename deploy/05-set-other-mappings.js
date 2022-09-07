@@ -78,6 +78,9 @@ module.exports = async ({
         keccak256(ethers.utils.solidityPack(["string", "address"], ["contract.exists", contractDeployment.address])),
         true
     );
+
+    // Not allows the guardian to call any method
+    await storageContract.setDeployedStatus();
 }
 
 module.exports.tags = ["all", "mappings"]
