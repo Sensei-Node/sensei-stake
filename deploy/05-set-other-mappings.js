@@ -24,12 +24,6 @@ module.exports = async ({
         'SenseistakeStorage'
     );
     const storageContract = await contr.attach(storageDeployment.address);
-    // const factoryDeployment = await deployments.get("SenseistakeServicesContractFactory");
-    // const FactoryContract = await ethers.getContractFactory(
-    //     'SenseistakeServicesContractFactory'
-    // );
-    // const factoryContract = await FactoryContract.attach(factoryDeployment.address);
-    // const serviceContractIndex = await factoryContract.getLastIndexServiceContract();
     const serviceContractIndex = deploymentVariables.servicesToDeploy;
     const contracts = ['SenseistakeStorage','SenseistakeERC721', 'SenseistakeServicesContractFactory']
     for( let i = 1 ; i <= serviceContractIndex; i++) {
@@ -79,8 +73,9 @@ module.exports = async ({
         true
     );
 
-    // Not allows the guardian to call any method
-    await storageContract.setDeployedStatus();
+    // This method seals the storage for new storage, wont allow operator to add new entries to storage
+    // is it is set to true
+    // await storageContract.setDeployedStatus();
 }
 
 module.exports.tags = ["all", "mappings"]

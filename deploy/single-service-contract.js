@@ -113,11 +113,11 @@ module.exports = async ({
     // TODO: test if a later call to this function does a revert (because of the immutable keyword)
 
     // save it for other deployments usage
-    const artifact = await deployments.getExtendedArtifact('SenseistakeServicesContract');
-    let proxyDeployments = {
-        address: servicesContract.address,
-        ...artifact
-    }
+    // const artifact = await deployments.getExtendedArtifact('SenseistakeServicesContract');
+    // let proxyDeployments = {
+    //     address: servicesContract.address,
+    //     ...artifact
+    // }
 
     if (['testnet', 'mainnet'].includes(network.config.type)) {
         if (jwt) {
@@ -145,16 +145,16 @@ module.exports = async ({
     }
 
     // Storage saving
-    const index = ((await deployments.get("scLastIndex")).address)+1;
-    console.log("INDEX",index);
-    const contract_name="SenseistakeServicesContract"+index;
+    const index = ((await deployments.get("SSLastIndex")).address) + 1;
+    console.log("INDEX TO DEPLOY", index);
+    const contract_name = "SenseistakeServicesContract" + index;
     const storageDeployment = await deployments.get('SenseistakeStorage')
     const contr = await ethers.getContractFactory(
         'SenseistakeStorage'
     );
     const storageContract = await contr.attach(storageDeployment.address);
 
-    tx = await storageContract.setBool(
+    let tx = await storageContract.setBool(
         keccak256(ethers.utils.solidityPack(["string", "address"], ["contract.exists", servicesContract.address])),
         true
     );
@@ -170,6 +170,7 @@ module.exports = async ({
     if (['testnet', 'mainnet'].includes(network.config.type)) {
         await tx.wait(1);
     }
+
     // Register the contract's address by name
     tx = await storageContract.setAddress(
         keccak256(ethers.utils.solidityPack(["string", "string"], ["contract.address", contract_name])),
@@ -179,7 +180,7 @@ module.exports = async ({
         await tx.wait(1);
     }
 
-    await save('scLastIndex', {address:index})
+    await save('SSLastIndex', { address: index })
 }
 
-module.exports.tags = ["all","single-service-contract"]
+module.exports.tags = ["single-service-contract"]

@@ -158,13 +158,14 @@ module.exports = async ({
             }
         }
 
-        console.log('SenseistakeServicesContract'+index)
+        console.log('SenseistakeServicesContract' + index)
         await save('SenseistakeServicesContract'+index, proxyDeployments);
         await save('ServiceContractSalt'+index, {address: `0x${saltBytes.toString("hex")}`});
         await save('SSvalidatorPubKey'+index, {address: utils.hexlify(depositData.validatorPubKey)});
         await save('SSdepositSignature'+index, {address: utils.hexlify(depositData.depositSignature)});
         await save('SSdepositDataRoot'+index, {address: utils.hexlify(depositData.depositDataRoot)});
         await save('SSexitDate'+index, {address: utils.hexlify(exitDate)});
+        await save('SSLastIndex', { address: index })
     }
 }
 
