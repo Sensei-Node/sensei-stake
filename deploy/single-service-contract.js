@@ -92,18 +92,6 @@ module.exports = async ({
     console.log("Operator pubkey:", utils.hexlify(operatorPubKeyBytes), "- Validator pubkey:", utils.hexlify(depositData.validatorPubKey))
     console.log("")
 
-    console.log("\n-- Validator (operator) deposit data --")
-    // console.log("\n** Validator PRIVATE key: ", utils.hexlify(operatorPrivKey.toBytes()), "**\n");
-    console.log("Validator public address: ", utils.hexlify(depositData.validatorPubKey));
-    console.log("Validator deposit signature: ", utils.hexlify(depositData.depositSignature));
-    console.log("Validator deposit data root: ", utils.hexlify(depositData.depositDataRoot));
-    console.log("Exit date: ", utils.hexlify(exitDate));
-    console.log("-- EOF --\n")
-
-    console.log("\n-- Validator (operator) keystore --")
-    console.log(JSON.stringify(keystore));
-    console.log("-- EOF --\n")
-
     // Setting the ERC20 address in the service contract
     const SenseistakeServicesContract = await ethers.getContractFactory(
         'SenseistakeServicesContract'
@@ -187,20 +175,10 @@ module.exports = async ({
         keccak256(ethers.utils.solidityPack(["string", "string"], ["contract.address", contract_name])),
         servicesContract.address
     );
-    console.log(contract_name, servicesContract.address, keccak256(ethers.utils.solidityPack(["string", "string"], ["contract.address", contract_name])))
     if (['testnet', 'mainnet'].includes(network.config.type)) {
         await tx.wait(1);
     }
 
-
-
-    // console.log('SenseistakeServicesContract'+index)
-    // await save('SenseistakeServicesContract'+index, proxyDeployments);
-    // await save('ServiceContractSalt'+index, {address: `0x${saltBytes.toString("hex")}`});
-    // await save('SSvalidatorPubKey'+index, {address: utils.hexlify(depositData.validatorPubKey)});
-    // await save('SSdepositSignature'+index, {address: utils.hexlify(depositData.depositSignature)});
-    // await save('SSdepositDataRoot'+index, {address: utils.hexlify(depositData.depositDataRoot)});
-    // await save('SSexitDate'+index, {address: utils.hexlify(exitDate)});
     await save('scLastIndex', {address:index})
 }
 
