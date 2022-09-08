@@ -43,6 +43,7 @@
     "@openzeppelin/contracts": "^4.7.2",
     "@openzeppelin/hardhat-upgrades": "^1.19.0",
     "axios": "^0.27.2",
+    "nft.storage": "^7.0.0",
     "pako": "^2.0.4"
   }
 }

@@ -3,6 +3,7 @@ const { BigNumber, utils } = ethers;
 const { deploymentVariables } = require("../helpers/variables");
 const strapi_url = process.env.STRAPI_URL;
 const { deployServiceContract } = require("../scripts/full-service-contract-deploy");
+const fs = require('fs');
 
 module.exports = async ({deployments, upgrades, run}) => {
     let jwt;
@@ -17,9 +18,11 @@ module.exports = async ({deployments, upgrades, run}) => {
     }
 
     const serviceContractDeploys = deploymentVariables.servicesToDeploy;
+    let validatorPublicKeys = []
 
     for (let index = 1; index <= serviceContractDeploys; index++) {
         let service_contract = await deployServiceContract(deployments, upgrades, run, jwt);
+        validatorPublicKeys.push(utils.hexlify(service_contract.depositData.validatorPubKey));
     
         console.log("\n-- Validator (operator) deposit data --")
         // console.log("\n** Validator PRIVATE key: ", utils.hexlify(operatorPrivKey.toBytes()), "**\n");
@@ -32,7 +35,9 @@ module.exports = async ({deployments, upgrades, run}) => {
         console.log("\n-- Validator (operator) keystore --")
         console.log(JSON.stringify(service_contract.keystore));
         console.log("-- EOF --\n")
-    }    
+    }  
+    
+    fs.writeFileSync(__dirname + `/../keystores/validator_public_keys.json`, JSON.stringify(validatorPublicKeys));
 }
 
 module.exports.tags = ["all", "service-contract"]

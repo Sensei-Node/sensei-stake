@@ -7,6 +7,7 @@ const { deploymentVariables } = require("../helpers/variables");
 const { keccak256 } = utils;
 const strapi_url = process.env.STRAPI_URL;
 const strapi_path = '/service-contracts'
+const fs = require('fs');
 
 module.exports.deployServiceContract = async (deployments, upgrades, run, jwt) => {
     const { deploy, log, save } = deployments;
@@ -126,16 +127,16 @@ module.exports.deployServiceContract = async (deployments, upgrades, run, jwt) =
     // ! POST to STRAPI newly available deploy
     if (['testnet', 'mainnet'].includes(network.config.type)) {
         if (jwt) {
-            const _date = parseInt((new Date().getTime()) / 1000);
-            const keystoreName = `keystore-m_12381_3600_${index-1}_0_0-${_date}.json`
+            // const _date = parseInt((new Date().getTime()) / 1000);
+            // const keystoreName = `keystore-m_12381_3600_${index-1}_0_0-${_date}.json`
             try {
                 await axios.post(strapi_url+strapi_path, {
                     validatorPubKey: utils.hexlify(depositData.validatorPubKey),
                     depositSignature: utils.hexlify(depositData.depositSignature),
                     depositDataRoot: utils.hexlify(depositData.depositDataRoot),
                     exitDate: utils.hexlify(exitDate),
-                    keystore,
-                    keystoreName,
+                    // keystore,
+                    // keystoreName,
                     serviceContractAddress: contractAddress,
                     network: network.config.name,
                     salt: `0x${saltBytes.toString("hex")}`,
@@ -148,6 +149,11 @@ module.exports.deployServiceContract = async (deployments, upgrades, run, jwt) =
             console.error('Unauthorized, please get the JWT token')
         }
     }
+
+    // store keystore in keystores directory
+    const _date = parseInt((new Date().getTime()) / 1000);
+    const keystoreName = `keystore-m_12381_3600_${index-1}_0_0-${_date}.json`
+    fs.writeFileSync(__dirname + `/../keystores/${keystoreName}`, JSON.stringify(keystore));
 
     // ! Storing required values in STORAGE CONTRACT
 
