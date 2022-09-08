@@ -24,12 +24,8 @@ module.exports = async ({
         'SenseistakeStorage'
     );
     const storageContract = await contr.attach(storageDeployment.address);
-    const serviceContractIndex = deploymentVariables.servicesToDeploy;
     const contracts = ['SenseistakeStorage','SenseistakeERC721', 'SenseistakeServicesContractFactory']
-    for( let i = 1 ; i <= serviceContractIndex; i++) {
-        contracts.push("SenseistakeServicesContract"+i)
-    }
-    console.log("... Seteando variables para", contracts, "...");
+    
     let tx;
     for(contract_name of contracts){
         console.log('... Seteando variables', contract_name, '...')
