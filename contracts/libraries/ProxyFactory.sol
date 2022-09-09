@@ -13,7 +13,7 @@
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-pragma solidity 0.8.4;
+pragma solidity ˆ0.8.0;
 
 /// @dev https://eips.ethereum.org/EIPS/eip-1167
 contract ProxyFactory {

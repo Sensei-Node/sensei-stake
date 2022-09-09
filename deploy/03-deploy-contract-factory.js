@@ -14,7 +14,7 @@ module.exports = async ({
     const [deployer] = await ethers.getSigners();
 
     const storageDeployment = await deployments.get("SenseistakeStorage")
-    const args = [100_000, storageDeployment.address];
+    const args = [10, storageDeployment.address];
 
     const senseistakeFactory = await deploy("SenseistakeServicesContractFactory", {
         contract: "SenseistakeServicesContractFactory",

@@ -15,7 +15,7 @@
 
 pragma solidity 0.8.4;
 
-import "./SenseistakeBase.sol";
+// import "./SenseistakeBase.sol";
 import "./interfaces/deposit_contract.sol";
 import "./interfaces/ISenseistakeServicesContract.sol";
 import * as ERC721Contract  from "./SenseistakeERC721.sol";
@@ -23,30 +23,31 @@ import "./libraries/Address.sol";
 
 import "hardhat/console.sol";
 
-contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesContract {
+contract SenseistakeServicesContract is ISenseistakeServicesContract, Ownable {
     using Address for address payable;
 
-    uint256 private constant HOUR = 3600;
-    uint256 private constant DAY = 24 * HOUR;
-    uint256 private constant WEEK = 7 * DAY;
-    uint256 private constant YEAR = 365 * DAY;
+    // uint256 private constant HOUR = 3600;
+    // uint256 private constant DAY = 24 * HOUR;
+    // uint256 private constant WEEK = 7 * DAY;
+    // uint256 private constant YEAR = 365 * DAY;
+    uint256 private constant YEAR = 360 * days;
     uint256 private constant MAX_SECONDS_IN_EXIT_QUEUE = 1 * YEAR;
-    uint256 private constant COMMISSION_RATE_SCALE = 1000000;
-    uint256 private constant DEPOSIT_AMOUNT_FOR_CREATE_VALIDATOR = 32 ether;
+    uint256 private constant COMMISSION_RATE_SCALE = 100;
+    uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
 
     // Packed into a single slot
-    uint24 private _commissionRate;
-    address private _operatorAddress;
-    uint64 private _exitDate;
-    State private _state;
+    address public operatorAddress;
+    uint24 public commissionRate;
+    uint64 public exitDate;
+    State public state;
 
-    bytes32 private _operatorDataCommitment;
+    bytes32 public operatorDataCommitment;
 
-    mapping(address => mapping(address => uint256)) private _allowances;
-    mapping(address => mapping(address => uint256)) private _allowedWithdrawals;
-    mapping(address => uint256) private _deposits;
-    uint256 private _totalDeposits;
-    uint256 private _operatorClaimable;
+    mapping(address => mapping(address => uint256)) private allowances;
+    mapping(address => mapping(address => uint256)) private allowedWithdrawals;
+    mapping(address => uint256) public deposits;
+    uint256 public totalDeposits;
+    uint256 public operatorClaimable;
 
     // for being able to deposit to the ethereum deposit contracts
     address public depositContractAddress;
@@ -56,7 +57,7 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
 
     modifier onlyOperator() {
         require(
-            msg.sender == _operatorAddress,
+            msg.sender == operatorAddress,
             "Caller is not the operator"
         );
         _;
@@ -64,7 +65,7 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
 
     modifier onlyDepositor() {
         require(
-            _deposits[msg.sender] == 32 ether,
+            deposits[msg.sender] == 32 ether,
             "Caller is not the depositor"
         );
         _;
@@ -72,34 +73,32 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
 
     modifier initializer() {
         require(
-            _state == State.NotInitialized,
+            state == State.NotInitialized,
             "Contract is already initialized"
         );
-        _state = State.PreDeposit;
+        state = State.PreDeposit;
         _;
     }
 
     error NotEnoughBalance();
 
     function initialize(
-        uint24 commissionRate,
-        address operatorAddress,
-        bytes32 operatorDataCommitment,
-        address senseistakeStorageAddress
+        uint24 _commissionRate,
+        address _operatorAddress,
+        bytes32 _operatorDataCommitment
     )
         external
         initializer
     {
         require(uint256(commissionRate) <= COMMISSION_RATE_SCALE, "Commission rate exceeds scale");
 
-        _commissionRate = commissionRate;
-        _operatorAddress = operatorAddress;
-        _operatorDataCommitment = operatorDataCommitment;
-        initializeSenseistakeStorage(senseistakeStorageAddress);
+        commissionRate = _commissionRate;
+        operatorAddress = _operatorAddress;
+        operatorDataCommitment = _operatorDataCommitment;
     }
 
     receive() payable external {
-        if (_state == State.PreDeposit) {
+        if (state == State.PreDeposit) {
             revert("Plain Ether transfer not allowed");
         }
     }
@@ -168,7 +167,7 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
 
         _exitDate = exitDate;
 
-        IDepositContract(depositContractAddress).deposit{value: DEPOSIT_AMOUNT_FOR_CREATE_VALIDATOR}(
+        IDepositContract(depositContractAddress).deposit{value: FULL_DEPOSIT_SIZE}(
             validatorPubKey,
             abi.encodePacked(uint96(0x010000000000000000000000), address(this)),
             depositSignature,
@@ -184,27 +183,25 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         external
         payable
         override
-        returns (uint256 surplus)
     {
         require(
             _state == State.PreDeposit,
             "Validator already created"
         );
 
-        return _handleDeposit(msg.sender);
+        _handleDeposit(msg.sender);
     }
 
     function depositOnBehalfOf(address depositor)
         external
         payable
         override
-        returns (uint256 surplus)
     {
         require(
             _state == State.PreDeposit,
             "Validator already created"
         );
-        return _handleDeposit(depositor);
+        _handleDeposit(depositor);
     }
 
     function endOperatorServices()
@@ -214,7 +211,7 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         uint256 balance = address(this).balance;
         require(balance > 0, "Can't end with 0 balance");
         require(_state == State.PostDeposit, "Not allowed in the current state");
-        require((msg.sender == _operatorAddress && block.timestamp > _exitDate) ||
+        require((msg.sender == operatorAddress && block.timestamp > _exitDate) ||
                 (_deposits[msg.sender] > 0 && block.timestamp > _exitDate + MAX_SECONDS_IN_EXIT_QUEUE), "Not allowed at the current time");
 
         _state = State.Withdrawn;
@@ -237,9 +234,9 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         uint256 claimable = _operatorClaimable;
         if (claimable > 0) {
             _operatorClaimable = 0;
-            payable(_operatorAddress).sendValue(claimable);
+            payable(operatorAddress).sendValue(claimable);
 
-            emit Claim(_operatorAddress, claimable);
+            emit Claim(operatorAddress, claimable);
         }
 
         return claimable;
@@ -473,15 +470,6 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         return _state;
     }
 
-    function getOperatorAddress()
-        external
-        view
-        override
-        returns (address)
-    {
-        return _operatorAddress;
-    }
-
     function getDeposit(address depositor)
         external
         view
@@ -568,22 +556,20 @@ contract SenseistakeServicesContract is SenseistakeBase, ISenseistakeServicesCon
         return amount;
     }
 
-    // NOTE: This throws (on underflow) if the contract's balance was more than
-    // 32 ether before the call
+    error DepositedAmountLowerThanFullDeposit();
+
     function _handleDeposit(address depositor)
         internal
-        returns (uint256 surplus)
     {
-        uint256 depositSize = msg.value;
-        surplus = (address(this).balance > 32 ether) ?
+        if (msg.value < FULL_DEPOSIT_SIZE) { revert DepositedAmountLowerThanFullDeposit(); }
+        
+        uint256 surplus = (address(this).balance > 32 ether) ?
             (address(this).balance - 32 ether) : 0;
 
-        uint256 acceptedDeposit = depositSize - surplus;
+        uint256 acceptedDeposit = msg.value - surplus;
 
         _deposits[depositor] += acceptedDeposit;
         _totalDeposits += acceptedDeposit;
-
-        // ERC721Contract.SenseistakeERC721(tokenContractAddress).safeMint(depositor);
         
         emit Deposit(depositor, acceptedDeposit);
         

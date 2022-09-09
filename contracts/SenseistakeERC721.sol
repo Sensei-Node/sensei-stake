@@ -6,49 +6,67 @@ import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
+import "@openzeppelin/contracts/proxy/Clones.sol";
+import { isContract } from "@openzeppelin/contracts/utils/Address.sol";
 import "./SenseistakeBase.sol";
 import "./interfaces/ISenseistakeServicesContract.sol";
 import "./interfaces/ISenseistakeServicesContractFactory.sol";
+import "./libraries/ProxyFactory.sol";
 
-contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable, SenseistakeBase {
+contract SenseistakeERC721 is ERC721, Clones, ERC721URIStorage, Ownable, SenseistakeBase, ISenseistakeServicesContract, ISenseistakeServicesContractFactory {
     mapping(uint256 => address) private _tokenServiceContract;
     mapping(address => uint256) private _serviceContractToken;
 
+    using Address for address;
+    using Address for address payable;
     using Counters for Counters.Counter;
+
     Counters.Counter private _tokenIdCounter;
 
     address private _factoryAddress;
-    address private _operatorAddress;
-
     string private _baseUri = "ipfs://QmWMi519m7BEEdNyxsmadLC214QzgXRemp3wa2pzw95Gm4/";
 
-    constructor(
-        string memory name, 
-        string memory symbol,
-        address storageDeploymentAddress
-    ) ERC721(name, symbol) {
-        initializeSenseistakeStorage(storageDeploymentAddress);
-        _operatorAddress = msg.sender;
-    }
+    uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
+    uint256 private constant COMMISSION_RATE_SCALE = 100;
 
-    modifier onlyOperator() {
-        require(
-            msg.sender == _operatorAddress,
-            "Caller is not the operator"
-        );
-        _;
+    address payable public servicesContractImpl;
+    
+    uint8 public commissionRate;
+
+    error CommissionRateScaleExceeded(uint8 rate);
+    error CommisionRateTooHigh(uint8 rate);
+
+    event ServiceImplementationChanged(
+        address newServiceContractImplementationAdddress
+    );
+
+    constructor(
+        string memory _name, 
+        string memory _symbol,
+        uint8 _commissionRate
+    ) ERC721(_name, _symbol) {
+        if(commissionRate > COMMISSION_RATE_SCALE){ revert CommissionRateScaleExceeded(commissionRate); }
+        if(commissionRate > (commissionRate / COMMISSION_RATE_SCALE * 2)){ revert CommisionRateTooHigh(commissionRate); }
+        // commission rate
+        commissionRate = _commissionRate;
+        // emits
+        emit CommissionRateChanged(commissionRate);
+        // constructor for service contract implementation
+        servicesContractImpl = payable(new SenseistakeServicesContract());
+        SenseistakeServicesContract(servicesContractImpl).initialize(0, address(0), "", address(0));
+        emit ServiceImplementationChanged(address(servicesContractImpl));
     }
 
     function changeBaseUri(string memory baseUri) 
         external
-        onlyOperator
+        onlyOwner
     {
         _baseUri = baseUri;
     }
 
     function setFactory(address _factory) 
         external
-        onlyOperator
+        onlyOwner
     {
         require(_factoryAddress == address(0), "Already set up a factory contract address");
         _factoryAddress = _factory;
@@ -121,5 +139,108 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable, SenseistakeBase
         returns (uint256)
     {
         return _serviceContractToken[serviceContract];
+    }
+
+    // FROM HERE WE START PUTTING CONTRACT FACTORY CODE
+
+    function changeCommissionRate(uint24 newCommissionRate)
+        external
+        override
+        onlyOwner
+    {
+        require(uint256(newCommissionRate) <= COMMISSION_RATE_SCALE, "Commission rate exceeds scale");
+        _commissionRate = newCommissionRate;
+
+        emit CommissionRateChanged(newCommissionRate);
+    }
+
+    error ValueSentGreaterThanFullDeposit();
+
+    function createContract(
+        bytes32 saltValue,
+        bytes32 operatorDataCommitment
+    )
+        external
+        payable
+        override
+        returns (address)
+    {
+        if (msg.value > FULL_DEPOSIT_SIZE) { revert ValueSentLowerThanFullDeposit(); }
+
+        // TODO: verify operatorDataCommitment with signatures;
+
+        bytes memory initData =
+            abi.encodeWithSignature(
+                "initialize(uint24,address,bytes32,address)",
+                _commissionRate,
+                owner(),
+                operatorDataCommitment
+            );
+
+        address proxy = cloneDeterministic(servicesContractImpl, initData, saltValue);
+        if (initData.length > 0) {
+            (bool success, ) = proxy.call(initData);
+            require(success, "Proxy init failed");
+        }
+        emit ContractCreated(saltValue);
+
+        if (msg.value > 0) {
+            ISenseistakeServicesContract(payable(proxy)).depositOnBehalfOf{value: msg.value}(msg.sender);
+        }
+
+        return proxy;
+    }
+
+    error DepositedAmountLowerThanMinimum();
+
+    function fundMultipleContracts(
+        bytes32[] calldata saltValues
+    )
+        external
+        payable
+        override
+        returns (uint256)
+    {
+        if (msg.value < FULL_DEPOSIT_SIZE) { revert DepositedAmountLowerThanMinimum(); }
+        
+        uint256 remaining = msg.value;
+        address depositor = msg.sender;
+
+        for (uint256 i = 0; i < saltValues.length; i++) {
+            if (remaining == 0)
+                break;
+            address proxy = predictDeterministicAddress(servicesContractImpl, saltValues[i]);
+            if (proxy.isContract()) {
+                ISenseistakeServicesContract sc = ISenseistakeServicesContract(payable(proxy));
+                if (sc.getState() == ISenseistakeServicesContract.State.PreDeposit) {
+                    uint256 depositAmount = _min(remaining, FULL_DEPOSIT_SIZE - address(sc).balance);
+                    if (depositAmount != 0) {
+                        sc.depositOnBehalfOf{value: depositAmount}(depositor);
+                        remaining -= depositAmount;
+                        emit ServiceContractDeposit(address(sc));
+                    }
+                    
+                }
+            }
+        }
+
+        if (remaining > 0) {
+            payable(msg.sender).sendValue(remaining);
+        }
+
+        return remaining;
+    }
+
+    // tokenId is the salt .. we use predictDeterministicAddress
+    function withdraw(bytes32 tokenId) 
+        external 
+        override
+    {
+        address serviceContract = predictDeterministicAddress(servicesContractImpl, tokenId);
+        serviceContract.withdrawAllOnBehalfOf(payable(msg.sender));
+    }
+
+    function _min(uint256 a, uint256 b) pure internal returns (uint256) {
+        return a <= b ? a : b;
     }
 }
