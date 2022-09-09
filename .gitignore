@@ -19,3 +19,7 @@ out
 yarn-error.log
 .vscode/
 deploySingle.log
+
+keystores
+images
+metadata

@@ -122,21 +122,21 @@ The service contract will have no eth after run it and keep it in the deposit ad
 - Clients are the ones that are able to use the ``withdraw`` or ``withdrawAll`` to withdraw their deposit. What they can withdraw are their initial deposit plus earnings minus operator fees.
 - If the operator wants to withdraw its earnings (collected fees of clients), it can do it calling the function ``operatorClaim``.
 
-![Service Contract DTE - SenseiStake.drawio.png](dte.png)
+![Service Contract DTE - SenseiStake.drawio.png](readme_assets/dte.png)
 
 ## Sequence diagrams 
 
 ### Deposit 32 eth
 
-![Deposit 32Eth - SenseiStake.drawio.png](deposit32Eth.png)
+![Deposit 32Eth - SenseiStake.drawio.png](readme_assets/deposit32Eth.png)
 
 
 
 ### Create a validator
 
-![Create a Validator - SenseiStake.drawio.png](createValidator.png)
+![Create a Validator - SenseiStake.drawio.png](readme_assets/createValidator.png)
 
 
 
 ## Complete diagram of all process
-![Complete Diagram - SenseiStake.drawio.png](diagramaUIsenseistakeNFT.png)
+![Complete Diagram - SenseiStake.drawio.png](readme_assets/diagramaUIsenseistakeNFT.png)

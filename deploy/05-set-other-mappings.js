@@ -24,18 +24,8 @@ module.exports = async ({
         'SenseistakeStorage'
     );
     const storageContract = await contr.attach(storageDeployment.address);
-    // const factoryDeployment = await deployments.get("SenseistakeServicesContractFactory");
-    // const FactoryContract = await ethers.getContractFactory(
-    //     'SenseistakeServicesContractFactory'
-    // );
-    // const factoryContract = await FactoryContract.attach(factoryDeployment.address);
-    // const serviceContractIndex = await factoryContract.getLastIndexServiceContract();
-    const serviceContractIndex = deploymentVariables.servicesToDeploy;
     const contracts = ['SenseistakeStorage','SenseistakeERC721', 'SenseistakeServicesContractFactory']
-    for( let i = 1 ; i <= serviceContractIndex; i++) {
-        contracts.push("SenseistakeServicesContract"+i)
-    }
-    console.log("... Seteando variables para", contracts, "...");
+    
     let tx;
     for(contract_name of contracts){
         console.log('... Seteando variables', contract_name, '...')
@@ -78,6 +68,10 @@ module.exports = async ({
         keccak256(ethers.utils.solidityPack(["string", "address"], ["contract.exists", contractDeployment.address])),
         true
     );
+
+    // This method seals the storage for new storage, wont allow operator to add new entries to storage
+    // is it is set to true
+    // await storageContract.setDeployedStatus();
 }
 
 module.exports.tags = ["all", "mappings"]

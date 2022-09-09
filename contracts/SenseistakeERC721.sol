@@ -20,7 +20,7 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable, SenseistakeBase
     address private _factoryAddress;
     address private _operatorAddress;
 
-    string private _baseUri = "https://ipfs.io/ipfs/QmSiQuffUmDf3TsNRGApBiMkgTc8cLipAVcWM4V7kdTyBo?filename=";
+    string private _baseUri = "ipfs://QmWMi519m7BEEdNyxsmadLC214QzgXRemp3wa2pzw95Gm4/";
 
     constructor(
         string memory name, 
@@ -37,6 +37,13 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable, SenseistakeBase
             "Caller is not the operator"
         );
         _;
+    }
+
+    function changeBaseUri(string memory baseUri) 
+        external
+        onlyOperator
+    {
+        _baseUri = baseUri;
     }
 
     function setFactory(address _factory) 
