@@ -64,11 +64,26 @@ describe('Complete32ethNFT', () => {
 
   it('0. should revert when less than 32eth are deposited', async function () {
     const { salt, sc } = serviceContracts[0];
+    // 5 ether
     let amount = "5000000000000000000"
     const tx = factoryContract.connect(aliceWhale).fundMultipleContracts([salt], {
       value: amount
     });
     await expect(tx).to.be.revertedWith('Deposited amount should be greater than minimum deposit');
+  })
+
+  it('0.1 should return the surplus when more than 32eth are deposited', async function () {
+    const { salt, sc } = serviceContracts[0];
+    // 50 ethers
+    let amount = "50000000000000000000"
+    const balanceBefore = (await sc.getDeposit(aliceWhale.address))
+
+    const tx = factoryContract.connect(aliceWhale).fundMultipleContracts([salt], {
+      value: amount
+    });
+    const balanceAfter = (await sc.getDeposit(aliceWhale.address))
+    
+    await expect((balanceAfter.sub(balanceBefore)).toString() ).to.equal('32000000000000000000');
   })
 
   let balances = {
