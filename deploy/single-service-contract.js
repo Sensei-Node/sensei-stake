@@ -1,4 +1,4 @@
-const { deployServiceContract } = require("../scripts/full-service-contract-deploy");
+// const { deployServiceContract } = require("../scripts/full-service-contract-deploy");
 
 module.exports = async ({deployments, upgrades,  run}) => {
     // console.log('\nDeploying single contract\n')
