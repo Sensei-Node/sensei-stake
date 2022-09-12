@@ -11,8 +11,7 @@
 
 pragma solidity 0.8.4;
 
-
-import "hardhat/console.sol";
+import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 // This interface is designed to be compatible with the Vyper version.
 /// @notice This is the Ethereum 2.0 deposit contract interface.
@@ -49,22 +48,11 @@ interface IDepositContract {
     function get_deposit_count() external view returns (bytes memory);
 }
 
-// Based on official specification in https://eips.ethereum.org/EIPS/eip-165
-interface ERC165 {
-    /// @notice Query if a contract implements an interface
-    /// @param interfaceId The interface identifier, as specified in ERC-165
-    /// @dev Interface identification is specified in ERC-165. This function
-    ///  uses less than 30,000 gas.
-    /// @return `true` if the contract implements `interfaceId` and
-    ///  `interfaceId` is not 0xffffffff, `false` otherwise
-    function supportsInterface(bytes4 interfaceId) external pure returns (bool);
-}
-
 // This is a rewrite of the Vyper Eth2.0 deposit contract in Solidity.
 // It tries to stay as close as possible to the original source code.
 /// @notice This is the Ethereum 2.0 deposit contract interface.
 /// For more information see the Phase 0 specification under https://github.com/ethereum/eth2.0-specs
-contract DepositContract is IDepositContract, ERC165 {
+contract DepositContract is IDepositContract, IERC165 {
     uint constant DEPOSIT_CONTRACT_TREE_DEPTH = 32;
     // NOTE: this also ensures `deposit_count` will fit into 64-bits
     uint constant MAX_DEPOSIT_COUNT = 2**DEPOSIT_CONTRACT_TREE_DEPTH - 1;
@@ -162,7 +150,7 @@ contract DepositContract is IDepositContract, ERC165 {
     }
 
     function supportsInterface(bytes4 interfaceId) override external pure returns (bool) {
-        return interfaceId == type(ERC165).interfaceId || interfaceId == type(IDepositContract).interfaceId;
+        return interfaceId == type(IERC165).interfaceId || interfaceId == type(IDepositContract).interfaceId;
     }
 
     function to_little_endian_64(uint64 value) internal pure returns (bytes memory ret) {
@@ -183,15 +171,8 @@ contract DepositContract is IDepositContract, ERC165 {
         external
         payable
     {
-        console.log("depositContr ",address(this).balance);
-        uint256 balanceBefore = address(msg.sender).balance;
-        console.log("Alice before", balanceBefore );
-        //payable(msg.sender).transfer(address(this).balance);
         (bool sent,) = payable(msg.sender).call{value: address(this).balance}("");
-        console.log("withdraw done!!!");
         require(sent, "Failed to send Ether");
-        console.log("depositContr ", address(this).balance);
-        console.log("Alice After",address(msg.sender).balance - balanceBefore);
     }
     
 }
