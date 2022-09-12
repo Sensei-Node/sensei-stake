@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.4;
+pragma solidity ^0.8.0;
 
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
@@ -7,13 +7,15 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
-import { isContract } from "@openzeppelin/contracts/utils/Address.sol";
+//TODO try to bring only isContract
+//import { isContract } from "@openzeppelin/contracts/utils/Address.sol";
+import  "@openzeppelin/contracts/utils/Address.sol";
 import "./SenseistakeBase.sol";
-import "./interfaces/ISenseistakeServicesContract.sol";
-import "./interfaces/ISenseistakeServicesContractFactory.sol";
-import "./libraries/ProxyFactory.sol";
+import "./SenseistakeServicesContract.sol";
+//import "./interfaces/ISenseistakeServicesContractFactory.sol";
+//import "./libraries/ProxyFactory.sol";
 
-contract SenseistakeERC721 is ERC721, Clones, ERC721URIStorage, Ownable, SenseistakeBase, ISenseistakeServicesContract, ISenseistakeServicesContractFactory {
+contract SenseistakeERC721 is ERC721, Clones, ERC721URIStorage, Ownable, SenseistakeBase {
     mapping(uint256 => address) private _tokenServiceContract;
     mapping(address => uint256) private _serviceContractToken;
 
@@ -23,11 +25,10 @@ contract SenseistakeERC721 is ERC721, Clones, ERC721URIStorage, Ownable, Senseis
 
     Counters.Counter private _tokenIdCounter;
 
-    address private _factoryAddress;
     string private _baseUri = "ipfs://QmWMi519m7BEEdNyxsmadLC214QzgXRemp3wa2pzw95Gm4/";
 
     uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
-    uint256 private constant COMMISSION_RATE_SCALE = 100;
+    uint8 private constant COMMISSION_RATE_SCALE = 100;
 
     address payable public servicesContractImpl;
     
@@ -38,6 +39,11 @@ contract SenseistakeERC721 is ERC721, Clones, ERC721URIStorage, Ownable, Senseis
 
     event ServiceImplementationChanged(
         address newServiceContractImplementationAdddress
+    );
+
+    /// @notice Emitted when operator service commission rate is set or changed.
+    event CommissionRateChanged(
+        uint256 newCommissionRate
     );
 
     constructor(
@@ -64,14 +70,6 @@ contract SenseistakeERC721 is ERC721, Clones, ERC721URIStorage, Ownable, Senseis
         _baseUri = baseUri;
     }
 
-    function setFactory(address _factory) 
-        external
-        onlyOwner
-    {
-        require(_factoryAddress == address(0), "Already set up a factory contract address");
-        _factoryAddress = _factory;
-    }
-
     // function _baseURI() internal view virtual override returns (string memory) {
     //     return "https://ipfs.io/ipfs/QmSiQuffUmDf3TsNRGApBiMkgTc8cLipAVcWM4V7kdTyBo?filename=";
     // }
@@ -86,23 +84,25 @@ contract SenseistakeERC721 is ERC721, Clones, ERC721URIStorage, Ownable, Senseis
         if (to != address(0) && from != address(0)) {
             // only for transfer we need to handle service-contranct and factory mappings 
             // (because operation starts in this contract)
-            return ISenseistakeServicesContractFactory(_factoryAddress).transferDepositServiceContract(_tokenServiceContract[tokenId], from, to);
+            //return ISenseistakeServicesContractFactory(_factoryAddress).transferDepositServiceContract(_tokenServiceContract[tokenId], from, to);
+            transferOwnership(to);
         }
         // check that sender is valid service contract
-        address serviceContract = msg.sender;
-        string memory serviceContractName = getContractName(serviceContract);
-        require(serviceContract == getContractAddress(serviceContractName), "Invalid or outdated contract");
+        //address serviceContract = msg.sender;
+        //string memory serviceContractName = getContractName(serviceContract);
+        //require(serviceContract == getContractAddress(serviceContractName), "Invalid or outdated contract");
         // burn, does not need to remove mappings in factory 
         // (because operation starts in factory)
         if (to == address(0) && from != address(0)) {
-            delete _serviceContractToken[_tokenServiceContract[tokenId]];
-            delete _tokenServiceContract[tokenId];
+            //delete _serviceContractToken[_tokenServiceContract[tokenId]];
+            //delete _tokenServiceContract[tokenId];
+            renounceOwnership();
         } 
         // mint, does not need to remove mappings in factory 
         // (because operation starts in factory)
         if (to != address(0) && from == address(0)) {
-            _tokenServiceContract[tokenId] = serviceContract;
-            _serviceContractToken[serviceContract] = tokenId;
+            //_tokenServiceContract[tokenId] = serviceContract;
+            //_serviceContractToken[serviceContract] = tokenId;
         }
     }
 
@@ -185,7 +185,7 @@ contract SenseistakeERC721 is ERC721, Clones, ERC721URIStorage, Ownable, Senseis
         emit ContractCreated(saltValue);
 
         if (msg.value > 0) {
-            ISenseistakeServicesContract(payable(proxy)).depositOnBehalfOf{value: msg.value}(msg.sender);
+            SenseistakeServicesContract(payable(proxy)).depositOnBehalfOf{value: msg.value}(msg.sender);
         }
 
         return proxy;
@@ -211,8 +211,8 @@ contract SenseistakeERC721 is ERC721, Clones, ERC721URIStorage, Ownable, Senseis
                 break;
             address proxy = predictDeterministicAddress(servicesContractImpl, saltValues[i]);
             if (proxy.isContract()) {
-                ISenseistakeServicesContract sc = ISenseistakeServicesContract(payable(proxy));
-                if (sc.getState() == ISenseistakeServicesContract.State.PreDeposit) {
+                SenseistakeServicesContract sc = SenseistakeServicesContract(payable(proxy));
+                if (sc.getState() == SenseistakeServicesContract.State.PreDeposit) {
                     uint256 depositAmount = _min(remaining, FULL_DEPOSIT_SIZE - address(sc).balance);
                     if (depositAmount != 0) {
                         sc.depositOnBehalfOf{value: depositAmount}(depositor);
@@ -243,4 +243,6 @@ contract SenseistakeERC721 is ERC721, Clones, ERC721URIStorage, Ownable, Senseis
     function _min(uint256 a, uint256 b) pure internal returns (uint256) {
         return a <= b ? a : b;
     }
+
+
 }

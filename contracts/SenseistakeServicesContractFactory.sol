@@ -19,7 +19,7 @@ import "./SenseistakeBase.sol";
 import "./interfaces/ISenseistakeStorage.sol";
 import "./interfaces/ISenseistakeServicesContract.sol";
 import "./interfaces/ISenseistakeServicesContractFactory.sol";
-import "./libraries/ProxyFactory.sol";
+//import "./libraries/ProxyFactory.sol";
 import "./libraries/Address.sol";
 import "./SenseistakeServicesContract.sol";
 import "hardhat/console.sol";

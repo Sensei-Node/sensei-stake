@@ -13,24 +13,30 @@
 
 // SPDX-License-Identifier: GPL-3.0-only
 
-pragma solidity 0.8.4;
+pragma solidity ^0.8.0;
 
 // import "./SenseistakeBase.sol";
 import "./interfaces/deposit_contract.sol";
 import "./interfaces/ISenseistakeServicesContract.sol";
 import * as ERC721Contract  from "./SenseistakeERC721.sol";
-import "./libraries/Address.sol";
 
 import "hardhat/console.sol";
 
-contract SenseistakeServicesContract is ISenseistakeServicesContract, Ownable {
+contract SenseistakeServicesContract {
+    /// @notice The life cycle of a services contract.
+    enum State {
+        NotInitialized,
+        PreDeposit,
+        PostDeposit,
+        Withdrawn
+    }
     using Address for address payable;
 
     // uint256 private constant HOUR = 3600;
     // uint256 private constant DAY = 24 * HOUR;
     // uint256 private constant WEEK = 7 * DAY;
     // uint256 private constant YEAR = 365 * DAY;
-    uint256 private constant YEAR = 360 * days;
+    uint256 private constant YEAR = 360 * day;
     uint256 private constant MAX_SECONDS_IN_EXIT_QUEUE = 1 * YEAR;
     uint256 private constant COMMISSION_RATE_SCALE = 100;
     uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
@@ -146,7 +152,6 @@ contract SenseistakeServicesContract is ISenseistakeServicesContract, Ownable {
         uint64 exitDate
     )
         external
-        override
         onlyDepositor
     {
 
@@ -182,7 +187,6 @@ contract SenseistakeServicesContract is ISenseistakeServicesContract, Ownable {
     function deposit()
         external
         payable
-        override
     {
         require(
             _state == State.PreDeposit,
@@ -195,7 +199,6 @@ contract SenseistakeServicesContract is ISenseistakeServicesContract, Ownable {
     function depositOnBehalfOf(address depositor)
         external
         payable
-        override
     {
         require(
             _state == State.PreDeposit,
@@ -389,9 +392,7 @@ contract SenseistakeServicesContract is ISenseistakeServicesContract, Ownable {
         address payable beneficiary
     )
         external
-        override
-        onlyLatestContract("SenseistakeServicesContractFactory", msg.sender)
-        returns (uint256)
+        //onlyLatestContract("SenseistakeServicesContractFactory", msg.sender)
     {
         require(_state != State.PostDeposit, WITHDRAWALS_NOT_ALLOWED);
         uint256 spenderAllowance = _allowedWithdrawals[beneficiary][msg.sender];
@@ -401,8 +402,7 @@ contract SenseistakeServicesContract is ISenseistakeServicesContract, Ownable {
         // here because modern versions of Solidity insert underflow checks
         _allowedWithdrawals[beneficiary][msg.sender] = 0;
         emit WithdrawalApproval(beneficiary, msg.sender, 0);
-        uint256 value = _executeWithdrawal(beneficiary, payable(beneficiary), allDeposit);
-        return value; 
+        _executeWithdrawal(beneficiary, payable(beneficiary), allDeposit);
     }
 
     function transferDeposit(
@@ -537,23 +537,21 @@ contract SenseistakeServicesContract is ISenseistakeServicesContract, Ownable {
         uint256 amount
     ) 
         internal
-        returns (uint256)
     {
         require(amount > 0, "Amount shouldn't be zero");
+         if (_state == State.Withdrawn) {
 
-        // Modern versions of Solidity automatically add underflow checks,
-        // so we don't need to `require(_deposits[_depositor] < _deposit` here:
-        _deposits[depositor] = 0;
-        _totalDeposits = 0;
+            // Modern versions of Solidity automatically add underflow checks,
+            // so we don't need to `require(_deposits[_depositor] < _deposit` here:
+            _deposits[depositor] = 0;
+            _totalDeposits = 0;
 
-        emit Withdrawal(depositor, beneficiary, amount);
-        beneficiary.sendValue(amount);
+            emit Withdrawal(depositor, beneficiary, amount);
+            beneficiary.sendValue(amount);
 
-        if (_state == State.Withdrawn) {
             ERC721Contract.SenseistakeERC721(tokenContractAddress).burn();
         }
 
-        return amount;
     }
 
     error DepositedAmountLowerThanFullDeposit();
