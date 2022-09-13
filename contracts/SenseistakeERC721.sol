@@ -19,16 +19,6 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
     using Address for address;
     using Address for address payable;
 
-    /// @notice IPFS base uri
-    string private _baseUri =
-        "ipfs://QmWMi519m7BEEdNyxsmadLC214QzgXRemp3wa2pzw95Gm4/";
-
-    /// @notice Deposit amount required for being a client
-    uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
-
-    /// @notice Scale for getting the commission rate (service fee)
-    uint32 private constant COMMISSION_RATE_SCALE = 1_000_000;
-
     /// @notice Used in conjuction with `COMMISSION_RATE_SCALE` for determining service fees
     /// @dev Is set up on the constructor and can be modified with provided setter aswell
     /// @return commissionRate the commission rate
@@ -39,9 +29,19 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
     /// @return servicesContractImpl where the service contract template is implemented
     address payable public servicesContractImpl;
 
+    /// @notice IPFS base uri
+    string private _baseUri =
+        "ipfs://QmWMi519m7BEEdNyxsmadLC214QzgXRemp3wa2pzw95Gm4/";
+
+    /// @notice Deposit amount required for being a client
+    uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
+
+    /// @notice Scale for getting the commission rate (service fee)
+    uint32 private constant COMMISSION_RATE_SCALE = 1_000_000;
+
     /// @notice Determines if a certain tokenId was minted
     /// @dev For allowing only a single mint per service contract
-    mapping(bytes32 => bool) internal minted;
+    mapping(bytes32 => bool) private minted;
 
     event CommissionRateChanged(uint32 newCommissionRate);
     event ContractCreated(bytes32 create2Salt);
@@ -259,7 +259,11 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
     /// @notice Casts bytes32 salt to uint256 tokenId
     /// @param salt_ Is the service contract salt
     /// @return tokenId Is the salt casted to uint256
-    function saltToTokenId(bytes32 salt_) external pure returns (uint256 tokenId) {
+    function saltToTokenId(bytes32 salt_)
+        external
+        pure
+        returns (uint256 tokenId)
+    {
         tokenId = uint256(salt_);
     }
 
