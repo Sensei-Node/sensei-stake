@@ -29,35 +29,35 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
     /// @notice Scale for getting the commission rate (service fee)
     uint32 private constant COMMISSION_RATE_SCALE = 1_000_000;
 
-    /// @notice Template service contract implementation address
-    /// @dev It is used for generating clones, using hardhats proxy clone
-    /// @return servicesContractImpl where the service contract template is implemented
-    address payable public servicesContractImpl;
-
     /// @notice Used in conjuction with `COMMISSION_RATE_SCALE` for determining service fees
     /// @dev Is set up on the constructor and can be modified with provided setter aswell
     /// @return commissionRate the commission rate
     uint32 public commissionRate;
 
+    /// @notice Template service contract implementation address
+    /// @dev It is used for generating clones, using hardhats proxy clone
+    /// @return servicesContractImpl where the service contract template is implemented
+    address payable public servicesContractImpl;
+
     /// @notice Determines if a certain tokenId was minted
     /// @dev For allowing only a single mint per service contract
     mapping(bytes32 => bool) internal minted;
 
-    event ServiceImplementationChanged(
-        address newServiceContractImplementationAdddress
-    );
     event CommissionRateChanged(uint32 newCommissionRate);
     event ContractCreated(bytes32 create2Salt);
     event ServiceContractDeposit(address indexed serviceContract);
+    event ServiceImplementationChanged(
+        address newServiceContractImplementationAdddress
+    );
 
+    error BurnInvalid();
     error CommissionRateScaleExceeded(uint32 rate);
     error CommisionRateTooHigh(uint32 rate);
-    error SafeMintInvalid();
+    error NotOwner();
     error SafeMintAlreadyMade();
-    error BurnInvalid();
+    error SafeMintInvalid();
     error ValueSentGreaterThanFullDeposit();
     error ValueSentLowerThanMinimumDeposit();
-    error NotOwner();
 
     /// @notice Initializes the contract
     /// @dev Sets token name and symbol, also sets commissionRate and checks its validity
@@ -84,38 +84,6 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
         emit ServiceImplementationChanged(address(servicesContractImpl));
     }
 
-    /// @notice Changes ipfs base uri
-    /// @param baseUri_ The new base uri
-    function changeBaseUri(string memory baseUri_) external onlyOwner {
-        _baseUri = baseUri_;
-    }
-
-    /// @notice Mints a new NFT
-    /// @dev Can only be called once, and only from any of our service contracts
-    /// @param to_ Address to mint to
-    /// @param salt_ Salt used for getting the service contract address
-    function safeMint(address to_, bytes32 salt_) external {
-        // if a safeMint -> burn -> safeMint cycle can be made unless this check added
-        if (minted[salt_] == true) {
-            revert SafeMintAlreadyMade();
-        }
-        // verify that caller is a service contract
-        if (
-            msg.sender !=
-            Clones.predictDeterministicAddress(servicesContractImpl, salt_)
-        ) {
-            revert SafeMintInvalid();
-        }
-        // tokenId is the uint256(salt)
-        _safeMint(to_, uint256(salt_));
-        // concatenation of base uri and id
-        _setTokenURI(
-            uint256(salt_),
-            string(abi.encodePacked(_baseUri, Strings.toString(uint256(salt_))))
-        );
-        minted[salt_] = true;
-    }
-
     /// @notice Burns minted NFT
     /// @dev Can only be called from any of our service contracts
     /// @param salt_ Salt used for getting the service contract address
@@ -128,6 +96,12 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
             revert BurnInvalid();
         }
         _burn(uint256(salt_));
+    }
+
+    /// @notice Changes ipfs base uri
+    /// @param baseUri_ The new base uri
+    function changeBaseUri(string memory baseUri_) external onlyOwner {
+        _baseUri = baseUri_;
     }
 
     /// @notice Changes commission rate (senseistake service fees)
@@ -225,6 +199,32 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
         if (remaining > 0) {
             payable(msg.sender).sendValue(remaining);
         }
+    }
+
+    /// @notice Mints a new NFT
+    /// @dev Can only be called once, and only from any of our service contracts
+    /// @param to_ Address to mint to
+    /// @param salt_ Salt used for getting the service contract address
+    function safeMint(address to_, bytes32 salt_) external {
+        // if a safeMint -> burn -> safeMint cycle can be made unless this check added
+        if (minted[salt_] == true) {
+            revert SafeMintAlreadyMade();
+        }
+        // verify that caller is a service contract
+        if (
+            msg.sender !=
+            Clones.predictDeterministicAddress(servicesContractImpl, salt_)
+        ) {
+            revert SafeMintInvalid();
+        }
+        // tokenId is the uint256(salt)
+        _safeMint(to_, uint256(salt_));
+        // concatenation of base uri and id
+        _setTokenURI(
+            uint256(salt_),
+            string(abi.encodePacked(_baseUri, Strings.toString(uint256(salt_))))
+        );
+        minted[salt_] = true;
     }
 
     /// @notice Performs withdraw of balance in service contract
