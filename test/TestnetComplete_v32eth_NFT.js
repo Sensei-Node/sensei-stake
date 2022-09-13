@@ -157,10 +157,36 @@ describe('Complete32ethNFT', () => {
 
       console.log("3.2 Transfer to bob")
 
+      balances.sc.Alice_deposit_before_3_2 = (await sc.getDeposit(aliceWhale.address)).toString();
+      balances.sc2.Alice_deposit_before_3_2 = (await sc2.getDeposit(aliceWhale.address)).toString();
+      balances.sc.Bob_deposit_before_3_2 = (await sc.getDeposit(bob.address)).toString();
+      balances.sc2.Bob_deposit_before_3_2 = (await sc2.getDeposit(bob.address)).toString();
+
       const tokenId = await tokenContract.saltToTokenId(salt);
+
+       balances.token.ownerOfTokenBefore = await tokenContract.ownerOf(tokenId);
+      balances.token.alice_before = (await tokenContract.balanceOf(aliceWhale.address)).toString();
+      balances.token.bob_before = (await tokenContract.balanceOf(bob.address)).toString();
+
       console.log('TOKEN ID TO TRANSFER', tokenId)
       const txTransfer = await tokenContract.connect(aliceWhale).transferFrom(aliceWhale.address, bob.address, tokenId);
       await txTransfer.wait(waitConfirmations[network.config.type]);
+      
+      balances.sc.Alice_deposit_after_3_2 = (await sc.getDeposit(aliceWhale.address)).toString();
+      balances.sc2.Alice_deposit_after_3_2 = (await sc2.getDeposit(aliceWhale.address)).toString();
+      balances.sc.Bob_deposit_after_3_2 = (await sc.getDeposit(bob.address)).toString();
+      balances.sc2.Bob_deposit_after_3_2 = (await sc2.getDeposit(bob.address)).toString();
+       balances.token.ownerOfTokenAfter = await tokenContract.ownerOf(tokenId);
+      balances.token.alice_after = (await tokenContract.balanceOf(aliceWhale.address)).toString();
+      balances.token.bob_after = (await tokenContract.balanceOf(bob.address)).toString();
+
+      expect(parseInt(balances.sc.Bob_deposit_after_3_2) - parseInt(balances.sc.Bob_deposit_before_3_2)).to.equal(amount/2)
+      expect(parseInt(balances.sc.Alice_deposit_before_3_2) - parseInt(balances.sc.Alice_deposit_after_3_2)).to.equal(amount/2)
+      expect(parseInt(balances.sc2.Alice_deposit_before_3_2) - parseInt(balances.sc2.Alice_deposit_after_3_2)).to.equal(0)
+       expect(balances.token.ownerOfTokenAfter).to.equal(bob.address)
+       expect(balances.token.ownerOfTokenBefore).to.equal(aliceWhale.address)
+      expect(parseInt(balances.token.bob_after) - parseInt(balances.token.bob_before)).to.equal(1)
+      expect(parseInt(balances.token.alice_before) - parseInt(balances.token.alice_after)).to.equal(1)
       
   });
 });
