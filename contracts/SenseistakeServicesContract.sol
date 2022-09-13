@@ -100,21 +100,21 @@ contract SenseistakeServicesContract is Initializable {
     );
 
     function initialize(
-        uint8 _commissionRate,
-        address _operatorAddress,
-        bytes32 _operatorDataCommitment,
-        bytes32 salt
+        uint8 commissionRate_,
+        address operatorAddress_,
+        bytes32 operatorDataCommitment_,
+        bytes32 salt_
     )
         external
         initializer
     {
-        if (_commissionRate > COMMISSION_RATE_SCALE) { revert CommissionRateScaleExceeded(_commissionRate); }
-        if (_commissionRate > (_commissionRate / COMMISSION_RATE_SCALE * 2)) { revert CommisionRateTooHigh(_commissionRate); }
+        if (commissionRate_ > COMMISSION_RATE_SCALE) { revert CommissionRateScaleExceeded(commissionRate_); }
+        if (commissionRate_ > (commissionRate_ / COMMISSION_RATE_SCALE * 2)) { revert CommisionRateTooHigh(commissionRate_); }
         state = State.PreDeposit;
-        commissionRate = _commissionRate;
-        operatorAddress = _operatorAddress;
-        operatorDataCommitment = _operatorDataCommitment;
-        _salt = salt;
+        commissionRate = commissionRate_;
+        operatorAddress = operatorAddress_;
+        operatorDataCommitment = operatorDataCommitment_;
+        _salt = salt_;
     }
 
     receive() payable external {
@@ -123,23 +123,23 @@ contract SenseistakeServicesContract is Initializable {
         }
     }
 
-    function setEthDepositContractAddress(address ethDepositContractAddress) 
+    function setEthDepositContractAddress(address ethDepositContractAddress_) 
         external
         onlyOperator
     {
         require(depositContractAddress == address(0), "Already set up ETH deposit contract address");
-        depositContractAddress = ethDepositContractAddress;
+        depositContractAddress = ethDepositContractAddress_;
     }
 
-    function setTokenContractAddress(address _tokenContractAddress) 
+    function setTokenContractAddress(address tokenContractAddress_) 
         external
         onlyOperator
     {
         require(tokenContractAddress == address(0), "Already set up token contract address");
-        tokenContractAddress = _tokenContractAddress;
+        tokenContractAddress = tokenContractAddress_;
     }
 
-    function updateExitDate(uint64 newExitDate)
+    function updateExitDate(uint64 exitDate_)
         external
         onlyOperator
     {
@@ -149,20 +149,20 @@ contract SenseistakeServicesContract is Initializable {
         );
 
         require(
-            newExitDate < exitDate,
+            exitDate_ < exitDate,
             "Not earlier than the original value"
         );
 
-        exitDate = newExitDate;
+        exitDate = exitDate_;
     }
 
     error notDepositor();
 
     function createValidator(
-        bytes calldata validatorPubKey, // 48 bytes
-        bytes calldata depositSignature, // 96 bytes
-        bytes32 depositDataRoot,
-        uint64 _exitDate
+        bytes calldata validatorPubKey_, // 48 bytes
+        bytes calldata depositSignature_, // 96 bytes
+        bytes32 depositDataRoot_,
+        uint64 exitDate_
     )
         external
     {
@@ -170,45 +170,33 @@ contract SenseistakeServicesContract is Initializable {
         require(state == State.PreDeposit, "Validator has been created");
         state = State.PostDeposit;
 
-        require(validatorPubKey.length == 48, "Invalid validator public key");
-        require(depositSignature.length == 96, "Invalid deposit signature");
+        require(validatorPubKey_.length == 48, "Invalid validator public key");
+        require(depositSignature_.length == 96, "Invalid deposit signature");
         require(operatorDataCommitment == keccak256(
             abi.encodePacked(
                 address(this),
-                validatorPubKey,
-                depositSignature,
-                depositDataRoot,
-                _exitDate
+                validatorPubKey_,
+                depositSignature_,
+                depositDataRoot_,
+                exitDate_
             )
         ), "Data doesn't match commitment");
 
-        exitDate = _exitDate;
+        exitDate = exitDate_;
 
         IDepositContract(depositContractAddress).deposit{value: FULL_DEPOSIT_SIZE}(
-            validatorPubKey,
+            validatorPubKey_,
             abi.encodePacked(uint96(0x010000000000000000000000), address(this)),
-            depositSignature,
-            depositDataRoot
+            depositSignature_,
+            depositDataRoot_
         );
 
         ERC721Contract.SenseistakeERC721(tokenContractAddress).safeMint(msg.sender, _salt);
 
-        emit ValidatorDeposited(validatorPubKey);
+        emit ValidatorDeposited(validatorPubKey_);
     }
 
-    // function deposit()
-    //     external
-    //     payable
-    // {
-    //     require(
-    //         state == State.PreDeposit,
-    //         "Validator already created"
-    //     );
-
-    //     _handleDeposit(msg.sender);
-    // }
-
-    function depositFrom(address _depositor)
+    function depositFrom(address depositor_)
         external
         payable
     {
@@ -216,7 +204,7 @@ contract SenseistakeServicesContract is Initializable {
             state == State.PreDeposit,
             "Validator already created"
         );
-        _handleDeposit(_depositor);
+        _handleDeposit(depositor_);
     }
 
     function endOperatorServices()
@@ -261,14 +249,14 @@ contract SenseistakeServicesContract is Initializable {
     error notTokenContract();
 
     function withdrawTo(
-        address payable beneficiary
+        address payable beneficiary_
     )
         external
     {
         // callable only from senseistake erc721 contract
         if (msg.sender != tokenContractAddress) { revert notTokenContract(); }
         require(state != State.PostDeposit, WITHDRAWALS_NOT_ALLOWED);
-        _executeWithdrawal(beneficiary, payable(beneficiary), FULL_DEPOSIT_SIZE);
+        _executeWithdrawal(beneficiary_, payable(beneficiary_), FULL_DEPOSIT_SIZE);
     }
 
     function getWithdrawableAmount()
@@ -284,19 +272,19 @@ contract SenseistakeServicesContract is Initializable {
     }
 
     function _executeWithdrawal(
-        address _depositor,
-        address payable beneficiary, 
-        uint256 amount
+        address depositor_,
+        address payable beneficiary_, 
+        uint256 amount_
     ) 
         internal
     {
-        require(amount > 0, "Amount shouldn't be zero");
+        require(amount_ > 0, "Amount shouldn't be zero");
 
         deposits = 0;
-        depositor = _depositor;
+        depositor = depositor_;
 
-        emit Withdrawal(depositor, beneficiary, amount);
-        beneficiary.sendValue(amount);
+        emit Withdrawal(depositor_, beneficiary_, amount_);
+        beneficiary_.sendValue(amount_);
 
         if (state == State.Withdrawn) {
             ERC721Contract.SenseistakeERC721(tokenContractAddress).burn(_salt);
@@ -305,7 +293,7 @@ contract SenseistakeServicesContract is Initializable {
 
     error DepositedAmountLowerThanFullDeposit();
 
-    function _handleDeposit(address _depositor)
+    function _handleDeposit(address depositor_)
         internal
     {
         if (msg.value < FULL_DEPOSIT_SIZE) { revert DepositedAmountLowerThanFullDeposit(); }
@@ -316,37 +304,30 @@ contract SenseistakeServicesContract is Initializable {
         uint256 acceptedDeposit = msg.value - surplus;
 
         deposits += acceptedDeposit;
-        depositor = _depositor;
+        depositor = depositor_;
         
-        emit Deposit(_depositor, acceptedDeposit);
+        emit Deposit(depositor_, acceptedDeposit);
         
         if (surplus > 0) {
-            payable(_depositor).sendValue(surplus);
+            payable(depositor_).sendValue(surplus);
         }
     }
 
     function _transfer(
-        address from,
-        address to,
-        uint256 amount
+        address from_,
+        address to_,
+        uint256 amount_
     )
         internal
     {
-        require(to != address(0), "Transfer to the zero address");
+        require(to_ != address(0), "Transfer to the zero address");
 
-        depositor = to;
+        depositor = to_;
 
-        emit Transfer(from, to, amount);
+        emit Transfer(from_, to_, amount_);
     }
 
-    function _min(
-        uint256 a,
-        uint256 b
-    )
-        internal
-        pure
-        returns (uint256)
-    {
-        return a < b ? a : b;
+    function _min(uint256 a_, uint256 b_) pure internal returns (uint256) {
+        return a_ <= b_ ? a_ : b_;
     }
 }
