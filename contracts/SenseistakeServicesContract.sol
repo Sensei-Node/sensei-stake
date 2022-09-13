@@ -35,25 +35,50 @@ contract SenseistakeServicesContract is Initializable {
     /// @notice Fixed amount of the deposit
     uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
 
+    /// @notice The salt use to create this contract usign the proxy clone
     bytes32 private _salt;
 
     // Packed into a single slot
+    /// @notice Operator Address 
+    /// @return operatorAddress operator address
     address public operatorAddress;
+    
+    /// @notice Used in conjuction with `COMMISSION_RATE_SCALE` for determining service fees
+    /// @dev Is set up on the constructor and can be modified with provided setter aswell
+    /// @return commissionRate the commission rate
     uint32 public commissionRate;
+
+    /// @notice The moment when the operator can call the operator services or when the depositor plus MAX_SECONDS_IN_EXIT_QUEUE could do it.
+    /// @dev The call of end operator services is the first step to withdraw the deposit. It change the state to Withdrawn
+    /// @return exitDate the exit date
     uint64 public exitDate;
+
+    /// @notice The state of the lifecyle of the service contract. This allows or forbids to make any action. 
+    /// @dev This use the enum State
+    /// @return state the state
     State public state;
 
+    /// @notice This is the hash created in the deployment to create the validator
+    /// @return state the operator data commitment
     bytes32 public operatorDataCommitment;
 
+    /// @notice the amount of eth the operator could claim
+    /// @return state the operator claimable amount (in eth)
     uint256 public operatorClaimable;
 
-    // for being able to deposit to the ethereum deposit contracts
+    // 
+    /// @notice the address for being able to deposit to the ethereum deposit contracts
+    /// @return depositContractAddress deposit contract address
     address public depositContractAddress;
 
-    // for getting the token contact address and then calling mint/burn methods
+    //
+    /// @notice for getting the token contact address and then calling mint/burn methods
+    /// @return tokenContractAddress the token contract address (erc721)
     address public tokenContractAddress;
 
-    // depositor address for determining if user deposited
+    // 
+    /// @notice depositor address for determining if user deposited
+    /// @return depositor the address of the depositor
     address public depositor;
 
     /// @notice Only the operator access.
