@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import  "@openzeppelin/contracts/utils/Address.sol";
 import "./SenseistakeServicesContract.sol";
+// import "hardhat/console.sol";
 
 contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
     using Address for address;
@@ -16,24 +17,24 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
     string private _baseUri = "ipfs://QmWMi519m7BEEdNyxsmadLC214QzgXRemp3wa2pzw95Gm4/";
 
     uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
-    uint8 private constant COMMISSION_RATE_SCALE = 100;
+    uint32 private constant COMMISSION_RATE_SCALE = 1_000_000;
 
     address payable public servicesContractImpl;
     
-    uint8 public commissionRate;
+    uint32 public commissionRate;
 
     // for only allowing mint once per salt
     mapping(bytes32 => bool) internal minted;
 
-    error CommissionRateScaleExceeded(uint8 rate);
-    error CommisionRateTooHigh(uint8 rate);
+    error CommissionRateScaleExceeded(uint32 rate);
+    error CommisionRateTooHigh(uint32 rate);
 
     event ServiceImplementationChanged(
         address newServiceContractImplementationAdddress
     );
 
     event CommissionRateChanged(
-        uint256 newCommissionRate
+        uint32 newCommissionRate
     );
 
     event ContractCreated(
@@ -47,10 +48,10 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
     constructor(
         string memory name_, 
         string memory symbol_,
-        uint8 commissionRate_
+        uint32 commissionRate_
     ) ERC721(name_, symbol_) {
         if (commissionRate_ > COMMISSION_RATE_SCALE) { revert CommissionRateScaleExceeded(commissionRate_); }
-        if (commissionRate_ > (commissionRate_ / COMMISSION_RATE_SCALE * 2)) { revert CommisionRateTooHigh(commissionRate_); }
+        if (commissionRate_ > (COMMISSION_RATE_SCALE / 2)) { revert CommisionRateTooHigh(commissionRate_); }
         // commission rate
         commissionRate = commissionRate_;
         // emits
@@ -72,11 +73,6 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
     //     return "https://ipfs.io/ipfs/QmSiQuffUmDf3TsNRGApBiMkgTc8cLipAVcWM4V7kdTyBo?filename=";
     // }
 
-    // f t action
-    // 0 0 not possible
-    // 0 1 mint
-    // 1 0 burn
-    // 1 1 transfer
     function _afterTokenTransfer(
         address from_,
         address to_,
@@ -85,17 +81,8 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
         super._afterTokenTransfer(from_, to_, tokenId_);
         // transfer
         if (to_ != address(0) && from_ != address(0)) {
-            // TODO
-        } else {
-            // mint
-            if (to_ != address(0)) {
-                // TODO
-            } else {
-                // burn
-                if (from_ != address(0)) {
-                    // TODO
-                }
-            }
+            address proxy = Clones.predictDeterministicAddress(servicesContractImpl, bytes32(tokenId_));
+            SenseistakeServicesContract(payable(proxy)).changeDepositor(from_, to_);
         }
     }
 
@@ -147,12 +134,12 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
 
     // FROM HERE WE START PUTTING CONTRACT FACTORY CODE
 
-    function changeCommissionRate(uint8 commissionRate_)
+    function changeCommissionRate(uint32 commissionRate_)
         external
         onlyOwner
     {
         if (commissionRate_ > COMMISSION_RATE_SCALE) { revert CommissionRateScaleExceeded(commissionRate_); }
-        if (commissionRate_ > (commissionRate_ / COMMISSION_RATE_SCALE * 2)) { revert CommisionRateTooHigh(commissionRate_); }
+        if (commissionRate_ > (COMMISSION_RATE_SCALE / 2)) { revert CommisionRateTooHigh(commissionRate_); }
         commissionRate = commissionRate_;
         emit CommissionRateChanged(commissionRate_);
     }
@@ -172,7 +159,7 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
 
         bytes memory initData =
             abi.encodeWithSignature(
-                "initialize(uint8,address,bytes32,bytes32)",
+                "initialize(uint32,address,bytes32,bytes32)",
                 commissionRate,
                 owner(),
                 operatorDataCommitment_,
@@ -232,15 +219,27 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
     function withdraw(uint256 tokenId_)
         external
     {
-        if (msg.sender != ownerOf(tokenId_)) { revert notOwner(); }
         address proxy = Clones.predictDeterministicAddress(servicesContractImpl, bytes32(tokenId_));
-        SenseistakeServicesContract(payable(proxy)).withdrawTo(payable(msg.sender));
+        SenseistakeServicesContract serviceContract = SenseistakeServicesContract(payable(proxy));
+        if (msg.sender != serviceContract.depositor()) { revert notOwner(); }
+        serviceContract.withdrawTo(payable(msg.sender));
     }
 
-    // this will cost gas, https://ethereum.stackexchange.com/questions/52885/view-pure-gas-usage-cost-gas-if-called-internally-by-another-function
-    // function _getServiceContractAddress(bytes32 salt_) internal view returns (address) {
-    //     return Clones.predictDeterministicAddress(servicesContractImpl, salt_);
-    // }
+    function saltToTokenId(bytes32 salt_) 
+        external
+        pure
+        returns(uint256 salt)
+    {
+        salt = uint256(salt_);
+    }
+
+    function tokenIdToSalt(uint256 tokenId_) 
+        external
+        pure
+        returns(bytes32 tokenId)
+    {
+        tokenId = bytes32(tokenId_);
+    }
 
     function _min(uint256 a_, uint256 b_) pure internal returns (uint256) {
         return a_ <= b_ ? a_ : b_;

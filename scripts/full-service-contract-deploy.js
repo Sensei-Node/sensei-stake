@@ -13,7 +13,6 @@ module.exports.deployServiceContract = async (deployments, upgrades, run, jwt) =
     const { deploy, log, save } = deployments;
     const [deployer] = await ethers.getSigners();
 
-    const factoryDeployment = await deployments.get("SenseistakeServicesContractFactory");
     const tokenDeployment = await deployments.get("SenseistakeERC721");
 
     // Storage saving, doing it ASAP in case there is another call for this
@@ -60,22 +59,20 @@ module.exports.deployServiceContract = async (deployments, upgrades, run, jwt) =
 
     const saltBytes = randomBytes(32);
 
-    const FactoryContract = await ethers.getContractFactory(
-        'SenseistakeServicesContractFactory'
+    const TokenContract = await ethers.getContractFactory(
+        'SenseistakeERC721'
     );
-    const factoryContract = await FactoryContract.attach(factoryDeployment.address);
+    const tokenContract = await TokenContract.attach(tokenDeployment.address);
 
     const NNETWK = {
-        FACTORY_ADDRESS: factoryDeployment.address,
-        CONTRACT_IMPL_ADDRESS: await factoryContract.getServicesContractImpl()
+        TOKEN_ADDRESS: tokenDeployment.address,
+        CONTRACT_IMPL_ADDRESS: await tokenContract.servicesContractImpl()
     }
     const contractAddress = saltBytesToContractAddress(saltBytes, NNETWK);
 
     const depositData = createOperatorDepositData(operatorPrivKey, contractAddress, network.config.type);
 
-    const exitDate = BigNumber.from(new Date(2024).getTime());
-    // ~4 months from now
-    // const exitDate = BigNumber.from(parseInt((new Date().getTime() + 9000000000) / 1000));
+    const exitDate = BigNumber.from(new Date(2024, 0, 1).getTime());
     console.log('exit date dec:', exitDate.toString(), '- bignum:', exitDate)
 
     let commitment = createOperatorCommitment(
@@ -85,7 +82,7 @@ module.exports.deployServiceContract = async (deployments, upgrades, run, jwt) =
         depositData.depositDataRoot,
         exitDate)
 
-    const fcs = await factoryContract.createContract(saltBytes, commitment);
+    const fcs = await tokenContract.createContract(saltBytes, commitment);
     if (['testnet', 'mainnet'].includes(network.config.type)) {
         await fcs.wait(2)
     }
@@ -135,8 +132,6 @@ module.exports.deployServiceContract = async (deployments, upgrades, run, jwt) =
                     depositSignature: utils.hexlify(depositData.depositSignature),
                     depositDataRoot: utils.hexlify(depositData.depositDataRoot),
                     exitDate: utils.hexlify(exitDate),
-                    // keystore,
-                    // keystoreName,
                     serviceContractAddress: contractAddress,
                     network: network.config.name,
                     salt: `0x${saltBytes.toString("hex")}`,
@@ -154,41 +149,6 @@ module.exports.deployServiceContract = async (deployments, upgrades, run, jwt) =
     const _date = parseInt((new Date().getTime()) / 1000);
     const keystoreName = `keystore-m_12381_3600_${index-1}_0_0-${_date}.json`
     fs.writeFileSync(__dirname + `/../keystores/${keystoreName}`, JSON.stringify(keystore));
-
-    // ! Storing required values in STORAGE CONTRACT
-
-    const contract_name = "SenseistakeServicesContract" + index;
-    const storageDeployment = await deployments.get('SenseistakeStorage')
-    const contr = await ethers.getContractFactory(
-        'SenseistakeStorage'
-    );
-    const storageContract = await contr.attach(storageDeployment.address);
-
-    let tx = await storageContract.setBool(
-        keccak256(ethers.utils.solidityPack(["string", "address"], ["contract.exists", servicesContract.address])),
-        true
-    );
-    if (['testnet', 'mainnet'].includes(network.config.type)) {
-        await tx.wait(1);
-    }
-
-    // Register the contract's name by address
-    tx = await storageContract.setString(
-        keccak256(ethers.utils.solidityPack(["string", "address"], ["contract.name", servicesContract.address])),
-        contract_name
-    );
-    if (['testnet', 'mainnet'].includes(network.config.type)) {
-        await tx.wait(1);
-    }
-
-    // Register the contract's address by name
-    tx = await storageContract.setAddress(
-        keccak256(ethers.utils.solidityPack(["string", "string"], ["contract.address", contract_name])),
-        servicesContract.address
-    );
-    if (['testnet', 'mainnet'].includes(network.config.type)) {
-        await tx.wait(1);
-    }
 
     await save('SenseistakeServicesContract'+index, proxyDeployments);
     await save('ServiceContractSalt'+index, {address: `0x${saltBytes.toString("hex")}`});

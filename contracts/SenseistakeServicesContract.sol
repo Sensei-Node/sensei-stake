@@ -1,26 +1,10 @@
-// This program is free software: you can redistribute it and/or modify
-// it under the terms of the GNU General Public License as published by
-// the Free Software Foundation, either version 3 of the License, or
-// (at your option) any later version.
-
-// This program is distributed in the hope that it will be useful,
-// but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-// GNU General Public License for more details.
-
-// You should have received a copy of the GNU General Public License
-// along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-// SPDX-License-Identifier: GPL-3.0-only
-
+// SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "./interfaces/deposit_contract.sol";
-// import "./SenseistakeERC721.sol";
-import * as ERC721Contract  from "./SenseistakeERC721.sol";
-
-import "hardhat/console.sol";
+import "./SenseistakeERC721.sol";
+// import "hardhat/console.sol";
 
 contract SenseistakeServicesContract is Initializable {
 
@@ -31,17 +15,17 @@ contract SenseistakeServicesContract is Initializable {
         PostDeposit,
         Withdrawn
     }
+
     using Address for address payable;
 
-    uint256 private constant YEAR = 360 days;
-    uint256 private constant MAX_SECONDS_IN_EXIT_QUEUE = 1 * YEAR;
-    uint256 private constant COMMISSION_RATE_SCALE = 100;
+    uint256 private constant MAX_SECONDS_IN_EXIT_QUEUE = 360 days;
+    uint32 private constant COMMISSION_RATE_SCALE = 1_000_000;
     uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
     bytes32 private _salt;
 
     // Packed into a single slot
     address public operatorAddress;
-    uint8 public commissionRate;
+    uint32 public commissionRate;
     uint64 public exitDate;
     State public state;
 
@@ -55,8 +39,7 @@ contract SenseistakeServicesContract is Initializable {
     // for getting the token contact address and then calling mint/burn methods
     address public tokenContractAddress;
 
-    // depositor address and deposited amount
-    uint256 public deposits;
+    // depositor address for determining if user deposited
     address public depositor;
 
     modifier onlyOperator() {
@@ -68,8 +51,8 @@ contract SenseistakeServicesContract is Initializable {
     }
 
     error NotEnoughBalance();
-    error CommissionRateScaleExceeded(uint8 rate);
-    error CommisionRateTooHigh(uint8 rate);
+    error CommissionRateScaleExceeded(uint32 rate);
+    error CommisionRateTooHigh(uint32 rate);
 
     event ValidatorDeposited(
         bytes pubkey // 48 bytes
@@ -83,7 +66,6 @@ contract SenseistakeServicesContract is Initializable {
     );
 
     event Withdrawal(
-        address indexed owner,
         address indexed to,
         uint256 value
     );
@@ -100,7 +82,7 @@ contract SenseistakeServicesContract is Initializable {
     );
 
     function initialize(
-        uint8 commissionRate_,
+        uint32 commissionRate_,
         address operatorAddress_,
         bytes32 operatorDataCommitment_,
         bytes32 salt_
@@ -109,7 +91,7 @@ contract SenseistakeServicesContract is Initializable {
         initializer
     {
         if (commissionRate_ > COMMISSION_RATE_SCALE) { revert CommissionRateScaleExceeded(commissionRate_); }
-        if (commissionRate_ > (commissionRate_ / COMMISSION_RATE_SCALE * 2)) { revert CommisionRateTooHigh(commissionRate_); }
+        if (commissionRate_ > (COMMISSION_RATE_SCALE / 2)) { revert CommisionRateTooHigh(commissionRate_); }
         state = State.PreDeposit;
         commissionRate = commissionRate_;
         operatorAddress = operatorAddress_;
@@ -191,7 +173,7 @@ contract SenseistakeServicesContract is Initializable {
             depositDataRoot_
         );
 
-        ERC721Contract.SenseistakeERC721(tokenContractAddress).safeMint(msg.sender, _salt);
+        SenseistakeERC721(tokenContractAddress).safeMint(msg.sender, _salt);
 
         emit ValidatorDeposited(validatorPubKey_);
     }
@@ -214,7 +196,7 @@ contract SenseistakeServicesContract is Initializable {
         require(balance > 0, "Can't end with 0 balance");
         require(state == State.PostDeposit, "Not allowed in the current state");
         require((msg.sender == operatorAddress && block.timestamp > exitDate) ||
-                (deposits > 0 && block.timestamp > exitDate + MAX_SECONDS_IN_EXIT_QUEUE), "Not allowed at the current time");
+                (depositor != address(0) && block.timestamp > exitDate + MAX_SECONDS_IN_EXIT_QUEUE), "Not allowed at the current time");
 
         state = State.Withdrawn;
 
@@ -249,14 +231,14 @@ contract SenseistakeServicesContract is Initializable {
     error notTokenContract();
 
     function withdrawTo(
-        address payable beneficiary_
+        address beneficiary_
     )
         external
     {
         // callable only from senseistake erc721 contract
         if (msg.sender != tokenContractAddress) { revert notTokenContract(); }
         require(state != State.PostDeposit, WITHDRAWALS_NOT_ALLOWED);
-        _executeWithdrawal(beneficiary_, payable(beneficiary_), FULL_DEPOSIT_SIZE);
+        _executeWithdrawal(beneficiary_);
     }
 
     function getWithdrawableAmount()
@@ -272,22 +254,15 @@ contract SenseistakeServicesContract is Initializable {
     }
 
     function _executeWithdrawal(
-        address depositor_,
-        address payable beneficiary_, 
-        uint256 amount_
+        address beneficiary_
     ) 
         internal
     {
-        require(amount_ > 0, "Amount shouldn't be zero");
-
-        deposits = 0;
-        depositor = depositor_;
-
-        emit Withdrawal(depositor_, beneficiary_, amount_);
-        beneficiary_.sendValue(amount_);
-
+        depositor = address(0);
+        emit Withdrawal(beneficiary_, FULL_DEPOSIT_SIZE);
+        payable(beneficiary_).sendValue(FULL_DEPOSIT_SIZE);
         if (state == State.Withdrawn) {
-            ERC721Contract.SenseistakeERC721(tokenContractAddress).burn(_salt);
+            SenseistakeERC721(tokenContractAddress).burn(_salt);
         }
     }
 
@@ -303,7 +278,6 @@ contract SenseistakeServicesContract is Initializable {
 
         uint256 acceptedDeposit = msg.value - surplus;
 
-        deposits += acceptedDeposit;
         depositor = depositor_;
         
         emit Deposit(depositor_, acceptedDeposit);
@@ -313,18 +287,43 @@ contract SenseistakeServicesContract is Initializable {
         }
     }
 
-    function _transfer(
-        address from_,
-        address to_,
-        uint256 amount_
-    )
-        internal
+    // function _transfer(
+    //     address from_,
+    //     address to_,
+    //     uint256 amount_
+    // )
+    //     internal
+    // {
+    //     require(to_ != address(0), "Transfer to the zero address");
+    //     depositor = to_;
+    //     emit Transfer(from_, to_, amount_);
+    // }
+
+    function getDeposit(address depositor_)
+        external
+        view
+        returns (uint256 amount)
     {
-        require(to_ != address(0), "Transfer to the zero address");
+        if (depositor == depositor_) amount = 32 ether;
+    }
 
+    event DepositorChanged(
+        address indexed from,
+        address indexed to
+    );
+
+    error DepositNotOwned();
+
+    function changeDepositor(address from_, address to_) 
+        external
+    {
+        address owner = msg.sender;
+        if (msg.sender == tokenContractAddress) {
+            owner = from_;
+        }
+        if (owner != from_) { revert DepositNotOwned(); }
         depositor = to_;
-
-        emit Transfer(from_, to_, amount_);
+        emit DepositorChanged(from_, to_);
     }
 
     function _min(uint256 a_, uint256 b_) pure internal returns (uint256) {
