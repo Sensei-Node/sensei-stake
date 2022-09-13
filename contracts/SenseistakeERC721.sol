@@ -22,6 +22,9 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
     
     uint8 public commissionRate;
 
+    // for only allowing mint once per salt
+    mapping(bytes32 => bool) internal minted;
+
     error CommissionRateScaleExceeded(uint8 rate);
     error CommisionRateTooHigh(uint8 rate);
 
@@ -97,14 +100,18 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
     }
 
     error safeMintInvalid();
+    error safeMintAlreadyMade();
 
     function safeMint(address to_, bytes32 salt_) public {
+        // if a safeMint -> burn -> safeMint cycle can be made unless this check added
+        if (minted[salt_] == true) { revert safeMintAlreadyMade(); }
         // verify that caller is a service contract
         if (msg.sender != Clones.predictDeterministicAddress(servicesContractImpl, salt_)) { revert safeMintInvalid(); }
         // tokenId is the uint256(salt)
         _safeMint(to_, uint256(salt_));
         // concatenation of base uri and id
         _setTokenURI(uint256(salt_), string(abi.encodePacked(_baseUri, Strings.toString(uint256(salt_)))));
+        minted[salt_] = true;
     }
 
     error burnInvalid();
