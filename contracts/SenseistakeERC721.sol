@@ -89,7 +89,7 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
     error safeMintInvalid();
     error safeMintAlreadyMade();
 
-    function safeMint(address to_, bytes32 salt_) public {
+    function safeMint(address to_, bytes32 salt_) external {
         // if a safeMint -> burn -> safeMint cycle can be made unless this check added
         if (minted[salt_] == true) { revert safeMintAlreadyMade(); }
         // verify that caller is a service contract
@@ -103,7 +103,7 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
 
     error burnInvalid();
 
-    function burn(bytes32 salt_) public {
+    function burn(bytes32 salt_) external {
         // verify that caller is a service contract
         if (msg.sender != Clones.predictDeterministicAddress(servicesContractImpl, salt_)) { revert burnInvalid(); }
         // burns token of salt
@@ -125,7 +125,7 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
     }
 
     function getServiceContractAddress(bytes32 salt_)
-        public
+        external
         view
         returns (address)
     {
@@ -152,6 +152,7 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
     )
         external
         payable
+        onlyOwner
     {
         if (msg.value > FULL_DEPOSIT_SIZE) { revert ValueSentGreaterThanFullDeposit(); }
 
@@ -190,8 +191,8 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
         
         uint256 remaining = msg.value;
         address depositor = msg.sender;
-
-        for (uint256 i = 0; i < salts_.length; i++) {
+        uint8 saltsLen = uint8(salts_.length);
+        for (uint8 i ; i < saltsLen;) {
             if (remaining == 0)
                 break;
             address proxy = Clones.predictDeterministicAddress(servicesContractImpl, bytes32(salts_[i]));
@@ -206,6 +207,9 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
                     }
                     
                 }
+            }
+            unchecked {
+                ++i;
             }
         }
 
