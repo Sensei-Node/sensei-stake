@@ -4,10 +4,10 @@ pragma solidity 0.8.4;
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "./interfaces/deposit_contract.sol";
 import "./SenseistakeERC721.sol";
+
 // import "hardhat/console.sol";
 
 contract SenseistakeServicesContract is Initializable {
-
     /// @notice The life cycle of a services contract.
     enum State {
         NotInitialized,
@@ -43,10 +43,7 @@ contract SenseistakeServicesContract is Initializable {
     address public depositor;
 
     modifier onlyOperator() {
-        require(
-            msg.sender == operatorAddress,
-            "Caller is not the operator"
-        );
+        require(msg.sender == operatorAddress, "Caller is not the operator");
         _;
     }
 
@@ -60,38 +57,26 @@ contract SenseistakeServicesContract is Initializable {
 
     event ServiceEnd();
 
-    event Claim(
-        address receiver,
-        uint256 amount
-    );
+    event Claim(address receiver, uint256 amount);
 
-    event Withdrawal(
-        address indexed to,
-        uint256 value
-    );
+    event Withdrawal(address indexed to, uint256 value);
 
-    event Deposit(
-        address from,
-        uint256 amount
-    );
+    event Deposit(address from, uint256 amount);
 
-    event Transfer(
-        address indexed from,
-        address indexed to,
-        uint256 amount
-    );
+    event Transfer(address indexed from, address indexed to, uint256 amount);
 
     function initialize(
         uint32 commissionRate_,
         address operatorAddress_,
         bytes32 operatorDataCommitment_,
         bytes32 salt_
-    )
-        external
-        initializer
-    {
-        if (commissionRate_ > COMMISSION_RATE_SCALE) { revert CommissionRateScaleExceeded(commissionRate_); }
-        if (commissionRate_ > (COMMISSION_RATE_SCALE / 2)) { revert CommisionRateTooHigh(commissionRate_); }
+    ) external initializer {
+        if (commissionRate_ > COMMISSION_RATE_SCALE) {
+            revert CommissionRateScaleExceeded(commissionRate_);
+        }
+        if (commissionRate_ > (COMMISSION_RATE_SCALE / 2)) {
+            revert CommisionRateTooHigh(commissionRate_);
+        }
         state = State.PreDeposit;
         commissionRate = commissionRate_;
         operatorAddress = operatorAddress_;
@@ -99,41 +84,38 @@ contract SenseistakeServicesContract is Initializable {
         _salt = salt_;
     }
 
-    receive() payable external {
+    receive() external payable {
         if (state == State.PreDeposit) {
             revert("Plain Ether transfer not allowed");
         }
     }
 
-    function setEthDepositContractAddress(address ethDepositContractAddress_) 
+    function setEthDepositContractAddress(address ethDepositContractAddress_)
         external
         onlyOperator
     {
-        require(depositContractAddress == address(0), "Already set up ETH deposit contract address");
+        require(
+            depositContractAddress == address(0),
+            "Already set up ETH deposit contract address"
+        );
         depositContractAddress = ethDepositContractAddress_;
     }
 
-    function setTokenContractAddress(address tokenContractAddress_) 
+    function setTokenContractAddress(address tokenContractAddress_)
         external
         onlyOperator
     {
-        require(tokenContractAddress == address(0), "Already set up token contract address");
+        require(
+            tokenContractAddress == address(0),
+            "Already set up token contract address"
+        );
         tokenContractAddress = tokenContractAddress_;
     }
 
-    function updateExitDate(uint64 exitDate_)
-        external
-        onlyOperator
-    {
-        require(
-            state == State.PostDeposit,
-            "Validator is not active"
-        );
+    function updateExitDate(uint64 exitDate_) external onlyOperator {
+        require(state == State.PostDeposit, "Validator is not active");
 
-        require(
-            exitDate_ < exitDate,
-            "Not earlier than the original value"
-        );
+        require(exitDate_ < exitDate, "Not earlier than the original value");
 
         exitDate = exitDate_;
     }
@@ -145,28 +127,34 @@ contract SenseistakeServicesContract is Initializable {
         bytes calldata depositSignature_, // 96 bytes
         bytes32 depositDataRoot_,
         uint64 exitDate_
-    )
-        external
-    {
-        if (msg.sender != depositor) { revert notDepositor(); }
+    ) external {
+        if (msg.sender != depositor) {
+            revert notDepositor();
+        }
         require(state == State.PreDeposit, "Validator has been created");
         state = State.PostDeposit;
 
         require(validatorPubKey_.length == 48, "Invalid validator public key");
         require(depositSignature_.length == 96, "Invalid deposit signature");
-        require(operatorDataCommitment == keccak256(
-            abi.encodePacked(
-                address(this),
-                validatorPubKey_,
-                depositSignature_,
-                depositDataRoot_,
-                exitDate_
-            )
-        ), "Data doesn't match commitment");
+        require(
+            operatorDataCommitment ==
+                keccak256(
+                    abi.encodePacked(
+                        address(this),
+                        validatorPubKey_,
+                        depositSignature_,
+                        depositDataRoot_,
+                        exitDate_
+                    )
+                ),
+            "Data doesn't match commitment"
+        );
 
         exitDate = exitDate_;
 
-        IDepositContract(depositContractAddress).deposit{value: FULL_DEPOSIT_SIZE}(
+        IDepositContract(depositContractAddress).deposit{
+            value: FULL_DEPOSIT_SIZE
+        }(
             validatorPubKey_,
             abi.encodePacked(uint96(0x010000000000000000000000), address(this)),
             depositSignature_,
@@ -178,42 +166,35 @@ contract SenseistakeServicesContract is Initializable {
         emit ValidatorDeposited(validatorPubKey_);
     }
 
-    function depositFrom(address depositor_)
-        external
-        payable
-    {
-        require(
-            state == State.PreDeposit,
-            "Validator already created"
-        );
+    function depositFrom(address depositor_) external payable {
+        require(state == State.PreDeposit, "Validator already created");
         _handleDeposit(depositor_);
     }
 
-    function endOperatorServices()
-        external
-    {
+    function endOperatorServices() external {
         uint256 balance = address(this).balance;
         require(balance > 0, "Can't end with 0 balance");
         require(state == State.PostDeposit, "Not allowed in the current state");
-        require((msg.sender == operatorAddress && block.timestamp > exitDate) ||
-                (depositor != address(0) && block.timestamp > exitDate + MAX_SECONDS_IN_EXIT_QUEUE), "Not allowed at the current time");
+        require(
+            (msg.sender == operatorAddress && block.timestamp > exitDate) ||
+                (depositor != address(0) &&
+                    block.timestamp > exitDate + MAX_SECONDS_IN_EXIT_QUEUE),
+            "Not allowed at the current time"
+        );
 
         state = State.Withdrawn;
 
         if (balance > 32 ether) {
             uint256 profit = balance - 32 ether;
-            uint256 finalCommission = profit * commissionRate / COMMISSION_RATE_SCALE;
+            uint256 finalCommission = (profit * commissionRate) /
+                COMMISSION_RATE_SCALE;
             operatorClaimable += finalCommission;
         }
 
         emit ServiceEnd();
     }
 
-    function operatorClaim()
-        external
-        onlyOperator
-        returns (uint256)
-    {
+    function operatorClaim() external onlyOperator returns (uint256) {
         uint256 claimable = operatorClaimable;
         if (claimable > 0) {
             operatorClaimable = 0;
@@ -230,22 +211,16 @@ contract SenseistakeServicesContract is Initializable {
 
     error notTokenContract();
 
-    function withdrawTo(
-        address beneficiary_
-    )
-        external
-    {
+    function withdrawTo(address beneficiary_) external {
         // callable only from senseistake erc721 contract
-        if (msg.sender != tokenContractAddress) { revert notTokenContract(); }
+        if (msg.sender != tokenContractAddress) {
+            revert notTokenContract();
+        }
         require(state != State.PostDeposit, WITHDRAWALS_NOT_ALLOWED);
         _executeWithdrawal(beneficiary_);
     }
 
-    function getWithdrawableAmount()
-        external
-        view
-        returns (uint256)
-    {
+    function getWithdrawableAmount() external view returns (uint256) {
         if (state == State.PostDeposit) {
             return 0;
         }
@@ -253,11 +228,7 @@ contract SenseistakeServicesContract is Initializable {
         return address(this).balance - operatorClaimable;
     }
 
-    function _executeWithdrawal(
-        address beneficiary_
-    ) 
-        internal
-    {
+    function _executeWithdrawal(address beneficiary_) internal {
         depositor = address(0);
         emit Withdrawal(beneficiary_, FULL_DEPOSIT_SIZE);
         payable(beneficiary_).sendValue(FULL_DEPOSIT_SIZE);
@@ -268,20 +239,21 @@ contract SenseistakeServicesContract is Initializable {
 
     error DepositedAmountLowerThanFullDeposit();
 
-    function _handleDeposit(address depositor_)
-        internal
-    {
-        if (msg.value < FULL_DEPOSIT_SIZE) { revert DepositedAmountLowerThanFullDeposit(); }
-        
-        uint256 surplus = (address(this).balance > 32 ether) ?
-            (address(this).balance - 32 ether) : 0;
+    function _handleDeposit(address depositor_) internal {
+        if (msg.value < FULL_DEPOSIT_SIZE) {
+            revert DepositedAmountLowerThanFullDeposit();
+        }
+
+        uint256 surplus = (address(this).balance > 32 ether)
+            ? (address(this).balance - 32 ether)
+            : 0;
 
         uint256 acceptedDeposit = msg.value - surplus;
 
         depositor = depositor_;
-        
+
         emit Deposit(depositor_, acceptedDeposit);
-        
+
         if (surplus > 0) {
             payable(depositor_).sendValue(surplus);
         }
@@ -307,26 +279,23 @@ contract SenseistakeServicesContract is Initializable {
         if (depositor == depositor_) amount = 32 ether;
     }
 
-    event DepositorChanged(
-        address indexed from,
-        address indexed to
-    );
+    event DepositorChanged(address indexed from, address indexed to);
 
     error DepositNotOwned();
 
-    function changeDepositor(address from_, address to_) 
-        external
-    {
+    function changeDepositor(address from_, address to_) external {
         address owner = msg.sender;
         if (msg.sender == tokenContractAddress) {
             owner = from_;
         }
-        if (owner != from_) { revert DepositNotOwned(); }
+        if (owner != from_) {
+            revert DepositNotOwned();
+        }
         depositor = to_;
         emit DepositorChanged(from_, to_);
     }
 
-    function _min(uint256 a_, uint256 b_) pure internal returns (uint256) {
+    function _min(uint256 a_, uint256 b_) internal pure returns (uint256) {
         return a_ <= b_ ? a_ : b_;
     }
 }
