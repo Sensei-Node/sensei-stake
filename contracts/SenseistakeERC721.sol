@@ -153,7 +153,7 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
         external
         payable
     {
-        if (msg.value > FULL_DEPOSIT_SIZE) { revert ValueSentGreaterThanFullDeposit(); }
+        if (msg.value >= FULL_DEPOSIT_SIZE) { revert ValueSentGreaterThanFullDeposit(); }
 
         // TODO: verify operatorDataCommitment with signatures;
 
