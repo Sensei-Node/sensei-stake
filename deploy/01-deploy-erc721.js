@@ -10,10 +10,9 @@ module.exports = async ({
 }) => {
     const { deploy, log } = deployments;
     const [deployer] = await ethers.getSigners();
-    
-    const storageDeployment = await deployments.get("SenseistakeStorage")
 
-    const args = ["SenseiStakeValidator", "SNSV", storageDeployment.address];
+    // name, symbol, commissionRate
+    const args = ["SenseiStakeValidator", "SNSV", 100_000];
     const senseistakeERC721 = await deploy("SenseistakeERC721", {
         contract: "SenseistakeERC721",
         from: deployer.address,
