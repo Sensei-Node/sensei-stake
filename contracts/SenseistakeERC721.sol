@@ -124,7 +124,7 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
         payable
         onlyOwner
     {
-        if (msg.value >= FULL_DEPOSIT_SIZE) {
+        if (msg.value > FULL_DEPOSIT_SIZE) {
             revert ValueSentGreaterThanFullDeposit();
         }
 
@@ -161,7 +161,6 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
         }
 
         uint256 remaining = msg.value;
-        address depositor = msg.sender;
         uint8 saltsLen = uint8(salts_.length);
 
         for (uint8 i; i < saltsLen; ) {
@@ -184,7 +183,7 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
                     );
                     if (depositAmount != 0) {
                         serviceContract.depositFrom{value: depositAmount}(
-                            depositor
+                            msg.sender
                         );
                         remaining -= depositAmount;
                         emit ServiceContractDeposit(address(serviceContract));
