@@ -20,9 +20,9 @@ module.exports = async ({
         waitConfirmations: deploymentVariables.waitConfirmations
     })
 
-    // if (['testnet', 'mainnet'].includes(network.config.type) && process.env.ETHERSCAN_KEY) {
-    //     await verify(senseistakeService.address, args)
-    // }
+    if (['testnet', 'mainnet'].includes(network.config.type) && process.env.ETHERSCAN_KEY) {
+        await verify(senseistakeService.address, args)
+    }
 }
 
 module.exports.tags = ["all", "deposit_contract"]

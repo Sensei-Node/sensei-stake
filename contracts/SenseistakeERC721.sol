@@ -30,8 +30,8 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
     address payable public servicesContractImpl;
 
     /// @notice IPFS base uri
-    string private _baseUri =
-        "ipfs://QmWMi519m7BEEdNyxsmadLC214QzgXRemp3wa2pzw95Gm4/";
+    string public _baseURI_ =
+        "ipfs://bafybeiakelvegorvmexqb6rpwge22bk3tvg3j2jpvgvi6hgskis3zmdjti/";
 
     /// @notice Fixed amount of the deposit
     uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
@@ -99,9 +99,9 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
     }
 
     /// @notice Changes ipfs base uri
-    /// @param baseUri_ The new base uri
-    function changeBaseUri(string memory baseUri_) external onlyOwner {
-        _baseUri = baseUri_;
+    /// @param baseURI_ The new base uri
+    function changeBaseUri(string memory baseURI_) external onlyOwner {
+        _baseURI_ = baseURI_;
     }
 
     /// @notice Changes commission rate (senseistake service fees)
@@ -221,7 +221,7 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
         // concatenation of base uri and id
         _setTokenURI(
             uint256(salt_),
-            string(abi.encodePacked(_baseUri, Strings.toString(uint256(salt_))))
+            Strings.toString(uint256(salt_))
         );
         minted[salt_] = true;
     }
@@ -327,5 +327,11 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
     /// @param b_ The second value
     function _min(uint256 a_, uint256 b_) internal pure returns (uint256) {
         return a_ <= b_ ? a_ : b_;
+    }
+
+    /// @notice IPFS base uri
+    /// @dev Base URI for computing {tokenURI}. If set, the resulting URI for each token will be the concatenation of the `baseURI` and the `tokenId`.
+    function _baseURI() internal view virtual override returns (string memory) {
+        return _baseURI_;
     }
 }
