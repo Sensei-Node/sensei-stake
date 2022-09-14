@@ -84,7 +84,7 @@ module.exports.deployServiceContract = async (deployments, upgrades, run, jwt) =
 
     const fcs = await tokenContract.createContract(saltBytes, commitment);
     if (['testnet', 'mainnet'].includes(network.config.type)) {
-        await fcs.wait(2)
+        await fcs.wait(deploymentVariables.waitConfirmations)
     }
 
     console.log("Service contract deployed at: ", contractAddress);
@@ -99,7 +99,10 @@ module.exports.deployServiceContract = async (deployments, upgrades, run, jwt) =
         'SenseistakeServicesContract'
     );
     const servicesContract = await SenseistakeServicesContract.attach(contractAddress);
-    await servicesContract.setTokenContractAddress(tokenDeployment.address);
+    const tx1 = await servicesContract.setTokenContractAddress(tokenDeployment.address);
+    if (['testnet', 'mainnet'].includes(network.config.type)) {
+        await tx1.wait(deploymentVariables.waitConfirmations)
+    }
 
     // parametrizing the ethereum deposit contract address
     let ethDepositContractAddress;
@@ -111,8 +114,10 @@ module.exports.deployServiceContract = async (deployments, upgrades, run, jwt) =
         ethDepositContractAddress = deploymentVariables.depositContractAddress[network.config.chainId] ? 
         { address: deploymentVariables.depositContractAddress[network.config.chainId] } : { address: '0x00000000219ab540356cBB839Cbe05303d7705Fa' }
     }
-    await servicesContract.setEthDepositContractAddress(ethDepositContractAddress.address);
-    // TODO: test if a later call to this function does a revert (because of the immutable keyword)
+    const tx2 = await servicesContract.setEthDepositContractAddress(ethDepositContractAddress.address);
+    if (['testnet', 'mainnet'].includes(network.config.type)) {
+        await tx2.wait(deploymentVariables.waitConfirmations)
+    }
 
     // save it for other deployments usage
     const artifact = await deployments.getExtendedArtifact('SenseistakeServicesContract');
