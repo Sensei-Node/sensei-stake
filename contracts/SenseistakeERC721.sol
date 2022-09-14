@@ -11,7 +11,7 @@ import "./SenseistakeServicesContract.sol";
 
 // import "hardhat/console.sol";
 
-/// @title An ERC721 contract for handling SenseiStake Validators
+/// @title An ERC721 contract for handling SenseiStake Services
 /// @author Senseinode
 /// @notice Serves as entrypoint for SenseiStake
 /// @dev Serves as entrypoint for creating service contracts, depositing, withdrawing and dealing with non fungible token. Inherits the OpenZepplin ERC721, ERC721URIStorage and Ownable implentation
@@ -33,7 +33,7 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
     string private _baseUri =
         "ipfs://QmWMi519m7BEEdNyxsmadLC214QzgXRemp3wa2pzw95Gm4/";
 
-    /// @notice Deposit amount required for being a client
+    /// @notice Fixed amount of the deposit
     uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
 
     /// @notice Scale for getting the commission rate (service fee)
