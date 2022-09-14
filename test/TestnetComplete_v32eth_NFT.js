@@ -80,20 +80,6 @@ describe('Complete32ethNFT', () => {
     await expect((balanceAfter.sub(balanceBefore)).toString() ).to.equal('32000000000000000000');
   })
 
-  it('0.1 should return the surplus when more than 32eth are deposited', async function () {
-    const { salt, sc } = serviceContracts[0];
-    // 50 ethers
-    let amount = "50000000000000000000"
-    const balanceBefore = (await sc.getDeposit(aliceWhale.address))
-
-    const tx = factoryContract.connect(aliceWhale).fundMultipleContracts([salt], {
-      value: amount
-    });
-    const balanceAfter = (await sc.getDeposit(aliceWhale.address))
-    
-    await expect((balanceAfter.sub(balanceBefore)).toString() ).to.equal('32000000000000000000');
-  })
-
   let balances = {
     alice: {},
     bob: {},
@@ -102,7 +88,7 @@ describe('Complete32ethNFT', () => {
     token: {}
   }
 
-  it('1,2. should be able to deposit 32eth or (multiples of 32eth) and withdraw them', async function () {
+  it('1. should be able to deposit 32eth or (multiples of 32eth) and withdraw them', async function () {
     /*
       1. deposit 32 eth
       2. withdraw 32 eth
@@ -111,7 +97,7 @@ describe('Complete32ethNFT', () => {
     
     let amount = "32000000000000000000"
 
-    console.log("1. Deposit 32 eth")
+    console.log("1.1. Deposit 32 eth")
 
     balances.sc.before_1 = (await sc.getDeposit(aliceWhale.address)).toString()
     const tx = await tokenContract.connect(aliceWhale).fundMultipleContracts([salt], {
@@ -121,7 +107,7 @@ describe('Complete32ethNFT', () => {
     balances.sc.after_1 = (await sc.getDeposit(aliceWhale.address)).toString()
     expect(balances.sc.after_1 - balances.sc.before_1).to.be.equal(parseInt(amount));
 
-    console.log("2.Withdraw 32 eth")
+    console.log("1.2. Withdraw 32 eth")
 
     balances.sc.before_2 = (await sc.getDeposit(aliceWhale.address)).toString()
     const tokenId = await tokenContract.saltToTokenId(salt);
@@ -130,8 +116,9 @@ describe('Complete32ethNFT', () => {
     balances.sc.after_2 = (await sc.getDeposit(aliceWhale.address)).toString()
     expect(balances.sc.before_2 - balances.sc.after_2).to.be.equal(parseInt(amount));
     
-    });
-    it('3,4. should be able to deposit 32eth or (multiples of 32eth) and withdraw them', async function () {
+  });
+
+  it('2. should be able to deposit 32eth or (multiples of 32eth) and withdraw them', async function () {
       /*
       3. deposit 62 eth
       4. withdraw 64 eth
@@ -139,7 +126,7 @@ describe('Complete32ethNFT', () => {
       const { salt, sc } = serviceContracts[0];
       const { salt:salt2, sc:sc2 } = serviceContracts[1];
 
-      console.log("3. Deposit 64 eth")
+      console.log("2.1. Deposit 64 eth")
 
       amount = "64000000000000000000"
       balances.sc.before_3 = (await sc.getDeposit(aliceWhale.address)).toString()
@@ -153,7 +140,7 @@ describe('Complete32ethNFT', () => {
       expect(balances.sc.after_3 - balances.sc.before_3).to.be.equal(parseInt(amount/2));
       expect(balances.sc2.after_3 - balances.sc2.before_3).to.be.equal(parseInt(amount/2));
 
-      console.log("3.1 Test CreateValidator")
+      console.log("2.2 Test CreateValidator")
 
       balances.sc.deposit_before_3_1 = (await sc.getDeposit(aliceWhale.address)).toString();
       balances.sc2.deposit_before_3_1 = (await sc2.getDeposit(aliceWhale.address)).toString();
@@ -170,7 +157,7 @@ describe('Complete32ethNFT', () => {
       expect(parseInt(balances.sc.deposit_before_3_1)).to.be.equal(amount/2);
       expect(parseInt(balances.sc2.deposit_before_3_1)).to.be.equal(parseInt(amount/2));
 
-      console.log("3.2 Transfer to bob")
+      console.log("2.3 Transfer to bob")
 
       balances.sc.Alice_deposit_before_3_2 = (await sc.getDeposit(aliceWhale.address)).toString();
       balances.sc2.Alice_deposit_before_3_2 = (await sc2.getDeposit(aliceWhale.address)).toString();
@@ -179,11 +166,10 @@ describe('Complete32ethNFT', () => {
 
       const tokenId = await tokenContract.saltToTokenId(salt);
 
-       balances.token.ownerOfTokenBefore = await tokenContract.ownerOf(tokenId);
+      balances.token.ownerOfTokenBefore = await tokenContract.ownerOf(tokenId);
       balances.token.alice_before = (await tokenContract.balanceOf(aliceWhale.address)).toString();
       balances.token.bob_before = (await tokenContract.balanceOf(bob.address)).toString();
 
-      console.log('TOKEN ID TO TRANSFER', tokenId)
       const txTransfer = await tokenContract.connect(aliceWhale).transferFrom(aliceWhale.address, bob.address, tokenId);
       await txTransfer.wait(waitConfirmations[network.config.type]);
       
@@ -191,17 +177,16 @@ describe('Complete32ethNFT', () => {
       balances.sc2.Alice_deposit_after_3_2 = (await sc2.getDeposit(aliceWhale.address)).toString();
       balances.sc.Bob_deposit_after_3_2 = (await sc.getDeposit(bob.address)).toString();
       balances.sc2.Bob_deposit_after_3_2 = (await sc2.getDeposit(bob.address)).toString();
-       balances.token.ownerOfTokenAfter = await tokenContract.ownerOf(tokenId);
+      balances.token.ownerOfTokenAfter = await tokenContract.ownerOf(tokenId);
       balances.token.alice_after = (await tokenContract.balanceOf(aliceWhale.address)).toString();
       balances.token.bob_after = (await tokenContract.balanceOf(bob.address)).toString();
 
       expect(parseInt(balances.sc.Bob_deposit_after_3_2) - parseInt(balances.sc.Bob_deposit_before_3_2)).to.equal(amount/2)
       expect(parseInt(balances.sc.Alice_deposit_before_3_2) - parseInt(balances.sc.Alice_deposit_after_3_2)).to.equal(amount/2)
       expect(parseInt(balances.sc2.Alice_deposit_before_3_2) - parseInt(balances.sc2.Alice_deposit_after_3_2)).to.equal(0)
-       expect(balances.token.ownerOfTokenAfter).to.equal(bob.address)
-       expect(balances.token.ownerOfTokenBefore).to.equal(aliceWhale.address)
+      expect(balances.token.ownerOfTokenAfter).to.equal(bob.address)
+      expect(balances.token.ownerOfTokenBefore).to.equal(aliceWhale.address)
       expect(parseInt(balances.token.bob_after) - parseInt(balances.token.bob_before)).to.equal(1)
       expect(parseInt(balances.token.alice_before) - parseInt(balances.token.alice_after)).to.equal(1)
-      
   });
 });

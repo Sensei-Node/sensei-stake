@@ -2,7 +2,7 @@
 pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "./interfaces/deposit_contract.sol";
+import "./interfaces/IDepositContract.sol";
 import "./SenseistakeERC721.sol";
 
 // import "hardhat/console.sol";
