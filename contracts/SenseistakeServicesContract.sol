@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "./interfaces/IDepositContract.sol";
 import "./SenseistakeERC721.sol";
 
-// import "hardhat/console.sol";
+import "hardhat/console.sol";
 
 /// @title A Service contract for handling SenseiStake Validators
 /// @author Senseinode
@@ -340,20 +340,11 @@ contract SenseistakeServicesContract is Initializable {
             : 0;
 
         uint256 acceptedDeposit = msg.value - surplus;
-
         depositor = depositor_;
-
         emit Deposit(depositor_, acceptedDeposit);
 
         if (surplus > 0) {
             payable(depositor_).sendValue(surplus);
         }
-    }
-
-    /// @notice Returns min value of two provided (if equality returns first)
-    /// @param a_ The first value
-    /// @param b_ The second value
-    function _min(uint256 a_, uint256 b_) internal pure returns (uint256) {
-        return a_ <= b_ ? a_ : b_;
     }
 }

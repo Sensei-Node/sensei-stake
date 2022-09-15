@@ -5,8 +5,6 @@ require('solidity-coverage');
 const expect = chai.expect;
 const { deploymentVariables, waitConfirmations } = require("../helpers/variables");
 const { network } = require("hardhat")
-const should = chai.should();
-const EventEmitter = require("events");
 
 describe('Complete', () => {
   let owner, aliceWhale, operator, bob;
@@ -14,7 +12,6 @@ describe('Complete', () => {
   let serviceContracts = [];
 
   beforeEach(async function () {
-    emitter = new EventEmitter();
     if (network.config.type == 'hardhat') await deployments.fixture();
     [owner, aliceWhale, bob, operator] = await ethers.getSigners();
     
@@ -190,23 +187,5 @@ describe('Complete', () => {
       expect(parseInt(balances.token.alice_before) - parseInt(balances.token.alice_after)).to.equal(1)
   });
 
-  it('3. Change commission rate', async function () {
-    await expect(tokenContract.changeCommissionRate(200_000)).to.be.ok;
-    await expect(tokenContract.changeCommissionRate(0)).to.be.ok
-    await expect(tokenContract.changeCommissionRate(10)).to.be.ok
-    await expect( tokenContract.changeCommissionRate(2_000_000)).to.be.reverted
-    await expect(tokenContract.changeCommissionRate(500_000)).to.be.ok
-    await expect(tokenContract.changeCommissionRate(500_001)).to.be.reverted
-    await expect(tokenContract.changeCommissionRate(undefined)).to.be.reverted
-    await expect(tokenContract.changeCommissionRate(-1)).to.be.reverted
-  })
 
-  it('4. Change commission rate', async function () {
-    
-    
-  })
-
-  it('5. A', async function () {
-    
-  })
 });
