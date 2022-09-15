@@ -92,8 +92,10 @@ contract SenseistakeServicesContract is Initializable {
     error DepositedAmountLowerThanFullDeposit();
     error DepositNotOwned();
     error NotDepositor();
+    error NotEarlierThanOriginalDate();
     error NotEnoughBalance();
     error NotTokenContract();
+    error ValidatorNotActive();
 
     /// @notice Initializes the contract
     /// @dev Sets the commission rate, the operator address, operator data commitment and the salt
@@ -265,19 +267,12 @@ contract SenseistakeServicesContract is Initializable {
     /// @dev The exit date must be after the current exit date and it's only possible in PostDeposit state
     /// @param exitDate_ The new exit date
     function updateExitDate(uint64 exitDate_) external onlyOperator {
-<<<<<<< Updated upstream
-        require(state == State.PostDeposit, "Validator is not active");
-
-        require(exitDate_ < exitDate, "Not earlier than the original value");
-=======
         if (state != State.PostDeposit) {
-            revert ValidatorIsNotActive();
+            revert ValidatorNotActive();
         }
         if (exitDate_ < exitDate) {
             revert NotEarlierThanOriginalDate();
         }
->>>>>>> Stashed changes
-
         exitDate = exitDate_;
     }
 
