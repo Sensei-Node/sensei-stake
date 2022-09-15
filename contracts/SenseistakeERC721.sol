@@ -219,10 +219,7 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
         // tokenId is the uint256(salt)
         _safeMint(to_, uint256(salt_));
         // concatenation of base uri and id
-        _setTokenURI(
-            uint256(salt_),
-            Strings.toString(uint256(salt_))
-        );
+        _setTokenURI(uint256(salt_), Strings.toString(uint256(salt_)));
         minted[salt_] = true;
     }
 

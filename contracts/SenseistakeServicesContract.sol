@@ -37,7 +37,7 @@ contract SenseistakeServicesContract is Initializable {
     /// @notice Operator Address
     /// @return operatorAddress operator address
     address public operatorAddress;
-    
+
     /// @notice Used in conjuction with `COMMISSION_RATE_SCALE` for determining service fees
     /// @dev Is set up on the constructor and can be modified with provided setter aswell
     /// @return commissionRate the commission rate
@@ -48,7 +48,7 @@ contract SenseistakeServicesContract is Initializable {
     /// @return exitDate the exit date
     uint64 public exitDate;
 
-    /// @notice The state of the lifecyle of the service contract. This allows or forbids to make any action. 
+    /// @notice The state of the lifecyle of the service contract. This allows or forbids to make any action.
     /// @dev This uses the State enum
     /// @return state the state
     State public state;
@@ -84,9 +84,7 @@ contract SenseistakeServicesContract is Initializable {
     event DepositorChanged(address indexed from, address indexed to);
     event ServiceEnd();
     event Transfer(address indexed from, address indexed to, uint256 amount);
-    event ValidatorDeposited(
-        bytes pubkey
-    );
+    event ValidatorDeposited(bytes pubkey);
     event Withdrawal(address indexed to, uint256 value);
 
     error CommissionRateScaleExceeded(uint32 rate);
@@ -97,7 +95,7 @@ contract SenseistakeServicesContract is Initializable {
     error NotEarlierThanOriginalDate();
     error NotEnoughBalance();
     error NotTokenContract();
-    error ValidatorIsNotActive();
+    error ValidatorNotActive();
 
     /// @notice Initializes the contract
     /// @dev Sets the commission rate, the operator address, operator data commitment and the salt
@@ -269,9 +267,12 @@ contract SenseistakeServicesContract is Initializable {
     /// @dev The exit date must be after the current exit date and it's only possible in PostDeposit state
     /// @param exitDate_ The new exit date
     function updateExitDate(uint64 exitDate_) external onlyOperator {
-        if(state != State.PostDeposit){ revert ValidatorIsNotActive(); }
-        if(exitDate_ < exitDate){ revert NotEarlierThanOriginalDate(); } 
-
+        if (state != State.PostDeposit) {
+            revert ValidatorNotActive();
+        }
+        if (exitDate_ < exitDate) {
+            revert NotEarlierThanOriginalDate();
+        }
         exitDate = exitDate_;
     }
 
@@ -283,7 +284,10 @@ contract SenseistakeServicesContract is Initializable {
         if (msg.sender != tokenContractAddress) {
             revert NotTokenContract();
         }
-        require(state != State.PostDeposit, "Not allowed when validator is active");
+        require(
+            state != State.PostDeposit,
+            "Not allowed when validator is active"
+        );
         _executeWithdrawal(beneficiary_);
     }
 
@@ -312,8 +316,13 @@ contract SenseistakeServicesContract is Initializable {
     /// @param beneficiary_ who can receive the deposit
     function _executeWithdrawal(address beneficiary_) internal {
         depositor = address(0);
-        emit Withdrawal(beneficiary_, address(this).balance - operatorClaimable);
-        payable(beneficiary_).sendValue(address(this).balance - operatorClaimable);
+        emit Withdrawal(
+            beneficiary_,
+            address(this).balance - operatorClaimable
+        );
+        payable(beneficiary_).sendValue(
+            address(this).balance - operatorClaimable
+        );
         if (state == State.Withdrawn) {
             SenseistakeERC721(tokenContractAddress).burn(_salt);
         }
