@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "./interfaces/IDepositContract.sol";
 import "./SenseistakeERC721.sol";
 
-// import "hardhat/console.sol";
+import "hardhat/console.sol";
 
 /// @title A Service contract for handling SenseiStake Validators
 /// @author Senseinode
@@ -94,8 +94,10 @@ contract SenseistakeServicesContract is Initializable {
     error DepositedAmountLowerThanFullDeposit();
     error DepositNotOwned();
     error NotDepositor();
+    error NotEarlierThanOriginalDate();
     error NotEnoughBalance();
     error NotTokenContract();
+    error ValidatorIsNotActive();
 
     /// @notice Initializes the contract
     /// @dev Sets the commission rate, the operator address, operator data commitment and the salt
@@ -267,9 +269,8 @@ contract SenseistakeServicesContract is Initializable {
     /// @dev The exit date must be after the current exit date and it's only possible in PostDeposit state
     /// @param exitDate_ The new exit date
     function updateExitDate(uint64 exitDate_) external onlyOperator {
-        require(state == State.PostDeposit, "Validator is not active");
-
-        require(exitDate_ < exitDate, "Not earlier than the original value");
+        if(state != State.PostDeposit){ revert ValidatorIsNotActive(); }
+        if(exitDate_ < exitDate){ revert NotEarlierThanOriginalDate(); } 
 
         exitDate = exitDate_;
     }
@@ -330,20 +331,11 @@ contract SenseistakeServicesContract is Initializable {
             : 0;
 
         uint256 acceptedDeposit = msg.value - surplus;
-
         depositor = depositor_;
-
         emit Deposit(depositor_, acceptedDeposit);
 
         if (surplus > 0) {
             payable(depositor_).sendValue(surplus);
         }
-    }
-
-    /// @notice Returns min value of two provided (if equality returns first)
-    /// @param a_ The first value
-    /// @param b_ The second value
-    function _min(uint256 a_, uint256 b_) internal pure returns (uint256) {
-        return a_ <= b_ ? a_ : b_;
     }
 }

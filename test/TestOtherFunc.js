@@ -116,7 +116,7 @@ describe('OtherFunc', () => {
 
   })
 
-  it('4. updateExitDate', async function () {
+  it('5. updateExitDate', async function () {
     const { sc, salt } = serviceContracts[0];
     await expect(sc.updateExitDate(new Date(2025,1,0).getTime())).to.be.revertedWith("ValidatorIsNotActive()")
     const tx = await tokenContract.connect(aliceWhale).fundMultipleContracts([salt], {
@@ -137,7 +137,7 @@ describe('OtherFunc', () => {
 
   })
 
-  it('5. NonDepositor to create validator', async function () {
+  it('6. NonDepositor to create validator', async function () {
     const { sc, salt } = serviceContracts[0];
     
     const { validatorPubKey, depositSignature, depositDataRoot, exitDate } = serviceContracts[0];
@@ -151,13 +151,13 @@ describe('OtherFunc', () => {
 
   });
 
-  it('5. tokenId -> salt --> tokenId', async function () {
+  it('7. tokenId -> salt --> tokenId', async function () {
     const { salt } = serviceContracts[0];
     await expect(await tokenContract.saltToTokenId(salt)).to.be.ok
     await expect(await tokenContract.tokenIdToSalt(await tokenContract.saltToTokenId(salt))).to.be.ok
   });
 
-  it('6. getServiceContractAddress', async function () {
+  it('8. getServiceContractAddress', async function () {
     const { salt } = serviceContracts[0];
     await expect(await tokenContract.getServiceContractAddress(salt)).to.be.ok
   });
