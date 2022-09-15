@@ -311,8 +311,8 @@ contract SenseistakeServicesContract is Initializable {
     /// @param beneficiary_ who can receive the deposit
     function _executeWithdrawal(address beneficiary_) internal {
         depositor = address(0);
-        emit Withdrawal(beneficiary_, FULL_DEPOSIT_SIZE);
-        payable(beneficiary_).sendValue(FULL_DEPOSIT_SIZE);
+        emit Withdrawal(beneficiary_, address(this).balance - operatorClaimable);
+        payable(beneficiary_).sendValue(address(this).balance - operatorClaimable);
         if (state == State.Withdrawn) {
             SenseistakeERC721(tokenContractAddress).burn(_salt);
         }

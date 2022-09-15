@@ -72,7 +72,7 @@ module.exports.deployServiceContract = async (deployments, upgrades, run, jwt) =
 
     const depositData = createOperatorDepositData(operatorPrivKey, contractAddress, network.config.type);
 
-    const exitDate = BigNumber.from(new Date(2024, 0, 1).getTime());
+    const exitDate = BigNumber.from(new Date(2024, 0, 1).getTime() / 1000);
     console.log('exit date dec:', exitDate.toString(), '- bignum:', exitDate)
 
     let commitment = createOperatorCommitment(
@@ -151,9 +151,11 @@ module.exports.deployServiceContract = async (deployments, upgrades, run, jwt) =
     }
 
     // store keystore in keystores directory
-    const _date = parseInt((new Date().getTime()) / 1000);
-    const keystoreName = `keystore-m_12381_3600_${index-1}_0_0-${_date}.json`
-    fs.writeFileSync(__dirname + `/../keystores/${keystoreName}`, JSON.stringify(keystore));
+    if (['testnet', 'mainnet'].includes(network.config.type)) {
+        const _date = parseInt((new Date().getTime()) / 1000);
+        const keystoreName = `keystore-m_12381_3600_${index-1}_0_0-${_date}.json`
+        fs.writeFileSync(__dirname + `/../keystores/${keystoreName}`, JSON.stringify(keystore));
+    }
 
     await save('SenseistakeServicesContract'+index, proxyDeployments);
     await save('ServiceContractSalt'+index, {address: `0x${saltBytes.toString("hex")}`});

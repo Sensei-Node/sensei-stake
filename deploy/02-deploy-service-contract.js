@@ -37,7 +37,9 @@ module.exports = async ({deployments, upgrades, run}) => {
         console.log("-- EOF --\n")
     }  
     
-    fs.writeFileSync(__dirname + `/../keystores/validator_public_keys.json`, JSON.stringify(validatorPublicKeys));
+    if (['testnet', 'mainnet'].includes(network.config.type)) {
+        fs.writeFileSync(__dirname + `/../keystores/validator_public_keys.json`, JSON.stringify(validatorPublicKeys));
+    }
 }
 
 module.exports.tags = ["all", "service-contract"]

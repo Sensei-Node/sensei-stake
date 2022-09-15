@@ -11,14 +11,15 @@
 
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+// import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "../interfaces/IDepositContract.sol";
 
 // This is a rewrite of the Vyper Eth2.0 deposit contract in Solidity.
 // It tries to stay as close as possible to the original source code.
 /// @notice This is the Ethereum 2.0 deposit contract interface.
 /// For more information see the Phase 0 specification under https://github.com/ethereum/eth2.0-specs
-contract DepositContract is IDepositContract, IERC165 {
+contract DepositContract is IDepositContract, Ownable {
     uint256 constant DEPOSIT_CONTRACT_TREE_DEPTH = 32;
     // NOTE: this also ensures `deposit_count` will fit into 64-bits
     uint256 constant MAX_DEPOSIT_COUNT = 2**DEPOSIT_CONTRACT_TREE_DEPTH - 1;
@@ -27,6 +28,8 @@ contract DepositContract is IDepositContract, IERC165 {
     uint256 deposit_count;
 
     bytes32[DEPOSIT_CONTRACT_TREE_DEPTH] zero_hashes;
+
+    address private _depositor; // ADDED BY SENSEISTAKE
 
     constructor() {
         // Compute hashes in empty sparse Merkle tree
@@ -40,32 +43,32 @@ contract DepositContract is IDepositContract, IERC165 {
             );
     }
 
-    function get_deposit_root() external view override returns (bytes32) {
-        bytes32 node;
-        uint256 size = deposit_count;
-        for (
-            uint256 height = 0;
-            height < DEPOSIT_CONTRACT_TREE_DEPTH;
-            height++
-        ) {
-            if ((size & 1) == 1)
-                node = sha256(abi.encodePacked(branch[height], node));
-            else node = sha256(abi.encodePacked(node, zero_hashes[height]));
-            size /= 2;
-        }
-        return
-            sha256(
-                abi.encodePacked(
-                    node,
-                    to_little_endian_64(uint64(deposit_count)),
-                    bytes24(0)
-                )
-            );
-    }
+    // function get_deposit_root() external view override returns (bytes32) {
+    //     bytes32 node;
+    //     uint256 size = deposit_count;
+    //     for (
+    //         uint256 height = 0;
+    //         height < DEPOSIT_CONTRACT_TREE_DEPTH;
+    //         height++
+    //     ) {
+    //         if ((size & 1) == 1)
+    //             node = sha256(abi.encodePacked(branch[height], node));
+    //         else node = sha256(abi.encodePacked(node, zero_hashes[height]));
+    //         size /= 2;
+    //     }
+    //     return
+    //         sha256(
+    //             abi.encodePacked(
+    //                 node,
+    //                 to_little_endian_64(uint64(deposit_count)),
+    //                 bytes24(0)
+    //             )
+    //         );
+    // }
 
-    function get_deposit_count() external view override returns (bytes memory) {
-        return to_little_endian_64(uint64(deposit_count));
-    }
+    // function get_deposit_count() external view override returns (bytes memory) {
+    //     return to_little_endian_64(uint64(deposit_count));
+    // }
 
     function deposit(
         bytes calldata pubkey,
@@ -133,6 +136,8 @@ contract DepositContract is IDepositContract, IERC165 {
             "DepositContract: merkle tree full"
         );
 
+        _depositor = bytesToAddress(withdrawal_credentials[12:]); // ADDED BY SENSEISTAKE
+
         // Add deposit data root to Merkle tree (update a single `branch` node)
         deposit_count += 1;
         uint256 size = deposit_count;
@@ -153,16 +158,16 @@ contract DepositContract is IDepositContract, IERC165 {
         assert(false);
     }
 
-    function supportsInterface(bytes4 interfaceId)
-        external
-        pure
-        override
-        returns (bool)
-    {
-        return
-            interfaceId == type(IERC165).interfaceId ||
-            interfaceId == type(IDepositContract).interfaceId;
-    }
+    // function supportsInterface(bytes4 interfaceId)
+    //     external
+    //     pure
+    //     override
+    //     returns (bool)
+    // {
+    //     return
+    //         interfaceId == type(IERC165).interfaceId ||
+    //         interfaceId == type(IDepositContract).interfaceId;
+    // }
 
     function to_little_endian_64(uint64 value)
         internal
@@ -182,10 +187,31 @@ contract DepositContract is IDepositContract, IERC165 {
         ret[7] = bytesValue[0];
     }
 
-    function withdrawAll() external payable {
+    // ADDED BY SENSEISTAKE (all functions below this point)
+
+    /// @notice withdraw allowed only for contract owner
+    function withdrawAllToOwner() external payable onlyOwner {
         (bool sent, ) = payable(msg.sender).call{value: address(this).balance}(
             ""
         );
         require(sent, "Failed to send Ether");
     }
+
+    /// @notice withdraw to depositor
+    function withdrawAllToDepositor() external payable {
+        (bool sent, ) = payable(_depositor).call{value: address(this).balance}(
+            ""
+        );
+        require(sent, "Failed to send Ether");
+    }
+
+    /// @notice convert withdrawal address bytes to wallet address
+    function bytesToAddress(bytes memory bys) private pure returns (address addr) {
+        assembly {
+            addr := mload(add(bys,20))
+        } 
+    }
+
+    /// @notice allow receive to simulate earnings
+    receive() external payable {}
 }
