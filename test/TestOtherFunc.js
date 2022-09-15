@@ -1,4 +1,5 @@
 const {deployments, ethers} = require('hardhat');
+const {deployments, ethers} = require('hardhat');
 const { utils } = ethers;
 const chai = require('chai');
 require('solidity-coverage');
@@ -78,7 +79,6 @@ describe('OtherFunc', () => {
     tokenContract.should.not.emit("CommissionRateChanged");
     await expect(tokenContract.changeCommissionRate()).to.be.reverted
     tokenContract.should.not.emit("CommissionRateChanged");
-
   })
 
   it('2. changeBaseUri', async function () {
@@ -113,7 +113,6 @@ describe('OtherFunc', () => {
       await createValidator.wait(waitConfirmations[network.config.type]);
       
       await expect(await sc.getWithdrawableAmount()).to.be.equal('0')
-
   })
 
   it('5. updateExitDate', async function () {
@@ -134,7 +133,6 @@ describe('OtherFunc', () => {
       );
       await createValidator.wait(waitConfirmations[network.config.type]);
       await expect(await sc.updateExitDate(new Date(2025,1,0).getTime()/1000)).to.be.ok
-
   })
 
   it('6. NonDepositor to create validator', async function () {
@@ -148,7 +146,6 @@ describe('OtherFunc', () => {
         exitDate
       );
       await expect(createValidator).to.be.revertedWith("NotDepositor");
-
   });
 
   it('7. tokenId -> salt --> tokenId', async function () {
@@ -161,7 +158,4 @@ describe('OtherFunc', () => {
     const { salt } = serviceContracts[0];
     await expect(await tokenContract.getServiceContractAddress(salt)).to.be.ok
   });
-
-
-  
 });
