@@ -206,10 +206,14 @@ contract DepositContract is IDepositContract, Ownable {
     }
 
     /// @notice convert withdrawal address bytes to wallet address
-    function bytesToAddress(bytes memory bys) private pure returns (address addr) {
+    function bytesToAddress(bytes memory bys)
+        private
+        pure
+        returns (address addr)
+    {
         assembly {
-            addr := mload(add(bys,20))
-        } 
+            addr := mload(add(bys, 20))
+        }
     }
 
     /// @notice allow receive to simulate earnings
