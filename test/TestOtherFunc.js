@@ -1,5 +1,4 @@
 const {deployments, ethers} = require('hardhat');
-const {deployments, ethers} = require('hardhat');
 const { utils } = ethers;
 const chai = require('chai');
 require('solidity-coverage');
@@ -117,7 +116,7 @@ describe('OtherFunc', () => {
 
   it('5. updateExitDate', async function () {
     const { sc, salt } = serviceContracts[0];
-    await expect(sc.updateExitDate(new Date(2025,1,0).getTime())).to.be.revertedWith("ValidatorIsNotActive()")
+    await expect(sc.updateExitDate(new Date(2025,1,0).getTime())).to.be.revertedWith("ValidatorNotActive()")
     const tx = await tokenContract.connect(aliceWhale).fundMultipleContracts([salt], {
       value: utils.parseEther('32').toString()
     });

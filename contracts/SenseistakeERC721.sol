@@ -9,8 +9,6 @@ import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "./SenseistakeServicesContract.sol";
 
-// import "hardhat/console.sol";
-
 /// @title An ERC721 contract for handling SenseiStake Services
 /// @author Senseinode
 /// @notice Serves as entrypoint for SenseiStake
@@ -310,6 +308,12 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
         }
     }
 
+    /// @notice IPFS base uri
+    /// @dev Base URI for computing {tokenURI}. If set, the resulting URI for each token will be the concatenation of the `baseURI` and the `tokenId`.
+    function _baseURI() internal view virtual override returns (string memory) {
+        return _baseURI_;
+    }
+
     /// @notice For removing ownership of an NFT from a wallet address
     /// @param tokenId_ Is the uint256 casted salt
     function _burn(uint256 tokenId_)
@@ -324,11 +328,5 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
     /// @param b_ The second value
     function _min(uint256 a_, uint256 b_) internal pure returns (uint256) {
         return a_ <= b_ ? a_ : b_;
-    }
-
-    /// @notice IPFS base uri
-    /// @dev Base URI for computing {tokenURI}. If set, the resulting URI for each token will be the concatenation of the `baseURI` and the `tokenId`.
-    function _baseURI() internal view virtual override returns (string memory) {
-        return _baseURI_;
     }
 }

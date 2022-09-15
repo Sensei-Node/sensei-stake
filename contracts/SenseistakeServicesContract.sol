@@ -5,8 +5,6 @@ import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import "./interfaces/IDepositContract.sol";
 import "./SenseistakeERC721.sol";
 
-import "hardhat/console.sol";
-
 /// @title A Service contract for handling SenseiStake Validators
 /// @author Senseinode
 /// @notice A service contract is where the deposits of a client are managed and all validator related tasks are performed. The ERC721 contract is the entrypoint for a client deposit, from there it is separeted into 32ETH chunks and then sent to different service contracts.

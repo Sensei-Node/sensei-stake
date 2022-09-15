@@ -11,7 +11,6 @@
 
 pragma solidity ^0.8.0;
 
-// import "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "../interfaces/IDepositContract.sol";
 
@@ -42,33 +41,6 @@ contract DepositContract is IDepositContract, Ownable {
                 abi.encodePacked(zero_hashes[height], zero_hashes[height])
             );
     }
-
-    // function get_deposit_root() external view override returns (bytes32) {
-    //     bytes32 node;
-    //     uint256 size = deposit_count;
-    //     for (
-    //         uint256 height = 0;
-    //         height < DEPOSIT_CONTRACT_TREE_DEPTH;
-    //         height++
-    //     ) {
-    //         if ((size & 1) == 1)
-    //             node = sha256(abi.encodePacked(branch[height], node));
-    //         else node = sha256(abi.encodePacked(node, zero_hashes[height]));
-    //         size /= 2;
-    //     }
-    //     return
-    //         sha256(
-    //             abi.encodePacked(
-    //                 node,
-    //                 to_little_endian_64(uint64(deposit_count)),
-    //                 bytes24(0)
-    //             )
-    //         );
-    // }
-
-    // function get_deposit_count() external view override returns (bytes memory) {
-    //     return to_little_endian_64(uint64(deposit_count));
-    // }
 
     function deposit(
         bytes calldata pubkey,
@@ -157,17 +129,6 @@ contract DepositContract is IDepositContract, Ownable {
         // this code should be unreachable. We assert `false` just to be safe.
         assert(false);
     }
-
-    // function supportsInterface(bytes4 interfaceId)
-    //     external
-    //     pure
-    //     override
-    //     returns (bool)
-    // {
-    //     return
-    //         interfaceId == type(IERC165).interfaceId ||
-    //         interfaceId == type(IDepositContract).interfaceId;
-    // }
 
     function to_little_endian_64(uint64 value)
         internal
