@@ -141,7 +141,7 @@ module.exports.deployServiceContract = async (deployments, upgrades, run, jwt) =
                     network: network.config.name,
                     salt: `0x${saltBytes.toString("hex")}`,
                     onQueue: true,
-                    tokenId: tokenId,
+                    tokenId: tokenId.toString(),
                 }, { headers: { authorization: `Bearer ${jwt}` }});
             } catch (err) {
                 console.error(err);
