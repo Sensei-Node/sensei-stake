@@ -2,14 +2,16 @@
 pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
-import "./interfaces/IDepositContract.sol";
-import "./SenseistakeERC721.sol";
+import {IDepositContract} from "./interfaces/IDepositContract.sol";
+import {SenseistakeERC721} from "./SenseistakeERC721.sol";
 
 /// @title A Service contract for handling SenseiStake Validators
 /// @author Senseinode
 /// @notice A service contract is where the deposits of a client are managed and all validator related tasks are performed. The ERC721 contract is the entrypoint for a client deposit, from there it is separeted into 32ETH chunks and then sent to different service contracts.
 /// @dev This contract is the implementation for the proxy factory clones that are made on ERC721 contract function (createContract) (an open zeppelin solution to create the same contract multiple times with gas optimization). The openzeppelin lib: https://docs.openzeppelin.com/contracts/4.x/api/proxy#Clone
 contract SenseistakeServicesContract is Initializable {
+    using Address for address payable;
+
     /// @notice The life cycle of a services contract.
     enum State {
         NotInitialized,
@@ -18,42 +20,30 @@ contract SenseistakeServicesContract is Initializable {
         Withdrawn
     }
 
-    using Address for address payable;
-
-    /// @notice Max second in exit queue, used when a user calls endOperatorServices
-    uint256 private constant MAX_SECONDS_IN_EXIT_QUEUE = 360 days;
-
-    /// @notice Scale for getting the commission rate (service fee)
-    uint32 private constant COMMISSION_RATE_SCALE = 1_000_000;
-
-    /// @notice Fixed amount of the deposit
-    uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
-
-    /// @notice The salt used to create this contract using the proxy clone
-    bytes32 public salt;
-
-    /// @notice Operator Address
-    /// @return operatorAddress operator address
-    address public operatorAddress;
-
     /// @notice Used in conjuction with `COMMISSION_RATE_SCALE` for determining service fees
     /// @dev Is set up on the constructor and can be modified with provided setter aswell
     /// @return commissionRate the commission rate
     uint32 public commissionRate;
+
+    /// @notice Scale for getting the commission rate (service fee)
+    uint32 private constant COMMISSION_RATE_SCALE = 1_000_000;
 
     /// @notice Used for determining from when the user deposit can be withdrawn.
     /// @dev The call of endOperatorServices function is the first step to withdraw the deposit. It changes the state to Withdrawn
     /// @return exitDate the exit date
     uint64 public exitDate;
 
-    /// @notice The state of the lifecyle of the service contract. This allows or forbids to make any action.
-    /// @dev This uses the State enum
-    /// @return state the state
-    State public state;
-
     /// @notice This is the hash created in the deployment to create the validator
     /// @return state the operator data commitment
     bytes32 public operatorDataCommitment;
+
+    // TODO REMOVE IT
+    /// @notice The salt used to create this contract using the proxy clone
+    bytes32 public salt;
+
+    /// @notice Operator Address
+    /// @return operatorAddress operator address
+    address public operatorAddress;
 
     /// @notice The amount of eth the operator can claim
     /// @return state the operator claimable amount (in eth)
@@ -71,11 +61,16 @@ contract SenseistakeServicesContract is Initializable {
     /// @return depositor the address of the depositor
     address public depositor;
 
-    /// @notice Only the operator access.
-    modifier onlyOperator() {
-        require(msg.sender == operatorAddress, "Caller is not the operator");
-        _;
-    }
+    /// @notice Fixed amount of the deposit
+    uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
+
+    /// @notice Max second in exit queue, used when a user calls endOperatorServices
+    uint256 private constant MAX_SECONDS_IN_EXIT_QUEUE = 360 days;
+
+    /// @notice The state of the lifecyle of the service contract. This allows or forbids to make any action.
+    /// @dev This uses the State enum
+    /// @return state the state
+    State public state;
 
     event Claim(address receiver, uint256 amount);
     event Deposit(address from, uint256 amount);
@@ -94,6 +89,27 @@ contract SenseistakeServicesContract is Initializable {
     error NotEnoughBalance();
     error NotTokenContract();
     error ValidatorNotActive();
+
+    /// @notice Only the operator access.
+    modifier onlyOperator() {
+        require(msg.sender == operatorAddress, "Caller is not the operator");
+        _;
+    }
+
+    /// @notice Initializes the contract
+    /// @dev Sets the eth deposit contract address
+    /// @param ethDepositContractAddress_ The eth deposit contract address for creating validator
+    constructor(address ethDepositContractAddress_) {
+        tokenContractAddress = msg.sender;
+        depositContractAddress = ethDepositContractAddress_;
+    }
+
+    /// @notice This is the receive function called when a user performs a transfer to this contract address
+    receive() external payable {
+        if (state == State.PreDeposit) {
+            revert("Plain Ether transfer not allowed");
+        }
+    }
 
     /// @notice Initializes the contract
     /// @dev Sets the commission rate, the operator address, operator data commitment and the salt
@@ -115,13 +131,6 @@ contract SenseistakeServicesContract is Initializable {
         operatorAddress = operatorAddress_;
         operatorDataCommitment = operatorDataCommitment_;
         salt = salt_;
-    }
-
-    /// @notice This is the receive function called when a user performs a transfer to this contract address
-    receive() external payable {
-        if (state == State.PreDeposit) {
-            revert("Plain Ether transfer not allowed");
-        }
     }
 
     /// @notice Used for handling client deposits
@@ -233,32 +242,6 @@ contract SenseistakeServicesContract is Initializable {
         }
 
         return claimable;
-    }
-
-    /// @notice This sets the deposit contract address. This action could made once.
-    /// @param ethDepositContractAddress_ The new deposit contract address
-    function setEthDepositContractAddress(address ethDepositContractAddress_)
-        external
-        onlyOperator
-    {
-        require(
-            depositContractAddress == address(0),
-            "Already set up ETH deposit contract address"
-        );
-        depositContractAddress = ethDepositContractAddress_;
-    }
-
-    /// @notice  This sets the erc721 token address. This action could made once.
-    /// @param tokenContractAddress_ The new erc721 address
-    function setTokenContractAddress(address tokenContractAddress_)
-        external
-        onlyOperator
-    {
-        require(
-            tokenContractAddress == address(0),
-            "Already set up token contract address"
-        );
-        tokenContractAddress = tokenContractAddress_;
     }
 
     /// @notice For updating the exitDate

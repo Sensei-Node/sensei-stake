@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
-import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/Strings.sol";
-import "@openzeppelin/contracts/proxy/Clones.sol";
-import "@openzeppelin/contracts/utils/Address.sol";
-import "./SenseistakeServicesContract.sol";
+import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
+import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {SenseistakeServicesContract} from "./SenseistakeServicesContract.sol";
 
 /// @title An ERC721 contract for handling SenseiStake Services
 /// @author Senseinode
@@ -16,16 +18,29 @@ import "./SenseistakeServicesContract.sol";
 contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
     using Address for address;
     using Address for address payable;
+    using Counters for Counters.Counter;
+
+    /// @notice Struct that specifies values that a service contract needs for creation
+    struct Validator {
+        uint256 salt;
+        bytes32 operatorDataCommitment;
+    }
 
     /// @notice Used in conjuction with `COMMISSION_RATE_SCALE` for determining service fees
     /// @dev Is set up on the constructor and can be modified with provided setter aswell
     /// @return commissionRate the commission rate
     uint32 public commissionRate;
 
+    /// @notice Scale for getting the commission rate (service fee)
+    uint32 private constant COMMISSION_RATE_SCALE = 1_000_000;
+
     /// @notice Template service contract implementation address
     /// @dev It is used for generating clones, using hardhats proxy clone
     /// @return servicesContractImpl where the service contract template is implemented
-    address payable public servicesContractImpl;
+    address public servicesContractImpl;
+
+    // TODO add docs
+    mapping(uint256 => Validator) public validators;
 
     /// @notice IPFS base uri
     string public _baseURI_ =
@@ -34,12 +49,12 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
     /// @notice Fixed amount of the deposit
     uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
 
-    /// @notice Scale for getting the commission rate (service fee)
-    uint32 private constant COMMISSION_RATE_SCALE = 1_000_000;
-
     /// @notice Determines if a certain tokenId was minted
     /// @dev For allowing only a single mint per service contract
     mapping(bytes32 => bool) private minted;
+
+    // TODO add docs
+    Counters.Counter private _tokenIdCounter;
 
     event CommissionRateChanged(uint32 newCommissionRate);
     event ContractCreated(bytes32 create2Salt);
@@ -62,18 +77,22 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
     /// @param name_ The token name
     /// @param symbol_ The token symbol
     /// @param commissionRate_ The service commission rate
+    /// @param commissionRate_ The service commission rate
     constructor(
         string memory name_,
         string memory symbol_,
-        uint32 commissionRate_
+        uint32 commissionRate_,
+        address ethDepositContractAddress_
     ) ERC721(name_, symbol_) {
         if (commissionRate_ > (COMMISSION_RATE_SCALE / 2)) {
             revert CommisionRateTooHigh(commissionRate_);
         }
         commissionRate = commissionRate_;
         emit CommissionRateChanged(commissionRate_);
-        servicesContractImpl = payable(new SenseistakeServicesContract());
-        SenseistakeServicesContract(servicesContractImpl).initialize(
+        servicesContractImpl = address(
+            new SenseistakeServicesContract(ethDepositContractAddress_)
+        );
+        SenseistakeServicesContract(payable(servicesContractImpl)).initialize(
             0,
             address(0),
             "",
@@ -126,8 +145,6 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
             revert ValueSentGreaterThanFullDeposit();
         }
 
-        // TODO: verify operatorDataCommitment with signatures;
-
         bytes memory initData = abi.encodeWithSignature(
             "initialize(uint32,address,bytes32,bytes32)",
             commissionRate,
@@ -175,7 +192,7 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
                     serviceContract.state() ==
                     SenseistakeServicesContract.State.PreDeposit
                 ) {
-                    uint256 depositAmount = _min(
+                    uint256 depositAmount = Math.min(
                         remaining,
                         FULL_DEPOSIT_SIZE - address(serviceContract).balance
                     );
@@ -232,7 +249,7 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
         SenseistakeServicesContract serviceContract = SenseistakeServicesContract(
                 payable(proxy)
             );
-        if (msg.sender != serviceContract.depositor()) {
+        if (msg.sender != ownerOf(tokenId_)) {
             revert NotOwner();
         }
         serviceContract.withdrawTo(payable(msg.sender));
@@ -248,28 +265,6 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
         returns (address)
     {
         return Clones.predictDeterministicAddress(servicesContractImpl, salt_);
-    }
-
-    /// @notice Casts bytes32 salt to uint256 tokenId
-    /// @param salt_ Is the service contract salt
-    /// @return tokenId Is the salt casted to uint256
-    function saltToTokenId(bytes32 salt_)
-        external
-        pure
-        returns (uint256 tokenId)
-    {
-        tokenId = uint256(salt_);
-    }
-
-    /// @notice Casts uint256 tokenId to bytes32 salt
-    /// @param tokenId_ Is the uint256 casted salt
-    /// @return salt Is the tokenId casted to bytes32
-    function tokenIdToSalt(uint256 tokenId_)
-        external
-        pure
-        returns (bytes32 salt)
-    {
-        salt = bytes32(tokenId_);
     }
 
     /// @notice Gets token uri where the metadata of NFT is stored
@@ -321,12 +316,5 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
         override(ERC721, ERC721URIStorage)
     {
         super._burn(tokenId_);
-    }
-
-    /// @notice Returns min value of two provided (if equality returns first)
-    /// @param a_ The first value
-    /// @param b_ The second value
-    function _min(uint256 a_, uint256 b_) internal pure returns (uint256) {
-        return a_ <= b_ ? a_ : b_;
     }
 }
