@@ -10,7 +10,7 @@ module.exports = async ({
     const { deploy, log } = deployments;
     const [deployer] = await ethers.getSigners();
 
-    const args = [];
+    const args = [ethers.constants.AddressZero];
 
     const senseistakeService = await deploy("SenseistakeServicesContract", {
         contract: "SenseistakeServicesContract",

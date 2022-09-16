@@ -2,7 +2,6 @@
 pragma solidity 0.8.4;
 
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import {ERC721URIStorage} from "@openzeppelin/contracts/token/ERC721/extensions/ERC721URIStorage.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
@@ -14,16 +13,19 @@ import {SenseistakeServicesContract} from "./SenseistakeServicesContract.sol";
 /// @title An ERC721 contract for handling SenseiStake Services
 /// @author Senseinode
 /// @notice Serves as entrypoint for SenseiStake
-/// @dev Serves as entrypoint for creating service contracts, depositing, withdrawing and dealing with non fungible token. Inherits the OpenZepplin ERC721, ERC721URIStorage and Ownable implentation
-contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
+/// @dev Serves as entrypoint for creating service contracts, depositing, withdrawing and dealing with non fungible token. Inherits the OpenZepplin ERC721 and Ownable implentation
+contract SenseistakeERC721 is ERC721, Ownable {
     using Address for address;
     using Address for address payable;
     using Counters for Counters.Counter;
 
     /// @notice Struct that specifies values that a service contract needs for creation
+    /// @dev The token id for uniqueness proxy implementation generation and the operatorDataCommitment for the validator
     struct Validator {
-        uint256 salt;
-        bytes32 operatorDataCommitment;
+        bytes validatorPubKey;
+        bytes depositSignature;
+        bytes32 depositDataRoot;
+        uint64 exitDate;
     }
 
     /// @notice Used in conjuction with `COMMISSION_RATE_SCALE` for determining service fees
@@ -39,7 +41,7 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
     /// @return servicesContractImpl where the service contract template is implemented
     address public servicesContractImpl;
 
-    // TODO add docs
+    /// @notice Stores data used for creating the validator
     mapping(uint256 => Validator) public validators;
 
     /// @notice IPFS base uri
@@ -49,15 +51,11 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
     /// @notice Fixed amount of the deposit
     uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
 
-    /// @notice Determines if a certain tokenId was minted
-    /// @dev For allowing only a single mint per service contract
-    mapping(bytes32 => bool) private minted;
-
-    // TODO add docs
+    /// @notice Current tokenId that needs to be minted
     Counters.Counter private _tokenIdCounter;
 
     event CommissionRateChanged(uint32 newCommissionRate);
-    event ContractCreated(bytes32 create2Salt);
+    event ContractCreated(uint256 tokenIdServiceContract);
     event ServiceContractDeposit(address indexed serviceContract);
     event ServiceImplementationChanged(
         address newServiceContractImplementationAdddress
@@ -69,7 +67,7 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
     error NotOwner();
     error SafeMintAlreadyMade();
     error SafeMintInvalid();
-    error ValueSentGreaterThanFullDeposit();
+    error ValueSentDifferentThanFullDeposit();
     error ValueSentLowerThanMinimumDeposit();
 
     /// @notice Initializes the contract
@@ -95,24 +93,36 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
         SenseistakeServicesContract(payable(servicesContractImpl)).initialize(
             0,
             address(0),
+            0,
+            "000000000000000000000000000000000000000000000000",
+            "000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
             "",
-            ""
+            0
         );
         emit ServiceImplementationChanged(address(servicesContractImpl));
     }
 
-    /// @notice Burns minted NFT
-    /// @dev Can only be called from any of our service contracts
-    /// @param salt_ Salt used for getting the service contract address
-    function burn(bytes32 salt_) external {
-        // verify that caller is a service contract
-        if (
-            msg.sender !=
-            Clones.predictDeterministicAddress(servicesContractImpl, salt_)
-        ) {
-            revert BurnInvalid();
-        }
-        _burn(uint256(salt_));
+    /// @notice Adds validator info to validators mapping
+    /// @dev Stores the tokenId and operatorDataCommitment used for generating new service contract
+    /// @param tokenId_ the token Id
+    /// @param validatorPubKey_ the validator public key
+    /// @param depositSignature_ the deposit_data.json signature
+    /// @param depositDataRoot_ the deposit_data.json data root
+    /// @param exitDate_ the exit date
+    function addValidator(
+        uint256 tokenId_,
+        bytes calldata validatorPubKey_,
+        bytes calldata depositSignature_,
+        bytes32 depositDataRoot_,
+        uint64 exitDate_
+    ) external onlyOwner {
+        Validator memory validator = Validator(
+            validatorPubKey_,
+            depositSignature_,
+            depositDataRoot_,
+            exitDate_
+        );
+        validators[tokenId_] = validator;
     }
 
     /// @notice Changes ipfs base uri
@@ -134,114 +144,58 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
 
     /// @notice Creates service contract based on implementation
     /// @dev Performs a clone of the implementation contract, a service contract handles logic for managing user deposit, withdraw and validator
-    /// @param salt_ Service contract salt
-    /// @param operatorDataCommitment_ Operator data commitment
-    function createContract(bytes32 salt_, bytes32 operatorDataCommitment_)
-        external
-        payable
-        onlyOwner
-    {
-        if (msg.value > FULL_DEPOSIT_SIZE) {
-            revert ValueSentGreaterThanFullDeposit();
+    function createContract() external payable {
+        if (msg.value != FULL_DEPOSIT_SIZE) {
+            revert ValueSentDifferentThanFullDeposit();
         }
 
+        // increment tokenid counter
+        _tokenIdCounter.increment();
+        uint256 tokenId = _tokenIdCounter.current();
+        Validator memory validator = validators[tokenId];
+
+        // TODO: validar que validator exista
+
         bytes memory initData = abi.encodeWithSignature(
-            "initialize(uint32,address,bytes32,bytes32)",
+            "initialize(uint32,address,uint256,bytes,bytes,bytes32,uint64)",
             commissionRate,
             owner(),
-            operatorDataCommitment_,
-            salt_
+            tokenId,
+            validator.validatorPubKey,
+            validator.depositSignature,
+            validator.depositDataRoot,
+            validator.exitDate
         );
 
-        address proxy = Clones.cloneDeterministic(servicesContractImpl, salt_);
+        address proxy = Clones.cloneDeterministic(
+            servicesContractImpl,
+            bytes32(tokenId)
+        );
         if (initData.length > 0) {
             (bool success, ) = proxy.call(initData);
             require(success, "Proxy init failed");
         }
-        emit ContractCreated(salt_);
+        emit ContractCreated(tokenId);
 
-        if (msg.value > 0) {
-            SenseistakeServicesContract(payable(proxy)).depositFrom{
-                value: msg.value
-            }(msg.sender);
-        }
+        // deposit to service contract
+        SenseistakeServicesContract(payable(proxy)).depositFrom{
+            value: msg.value
+        }(msg.sender);
+
+        // create validator
+        SenseistakeServicesContract(payable(proxy)).createValidator();
+
+        // mint the NFT
+        _safeMint(msg.sender, tokenId);
     }
 
-    /// @notice Allows deposits into different service contracts
-    /// @dev According to salts and `msg.value` provided it will be performing deposits up untill no more ether left (or salts)
-    /// @param salts_ Salts that derive in service contracts addresses
-    function fundMultipleContracts(bytes32[] calldata salts_) external payable {
-        if (msg.value < FULL_DEPOSIT_SIZE) {
-            revert ValueSentLowerThanMinimumDeposit();
+    /// @notice Allows user to start the withdrawal process
+    /// @dev Calls end operator services in service contract
+    /// @param tokenId_ the token id to end
+    function endOperatorServices(uint256 tokenId_) external {
+        if (msg.sender != ownerOf(tokenId_)) {
+            revert NotOwner();
         }
-
-        uint256 remaining = msg.value;
-        uint8 saltsLen = uint8(salts_.length);
-
-        for (uint8 i; i < saltsLen; ) {
-            if (remaining == 0) break;
-            address proxy = Clones.predictDeterministicAddress(
-                servicesContractImpl,
-                bytes32(salts_[i])
-            );
-            if (proxy.isContract()) {
-                SenseistakeServicesContract serviceContract = SenseistakeServicesContract(
-                        payable(proxy)
-                    );
-                if (
-                    serviceContract.state() ==
-                    SenseistakeServicesContract.State.PreDeposit
-                ) {
-                    uint256 depositAmount = Math.min(
-                        remaining,
-                        FULL_DEPOSIT_SIZE - address(serviceContract).balance
-                    );
-                    if (depositAmount != 0) {
-                        serviceContract.depositFrom{value: depositAmount}(
-                            msg.sender
-                        );
-                        remaining -= depositAmount;
-                        emit ServiceContractDeposit(address(serviceContract));
-                    }
-                }
-            }
-            unchecked {
-                ++i;
-            }
-        }
-
-        if (remaining > 0) {
-            payable(msg.sender).sendValue(remaining);
-        }
-    }
-
-    /// @notice Mints a new NFT
-    /// @dev Can only be called once, and only from any of our service contracts
-    /// @param to_ Address to mint to
-    /// @param salt_ Salt used for getting the service contract address
-    function safeMint(address to_, bytes32 salt_) external {
-        // if a safeMint -> burn -> safeMint cycle can be made unless this check added
-        if (minted[salt_] == true) {
-            revert SafeMintAlreadyMade();
-        }
-        // verify that caller is a service contract
-        if (
-            msg.sender !=
-            Clones.predictDeterministicAddress(servicesContractImpl, salt_)
-        ) {
-            revert SafeMintInvalid();
-        }
-        // tokenId is the uint256(salt)
-        _safeMint(to_, uint256(salt_));
-        // concatenation of base uri and id
-        _setTokenURI(uint256(salt_), Strings.toString(uint256(salt_)));
-        minted[salt_] = true;
-    }
-
-    /// @notice Performs withdraw of balance in service contract
-    /// @dev The `tokenId_` is a cast of the salt, and thus we can access the service contract from which the owner can perform a withdraw (if possible)
-    /// @param tokenId_ Is the salt casted to uint256
-    function withdraw(uint256 tokenId_) external {
         address proxy = Clones.predictDeterministicAddress(
             servicesContractImpl,
             bytes32(tokenId_)
@@ -249,58 +203,53 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
         SenseistakeServicesContract serviceContract = SenseistakeServicesContract(
                 payable(proxy)
             );
+        serviceContract.endOperatorServices();
+    }
+
+    /// @notice Performs withdraw of balance in service contract
+    /// @dev The `tokenId_` is used for deterining the the service contract from which the owner can perform a withdraw (if possible)
+    /// @param tokenId_ Is the token Id
+    function withdraw(uint256 tokenId_) external {
         if (msg.sender != ownerOf(tokenId_)) {
             revert NotOwner();
         }
+        address proxy = Clones.predictDeterministicAddress(
+            servicesContractImpl,
+            bytes32(tokenId_)
+        );
+        SenseistakeServicesContract serviceContract = SenseistakeServicesContract(
+                payable(proxy)
+            );
         serviceContract.withdrawTo(payable(msg.sender));
+        _burn(tokenId_);
     }
 
     /// @notice Gets service contract address
-    /// @dev For getting the service contract address of a given salt
-    /// @param salt_ Is the service contract salt
+    /// @dev For getting the service contract address of a given token id
+    /// @param tokenId_ Is the token id
     /// @return Address of a service contract
-    function getServiceContractAddress(bytes32 salt_)
+    function getServiceContractAddress(uint256 tokenId_)
         external
         view
         returns (address)
     {
-        return Clones.predictDeterministicAddress(servicesContractImpl, salt_);
+        return
+            Clones.predictDeterministicAddress(
+                servicesContractImpl,
+                bytes32(tokenId_)
+            );
     }
 
     /// @notice Gets token uri where the metadata of NFT is stored
-    /// @param tokenId_ Is the uint256 casted salt
+    /// @param tokenId_ Is the token id
     /// @return Token uri of the tokenId provided
     function tokenURI(uint256 tokenId_)
         public
         view
-        override(ERC721, ERC721URIStorage)
+        override(ERC721)
         returns (string memory)
     {
         return super.tokenURI(tokenId_);
-    }
-
-    /// @notice Lifecycle hook for every transfer, mint or burn done of the erc721 token
-    /// @dev Only needed to change the depositor address on transfers, for mint/burn this is handled in the service contract
-    /// @param from_ Address of the owner
-    /// @param to_ Address of the receiver
-    /// @param tokenId_ Is the uint256 casted salt
-    function _afterTokenTransfer(
-        address from_,
-        address to_,
-        uint256 tokenId_
-    ) internal virtual override(ERC721) {
-        super._afterTokenTransfer(from_, to_, tokenId_);
-        // transfer operation
-        if (to_ != address(0) && from_ != address(0)) {
-            address proxy = Clones.predictDeterministicAddress(
-                servicesContractImpl,
-                bytes32(tokenId_)
-            );
-            SenseistakeServicesContract(payable(proxy)).changeDepositor(
-                from_,
-                to_
-            );
-        }
     }
 
     /// @notice IPFS base uri
@@ -310,11 +259,8 @@ contract SenseistakeERC721 is ERC721, ERC721URIStorage, Ownable {
     }
 
     /// @notice For removing ownership of an NFT from a wallet address
-    /// @param tokenId_ Is the uint256 casted salt
-    function _burn(uint256 tokenId_)
-        internal
-        override(ERC721, ERC721URIStorage)
-    {
+    /// @param tokenId_ Is the token id
+    function _burn(uint256 tokenId_) internal override(ERC721) {
         super._burn(tokenId_);
     }
 }
