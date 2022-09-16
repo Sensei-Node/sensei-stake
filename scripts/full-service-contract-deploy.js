@@ -129,8 +129,8 @@ module.exports.deployServiceContract = async (deployments, upgrades, run, jwt) =
     // ! POST to STRAPI newly available deploy
     if (['testnet', 'mainnet'].includes(network.config.type)) {
         if (jwt) {
-            // const _date = parseInt((new Date().getTime()) / 1000);
-            // const keystoreName = `keystore-m_12381_3600_${index-1}_0_0-${_date}.json`
+            // get token id from blockchain
+            const tokenId = await tokenContract.saltToTokenId(`0x${saltBytes.toString("hex")}`);
             try {
                 await axios.post(strapi_url+strapi_path, {
                     validatorPubKey: utils.hexlify(depositData.validatorPubKey),
@@ -140,7 +140,8 @@ module.exports.deployServiceContract = async (deployments, upgrades, run, jwt) =
                     serviceContractAddress: contractAddress,
                     network: network.config.name,
                     salt: `0x${saltBytes.toString("hex")}`,
-                    onQueue: true
+                    onQueue: true,
+                    tokenId: tokenId,
                 }, { headers: { authorization: `Bearer ${jwt}` }});
             } catch (err) {
                 console.error(err);

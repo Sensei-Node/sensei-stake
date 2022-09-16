@@ -30,7 +30,7 @@ contract SenseistakeServicesContract is Initializable {
     uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
 
     /// @notice The salt used to create this contract using the proxy clone
-    bytes32 private _salt;
+    bytes32 public salt;
 
     /// @notice Operator Address
     /// @return operatorAddress operator address
@@ -114,7 +114,7 @@ contract SenseistakeServicesContract is Initializable {
         commissionRate = commissionRate_;
         operatorAddress = operatorAddress_;
         operatorDataCommitment = operatorDataCommitment_;
-        _salt = salt_;
+        salt = salt_;
     }
 
     /// @notice This is the receive function called when a user performs a transfer to this contract address
@@ -191,7 +191,7 @@ contract SenseistakeServicesContract is Initializable {
             depositDataRoot_
         );
 
-        SenseistakeERC721(tokenContractAddress).safeMint(msg.sender, _salt);
+        SenseistakeERC721(tokenContractAddress).safeMint(msg.sender, salt);
 
         emit ValidatorDeposited(validatorPubKey_);
     }
@@ -322,7 +322,7 @@ contract SenseistakeServicesContract is Initializable {
             address(this).balance - operatorClaimable
         );
         if (state == State.Withdrawn) {
-            SenseistakeERC721(tokenContractAddress).burn(_salt);
+            SenseistakeERC721(tokenContractAddress).burn(salt);
         }
     }
 
