@@ -34,9 +34,9 @@ module.exports = async ({deployments, upgrades, run}) => {
 
     // token contract
     const TokenContract = await ethers.getContractFactory(
-        'SenseistakeERC721'
+        'SenseiStake'
     );
-    const tokenDeployment = await deployments.get("SenseistakeERC721");
+    const tokenDeployment = await deployments.get("SenseiStake");
     const tokenContract = await TokenContract.attach(tokenDeployment.address);
     const NNETWK = {
         TOKEN_ADDRESS: tokenDeployment.address,

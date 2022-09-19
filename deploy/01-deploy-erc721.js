@@ -24,8 +24,8 @@ module.exports = async ({
 
     // name, symbol, commissionRate
     const args = ["SenseiStakeValidator", "SNSV", 100_000, ethDepositContractAddress.address];
-    const senseistakeERC721 = await deploy("SenseistakeERC721", {
-        contract: "SenseistakeERC721",
+    const senseistakeERC721 = await deploy("SenseiStake", {
+        contract: "SenseiStake",
         from: deployer.address,
         args,
         log: true,

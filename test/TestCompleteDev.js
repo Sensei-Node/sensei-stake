@@ -21,9 +21,9 @@ describe('CompleteDev', () => {
     serviceContractIndex = deploymentVariables.servicesToDeploy;
     
     // get token deployment
-    const tokenDeployment = await deployments.get('SenseistakeERC721')
+    const tokenDeployment = await deployments.get('SenseiStake')
     const contrToken = await ethers.getContractFactory(
-      'SenseistakeERC721'
+      'SenseiStake'
     );
     tokenContract = await contrToken.attach(tokenDeployment.address);
 
@@ -72,9 +72,8 @@ describe('CompleteDev', () => {
     balances.alice.deposit_after_token = (await tokenContract.balanceOf(aliceWhale.address)).toString();
     
     const tokenURI_ = await tokenContract.tokenURI(1);
+    console.log('ASDASDASD')
     console.log(tokenURI_);
-
-    
 
     // withdraw from deposit contract
     const wtx = await depositContract.withdrawAllToDepositor();

@@ -3,7 +3,7 @@ pragma solidity 0.8.4;
 
 import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {IDepositContract} from "./interfaces/IDepositContract.sol";
-import {SenseistakeERC721} from "./SenseistakeERC721.sol";
+import {SenseiStake} from "./SenseiStake.sol";
 
 /// @title A Service contract for handling SenseiStake Validators
 /// @author Senseinode
@@ -85,7 +85,6 @@ contract SenseistakeServicesContract is Initializable {
     error DepositedAmountLowerThanFullDeposit();
     error DepositNotOwned();
     error InvalidDepositSignature();
-    error InvalidPublicKey();
     error NotAllowedAtCurrentTime();
     error NotAllowedInCurrentState();
     error NotEarlierThanOriginalDate();
@@ -138,15 +137,6 @@ contract SenseistakeServicesContract is Initializable {
         bytes32 depositDataRoot_,
         uint64 exitDate_
     ) external initializer {
-        if (commissionRate_ > (COMMISSION_RATE_SCALE / 2)) {
-            revert CommissionRateTooHigh(commissionRate_);
-        }
-        if (validatorPubKey_.length != 48) {
-            revert InvalidPublicKey();
-        }
-        if (depositSignature_.length != 96) {
-            revert InvalidDepositSignature();
-        }
         state = State.PreDeposit;
         commissionRate = commissionRate_;
         operatorAddress = operatorAddress_;
@@ -201,11 +191,10 @@ contract SenseistakeServicesContract is Initializable {
         }
         if (
             (msg.sender == operatorAddress && block.timestamp < exitDate) ||
-            (msg.sender ==
-                SenseistakeERC721(tokenContractAddress).ownerOf(tokenId) &&
+            (msg.sender == SenseiStake(tokenContractAddress).ownerOf(tokenId) &&
                 block.timestamp < exitDate + MAX_SECONDS_IN_EXIT_QUEUE) ||
             (msg.sender == tokenContractAddress &&
-                block.timestamp < exitDate + MAX_SECONDS_IN_EXIT_QUEUE) 
+                block.timestamp < exitDate + MAX_SECONDS_IN_EXIT_QUEUE)
         ) {
             revert NotAllowedAtCurrentTime();
         }

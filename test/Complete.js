@@ -19,9 +19,9 @@ describe('Complete', () => {
     serviceContractIndex = deploymentVariables.servicesToDeploy;
     
     // get token deployment
-    const tokenDeployment = await deployments.get('SenseistakeERC721')
+    const tokenDeployment = await deployments.get('SenseiStake')
     const contrToken = await ethers.getContractFactory(
-      'SenseistakeERC721'
+      'SenseiStake'
     );
     tokenContract = await contrToken.attach(tokenDeployment.address);
 
