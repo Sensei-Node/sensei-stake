@@ -10,6 +10,7 @@ import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SenseistakeServicesContract} from "./SenseistakeServicesContract.sol";
 
+
 /// @title An ERC721 contract for handling SenseiStake Services
 /// @author Senseinode
 /// @notice Serves as entrypoint for SenseiStake
