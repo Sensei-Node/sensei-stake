@@ -68,33 +68,30 @@ describe('CompleteDev', () => {
       value: amount
     });
     const receipt = await tx.wait(waitConfirmations[network.config.type]);
-
     balances.alice.deposit_after_token = (await tokenContract.balanceOf(aliceWhale.address)).toString();
     
     const tokenURI_ = await tokenContract.tokenURI(1);
     console.log('ASDASDASD')
     console.log(tokenURI_);
 
+    const sc_addr = await tokenContract.getServiceContractAddress(1);
+    const sc = await contrService.attach(sc_addr);
+    expect(parseInt((await ethers.provider.getBalance(sc_addr)).toString())).to.equal(0);
+    expect(amount).to.equal(ethers.utils.parseEther("32"));
+
     // withdraw from deposit contract
     const wtx = await depositContract.withdrawAllToDepositor();
     await wtx.wait(waitConfirmations[network.config.type]);
 
-    const sc_addr = await tokenContract.getServiceContractAddress(1);
-    const sc = await contrService.attach(sc_addr);
+        
     expect(await sc.getWithdrawableAmount()).to.equal(0)
     expect(await sc.state()).to.equal(2) // PostDeposit
-    //TODO is ok the sc has 32 ether , teh validator was created 
-    console.log("getBalance - sc_addr", (await ethers.provider.getBalance(sc_addr)).toString())
-    console.log("getBalance - despositor",(await sc.depositContractAddress()),  (await ethers.provider.getBalance(await sc.depositContractAddress())).toString())
-
-    console.log("getBalance - sc_addr2", (await ethers.provider.getBalance(sc_addr)).toString())
 
     // change block time post exit date (2025/09/15)
     await ethers.provider.send("evm_mine", [parseInt(new Date(2025, 0, 2).getTime() / 1000)])
     
     // 6. end operator service
     const eos = await tokenContract.connect(aliceWhale).endOperatorServices(1);
-    console.log("getBalance - sc_addr3", (await ethers.provider.getBalance(sc_addr)).toString())
     
     // operator Claim
     const claimable = (await sc.operatorClaim());
@@ -109,17 +106,8 @@ describe('CompleteDev', () => {
     balances.sc.withdraw_after_eth = (await ethers.provider.getBalance(sc_addr)).toString()
 
     expect(parseInt(balances.alice.withdraw_before_token) - parseInt(balances.alice.withdraw_after_token)).to.equal(1);
-    console.log(balances)
-    console.log(amount)
     expect(parseInt(balances.sc.withdraw_before_eth) - parseInt(balances.sc.withdraw_after_eth)).to.equal(parseInt(amount));
 
-    console.log("getBalance - sc_addr2 ", (await ethers.provider.getBalance(sc_addr)).toString())
-
-
-    // const tokenURI_2 = await tokenContract.tokenURI(1);
-    // console.log(tokenURI_2);
-    
-    // const tokenId = await tokenContract.saltToTokenId(salt);
   });
 
 
@@ -277,15 +265,11 @@ describe('CompleteDev', () => {
 
     const sc_addr = await tokenContract.getServiceContractAddress(1);
     const sc = await contrService.attach(sc_addr);
-    // console.log((await ethers.provider.getBalance(sc_addr)).toString())
-    console.log("test 4 getBalance - sc - before", (await ethers.provider.getBalance(sc_addr)).toString())
 
     const txSend = await aliceWhale.sendTransaction({
       to:sc_addr, 
       value: ethers.utils.parseUnits("1","ether")
     });
-
-    console.log("test 4 getBalance - sc - after", (await ethers.provider.getBalance(sc_addr)).toString())
 
   });
 
@@ -306,7 +290,6 @@ describe('CompleteDev', () => {
 
     const sc_addr = await tokenContract.getServiceContractAddress(1);
     const sc = await contrService.attach(sc_addr);
-    // console.log((await ethers.provider.getBalance(sc_addr)).toString())
     const txSend = await aliceWhale.sendTransaction({
       to:sc_addr, 
       value: ethers.utils.parseUnits("3","ether")
@@ -320,20 +303,44 @@ describe('CompleteDev', () => {
     expect (await tokenContract.connect(aliceWhale).endOperatorServices(1)).to.be.ok;
     const ownerBefore = await ethers.provider.getBalance(owner.address)
     const claim_afterEOS =  (await sc.operatorClaimable());
-    console.log("operatorClaimable2 ", ethers.utils.formatEther(claim_afterEOS))
     expect(claim_afterEOS).to.equal(ethers.utils.parseEther("0.3"));
     const txClaim = await sc.operatorClaim()
-    //expect (txClaim).to.be.ok;
+    expect (txClaim).to.be.ok;
     //expect (txClaim.value).to.equal(claim_afterEOS);
     const claim_afterClaim =  (await sc.operatorClaimable());
-    console.log("operatorClaimable3 ", ethers.utils.formatEther(claim_afterClaim))
     expect(claim_afterClaim).to.equal(0);
     const ownerAfter  = await ethers.provider.getBalance(owner.address);
     const profitOwner = (ownerAfter).sub(ownerBefore)
-    console.log("test 5 getBalance - owner - before", ethers.utils.formatEther(profitOwner))
     const tx_fee = ethers.utils.parseEther("0.005");
     expect(parseInt(profitOwner.add(tx_fee))).to.greaterThanOrEqual(parseInt(ethers.utils.parseEther("0.3")))
     
 
   });
+
+  it('6. Change commission rate', async function () {
+    await expect(tokenContract.changeCommissionRate(200_000)).to.be.ok
+    .to.emit(tokenContract, 'CommissionRateChanged').withArgs(200_000);       
+    await expect(tokenContract.changeCommissionRate(0)).to.be.ok
+    .to.emit(tokenContract, 'CommissionRateChanged').withArgs(0);
+    await expect(tokenContract.changeCommissionRate(10)).to.be.ok
+    .to.emit(tokenContract, 'CommissionRateChanged').withArgs(10);
+    await expect( tokenContract.changeCommissionRate(2_000_000)).to.be.reverted
+    tokenContract.should.not.emit("CommissionRateChanged");
+    await expect(tokenContract.changeCommissionRate(500_000)).to.be.ok
+    .to.emit(tokenContract, 'CommissionRateChanged').withArgs(500_000);
+    await expect(tokenContract.changeCommissionRate(500_001)).to.be.reverted
+    tokenContract.should.not.emit("CommissionRateChanged");
+    await expect(tokenContract.changeCommissionRate(undefined)).to.be.reverted
+    tokenContract.should.not.emit("CommissionRateChanged");
+    await expect(tokenContract.changeCommissionRate(-1)).to.be.reverted
+    tokenContract.should.not.emit("CommissionRateChanged");
+    await expect(tokenContract.changeCommissionRate()).to.be.reverted
+    tokenContract.should.not.emit("CommissionRateChanged");
+  });
+
+  // it('7. changeBaseUri', async function () {
+  //   await expect(await tokenContract.changeBaseUri("otherURL")).to.be.ok
+  //   await expect(tokenContract.changeBaseUri()).to.be.reverted
+  // });
+  
 });
