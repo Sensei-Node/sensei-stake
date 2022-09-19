@@ -196,10 +196,8 @@ contract SenseistakeERC721 is ERC721, Ownable {
         if (msg.sender != ownerOf(tokenId_)) {
             revert NotOwner();
         }
-        address proxy = Clones.predictDeterministicAddress(
-            servicesContractImpl,
-            bytes32(tokenId_)
-        );
+        address proxy = getServiceContractAddress( tokenId_ );
+
         SenseistakeServicesContract serviceContract = SenseistakeServicesContract(
                 payable(proxy)
             );
@@ -213,10 +211,8 @@ contract SenseistakeERC721 is ERC721, Ownable {
         if (msg.sender != ownerOf(tokenId_)) {
             revert NotOwner();
         }
-        address proxy = Clones.predictDeterministicAddress(
-            servicesContractImpl,
-            bytes32(tokenId_)
-        );
+        address proxy = getServiceContractAddress( tokenId_ );
+
         SenseistakeServicesContract serviceContract = SenseistakeServicesContract(
                 payable(proxy)
             );
@@ -229,7 +225,7 @@ contract SenseistakeERC721 is ERC721, Ownable {
     /// @param tokenId_ Is the token id
     /// @return Address of a service contract
     function getServiceContractAddress(uint256 tokenId_)
-        external
+        public 
         view
         returns (address)
     {
