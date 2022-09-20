@@ -12,7 +12,6 @@ import {SenseistakeServicesContract} from "./SenseistakeServicesContract.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 // import {Helpers} from "./libraries/Helpers.sol";
-import "hardhat/console.sol";
 
 /// @title Main contract for handling SenseiStake Services
 /// @author Senseinode
