@@ -14,7 +14,6 @@ contract SenseistakeServicesContract is Initializable {
 
     /// @notice The life cycle of a services contract.
     enum State {
-        NotInitialized,
         PreDeposit,
         PostDeposit,
         Withdrawn
@@ -121,28 +120,32 @@ contract SenseistakeServicesContract is Initializable {
     /// @param operatorAddress_ The operator address
     /// @param tokenId_ The token id that is used
     /// @param exitDate_ The exit date
+    /// @param depositor_ The depositor address
     function initialize(
         uint32 commissionRate_,
         address operatorAddress_,
         uint256 tokenId_,
-        uint64 exitDate_
-    ) external initializer {
-        state = State.PreDeposit;
+        uint64 exitDate_,
+        address depositor_
+    ) external payable initializer {
+        // state = State.PreDeposit;
         commissionRate = commissionRate_;
         operatorAddress = operatorAddress_;
         tokenId = tokenId_;
         exitDate = exitDate_;
+        depositor = depositor_;
+        emit Deposit(depositor_, msg.value);
     }
 
-    /// @notice Used for handling client deposits
-    /// @dev The ERC721 contract calls this method using fundMultipleContract. Its current State must be PreDeposit for allowing deposit
-    /// @param depositor_ The ETH depositor
-    function depositFrom(address depositor_) external payable {
-        if (state != State.PreDeposit) {
-            revert ValidatorAlreadyCreated();
-        }
-        _handleDeposit(depositor_);
-    }
+    // /// @notice Used for handling client deposits
+    // /// @dev The ERC721 contract calls this method using fundMultipleContract. Its current State must be PreDeposit for allowing deposit
+    // /// @param depositor_ The ETH depositor
+    // function depositFrom(address depositor_) external payable {
+    //     if (state != State.PreDeposit) {
+    //         revert ValidatorAlreadyCreated();
+    //     }
+    //     _handleDeposit(depositor_);
+    // }
 
     /// @notice This creates the validator sending ethers to the deposit contract.
     /// @param validatorPubKey_ The validator public key
@@ -269,23 +272,23 @@ contract SenseistakeServicesContract is Initializable {
         );
     }
 
-    /// @notice This is the main part of the deposit process.
-    /// @param depositor_ is the user who made the deposit
-    function _handleDeposit(address depositor_) internal {
-        if (msg.value < FULL_DEPOSIT_SIZE) {
-            revert DepositedAmountLowerThanFullDeposit();
-        }
+    // /// @notice This is the main part of the deposit process.
+    // /// @param depositor_ is the user who made the deposit
+    // function _handleDeposit(address depositor_) internal {
+    //     if (msg.value < FULL_DEPOSIT_SIZE) {
+    //         revert DepositedAmountLowerThanFullDeposit();
+    //     }
 
-        uint256 surplus = (address(this).balance > 32 ether)
-            ? (address(this).balance - 32 ether)
-            : 0;
+    //     uint256 surplus = (address(this).balance > 32 ether)
+    //         ? (address(this).balance - 32 ether)
+    //         : 0;
 
-        uint256 acceptedDeposit = msg.value - surplus;
-        depositor = depositor_;
-        emit Deposit(depositor_, acceptedDeposit);
+    //     uint256 acceptedDeposit = msg.value - surplus;
+    //     depositor = depositor_;
+    //     emit Deposit(depositor_, acceptedDeposit);
 
-        if (surplus > 0) {
-            payable(depositor_).sendValue(surplus);
-        }
-    }
+    //     if (surplus > 0) {
+    //         payable(depositor_).sendValue(surplus);
+    //     }
+    // }
 }
