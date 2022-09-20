@@ -71,6 +71,7 @@ contract SenseiStake is ERC721, Ownable {
     error NotOwner();
     error SafeMintAlreadyMade();
     error SafeMintInvalid();
+    error TokenIdAlreadySetUp();
     error ValueSentDifferentThanFullDeposit();
     error ValueSentLowerThanMinimumDeposit();
 
@@ -117,6 +118,9 @@ contract SenseiStake is ERC721, Ownable {
         bytes32 depositDataRoot_,
         uint64 exitDate_
     ) external onlyOwner {
+        if (validators[tokenId_].validatorPubKey.length != 0) {
+            revert TokenIdAlreadySetUp();
+        }
         if (validatorPubKey_.length != 48) {
             revert InvalidPublicKey();
         }
@@ -197,11 +201,11 @@ contract SenseiStake is ERC721, Ownable {
         _safeMint(msg.sender, tokenId);
     }
 
-    /// @notice Allows user to start the withdrawal process
+    /// @notice Allows user or contract owner to start the withdrawal process
     /// @dev Calls end operator services in service contract
     /// @param tokenId_ the token id to end
     function endOperatorServices(uint256 tokenId_) external {
-        if (msg.sender != ownerOf(tokenId_)) {
+        if (msg.sender != ownerOf(tokenId_) && msg.sender != owner()) {
             revert NotOwner();
         }
 

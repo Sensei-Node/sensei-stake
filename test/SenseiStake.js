@@ -9,13 +9,13 @@ const { network } = require("hardhat")
 const should = chai.should();
 
 describe('SenseiStakeComplete', () => {
-  let owner, aliceWhale, operator, bob;
+  let owner, aliceWhale, otherPerson, bob;
   let serviceContractIndex, tokenContract, contrService;
   let serviceContracts = [];
 
   beforeEach(async function () {
     if (network.config.type == 'hardhat') await deployments.fixture();
-    [owner, aliceWhale, bob, operator] = await ethers.getSigners();
+    [owner, aliceWhale, bob, otherPerson] = await ethers.getSigners();
     
     // get service contract index
     serviceContractIndex = deploymentVariables.servicesToDeploy;
@@ -40,7 +40,7 @@ describe('SenseiStakeComplete', () => {
     //utils.hexZeroPad(utils.hexlify(index), 32)
   });
 
-  describe('1. AddValidator should fail if incorrect data provided', async function () {
+  describe('1. addValidator should fail if incorrect data provided', async function () {
     const correctLenBytes = {
         validatorPubKey: 48,
         depositSignature: 96,
@@ -88,5 +88,72 @@ describe('SenseiStakeComplete', () => {
         )
         await expect(addValidator).to.be.revertedWith("NotEarlierThanOriginalDate");
     })
+  });
+
+  describe('2. createContract should fail if incorrect data provided', async function () {
+    it('2.1 Should fail if more than 32 ETH being sent', async function () {
+        const createContract = tokenContract.connect(aliceWhale).createContract({
+            value: ethers.utils.parseEther("31")
+        });
+        await expect(createContract).to.be.revertedWith("ValueSentDifferentThanFullDeposit");
+
+    });
+    it('2.2 Should fail if less than 32 ETH being sent', async function () {
+        const createContract = tokenContract.connect(aliceWhale).createContract({
+            value: ethers.utils.parseEther("33")
+        });
+        await expect(createContract).to.be.revertedWith("ValueSentDifferentThanFullDeposit");
+    });
+    it('2.3 Should fail if no more validators available', async function () {
+        // we have added previously 2, so the third will fail
+        await tokenContract.connect(aliceWhale).createContract({
+            value: ethers.utils.parseEther("32")
+        });
+        await tokenContract.connect(aliceWhale).createContract({
+            value: ethers.utils.parseEther("32")
+        });
+        const createContract = tokenContract.connect(aliceWhale).createContract({
+            value: ethers.utils.parseEther("32")
+        });
+        await expect(createContract).to.be.revertedWith("NoMoreValidatorsLoaded");
+    });
+  });
+
+  describe('3. endOperatorServices should fail if incorrect data provided', async function () {
+    it('2.1 Should fail caller is not token owner or not contract deployer', async function () {
+        await tokenContract.connect(aliceWhale).createContract({
+            value: ethers.utils.parseEther("32")
+        });
+        const endOperatorServices = tokenContract.connect(otherPerson).endOperatorServices(1);
+        await expect(endOperatorServices).to.be.revertedWith("NotOwner");
+
+    });
+  });
+
+  describe('4. withdraw should fail if incorrect data provided', async function () {
+    it('2.1 Should fail caller is not token owner', async function () {
+        await tokenContract.connect(aliceWhale).createContract({
+            value: ethers.utils.parseEther("32")
+        });
+        const createContract = tokenContract.connect(otherPerson).withdraw(1);
+        await expect(createContract).to.be.revertedWith("NotOwner");
+
+    });
+  });
+
+  describe('5. transferOwnership should fail if incorrect data provided', async function () {
+    it('5.1 Should fail caller is not contract deployer (owner)', async function () {
+        const transferOwnership = tokenContract.connect(aliceWhale).transferOwnership(otherPerson.address);
+        await expect(transferOwnership).to.be.revertedWith("Ownable: caller is not the owner");
+
+    });
+  });
+
+  describe('6. renounceOwnership should fail if incorrect data provided', async function () {
+    it('6.1 Should fail caller is not contract deployer (owner)', async function () {
+        const renounceOwnership = tokenContract.connect(aliceWhale).renounceOwnership();
+        await expect(renounceOwnership).to.be.revertedWith("Ownable: caller is not the owner");
+
+    });
   });
 });

@@ -71,7 +71,6 @@ describe('CompleteDev', () => {
     balances.alice.deposit_after_token = (await tokenContract.balanceOf(aliceWhale.address)).toString();
     
     const tokenURI_ = await tokenContract.tokenURI(1);
-    console.log('ASDASDASD')
     console.log(tokenURI_);
 
     const sc_addr = await tokenContract.getServiceContractAddress(1);
