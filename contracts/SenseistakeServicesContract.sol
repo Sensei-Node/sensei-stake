@@ -67,10 +67,6 @@ contract SenseistakeServicesContract is Initializable {
     /// @return state the state
     State public state;
 
-    bytes private _validatorPubKey;
-    bytes private _depositSignature;
-    bytes32 private _depositDataRoot;
-
     event Claim(address receiver, uint256 amount);
     event Deposit(address from, uint256 amount);
     event DepositorChanged(address indexed from, address indexed to);
@@ -124,26 +120,17 @@ contract SenseistakeServicesContract is Initializable {
     /// @param commissionRate_  The service commission rate
     /// @param operatorAddress_ The operator address
     /// @param tokenId_ The token id that is used
-    /// @param validatorPubKey_ The validator public key
-    /// @param depositSignature_ The deposit_data.json signature
-    /// @param depositDataRoot_ The deposit_data.json data root
     /// @param exitDate_ The exit date
     function initialize(
         uint32 commissionRate_,
         address operatorAddress_,
         uint256 tokenId_,
-        bytes calldata validatorPubKey_,
-        bytes calldata depositSignature_,
-        bytes32 depositDataRoot_,
         uint64 exitDate_
     ) external initializer {
         state = State.PreDeposit;
         commissionRate = commissionRate_;
         operatorAddress = operatorAddress_;
         tokenId = tokenId_;
-        _validatorPubKey = validatorPubKey_;
-        _depositSignature = depositSignature_;
-        _depositDataRoot = depositDataRoot_;
         exitDate = exitDate_;
     }
 
@@ -158,7 +145,14 @@ contract SenseistakeServicesContract is Initializable {
     }
 
     /// @notice This creates the validator sending ethers to the deposit contract.
-    function createValidator() external {
+    /// @param validatorPubKey_ The validator public key
+    /// @param depositSignature_ The deposit_data.json signature
+    /// @param depositDataRoot_ The deposit_data.json data root
+    function createValidator(
+        bytes calldata validatorPubKey_,
+        bytes calldata depositSignature_,
+        bytes32 depositDataRoot_
+    ) external {
         if (msg.sender != tokenContractAddress) {
             revert NotTokenContract();
         }
@@ -170,13 +164,13 @@ contract SenseistakeServicesContract is Initializable {
         IDepositContract(depositContractAddress).deposit{
             value: FULL_DEPOSIT_SIZE
         }(
-            _validatorPubKey,
+            validatorPubKey_,
             abi.encodePacked(uint96(0x010000000000000000000000), address(this)),
-            _depositSignature,
-            _depositDataRoot
+            depositSignature_,
+            depositDataRoot_
         );
 
-        emit ValidatorDeposited(_validatorPubKey);
+        emit ValidatorDeposited(validatorPubKey_);
     }
 
     /// @notice Allows user to start the withdrawal process

@@ -98,9 +98,6 @@ contract SenseiStake is ERC721, Ownable {
             0,
             address(0),
             0,
-            "",
-            "",
-            "",
             0
         );
         emit ServiceImplementationChanged(address(servicesContractImpl));
@@ -167,13 +164,10 @@ contract SenseiStake is ERC721, Ownable {
         }
 
         bytes memory initData = abi.encodeWithSignature(
-            "initialize(uint32,address,uint256,bytes,bytes,bytes32,uint64)",
+            "initialize(uint32,address,uint256,uint64)",
             commissionRate,
             owner(),
             tokenId,
-            validator.validatorPubKey,
-            validator.depositSignature,
-            validator.depositDataRoot,
             validator.exitDate
         );
 
@@ -193,7 +187,11 @@ contract SenseiStake is ERC721, Ownable {
         }(msg.sender);
 
         // create validator
-        SenseistakeServicesContract(payable(proxy)).createValidator();
+        SenseistakeServicesContract(payable(proxy)).createValidator(
+            validator.validatorPubKey,
+            validator.depositSignature,
+            validator.depositDataRoot
+        );
 
         // mint the NFT
         _safeMint(msg.sender, tokenId);
