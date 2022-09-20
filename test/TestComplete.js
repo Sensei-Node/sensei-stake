@@ -79,7 +79,7 @@ describe('Complete', () => {
     await withdrawAllToDepositor();
         
     expect(await sc.getWithdrawableAmount()).to.equal(0)
-    expect(await sc.state()).to.equal(2) // PostDeposit
+    expect(await sc.state()).to.equal(1) // PostDeposit
 
     await callToEOS(sc, tokenContract, aliceWhale);
     
@@ -302,9 +302,6 @@ describe('Complete', () => {
   });
 
   it('7.1 getWithdrawableAmount: shouldnt amount to withdraw ', async function () {
-
-    //SenseistakeServicesContract
-    //await expect(await sc.getWithdrawableAmount()).to.be.equal('0')
     
     const tx = await tokenContract.connect(aliceWhale).createContract({
       value: ethers.utils.parseEther('32')
@@ -334,9 +331,9 @@ describe('Complete', () => {
 
   });
 
-  describe('modifier OnlyOperator', () => {
+  describe('8. modifier OnlyOperator', () => {
 
-    it(' should not access non operator in onlyOperator ', async function () {
+    it('1 should not access non operator in onlyOperator ', async function () {
       const servciceContractDeployment = await deployments.get("SenseistakeServicesContract")
       const sContract = await ethers.getContractFactory(
         'SenseistakeServicesContract'
@@ -347,11 +344,11 @@ describe('Complete', () => {
     });
   });
 
-  describe('test withdrawTo', () => {
+  describe('9. test withdrawTo', () => {
 
     let amount = "32000000000000000000"
 
-    it(' should access by token contract', async function () {
+    it('1. should access by token contract', async function () {
       await createContract(tokenContract, aliceWhale, amount);
 
       const sc_addr = await tokenContract.getServiceContractAddress(1);
@@ -362,8 +359,31 @@ describe('Complete', () => {
 
     });
   });
+  describe('10. test create validator', () => {
 
-  
+    let amount = "32000000000000000000"
+    const correctLenBytes = {
+        validatorPubKey: 48,
+        depositSignature: 96,
+        depositDataRoot: 32,
+        exitDate: 8
+    }
+
+    it('1. should only access by token contract', async function () {
+      await createContract(tokenContract, aliceWhale, amount);
+
+      const sc_addr = await tokenContract.getServiceContractAddress(1);
+      const sc = await contrService.attach(sc_addr);
+
+      const accion = sc.connect(aliceWhale).createValidator(
+        ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['validatorPubKey']-2),
+        ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositSignature']),
+        ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositDataRoot'])
+      )
+      await expect(accion).to.be.revertedWith('NotTokenContract');
+
+    });
+  });
 });
 
 async function createContract(tokenContract, aliceWhale, amount) {

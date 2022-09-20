@@ -99,7 +99,8 @@ contract SenseiStake is ERC721, Ownable {
             0,
             address(0),
             0,
-            0
+            0,
+            address(0)
         );
         emit ServiceImplementationChanged(address(servicesContractImpl));
     }
@@ -168,11 +169,12 @@ contract SenseiStake is ERC721, Ownable {
         }
 
         bytes memory initData = abi.encodeWithSignature(
-            "initialize(uint32,address,uint256,uint64)",
+            "initialize(uint32,address,uint256,uint64,address)",
             commissionRate,
             owner(),
             tokenId,
-            validator.exitDate
+            validator.exitDate,
+            msg.sender
         );
 
         address proxy = Clones.cloneDeterministic(
@@ -180,15 +182,15 @@ contract SenseiStake is ERC721, Ownable {
             bytes32(tokenId)
         );
         if (initData.length > 0) {
-            (bool success, ) = proxy.call(initData);
+            (bool success, ) = proxy.call{value: msg.value}(initData);
             require(success, "Proxy init failed");
         }
         emit ContractCreated(tokenId);
 
-        // deposit to service contract
-        SenseistakeServicesContract(payable(proxy)).depositFrom{
-            value: msg.value
-        }(msg.sender);
+        // // deposit to service contract
+        // SenseistakeServicesContract(payable(proxy)).depositFrom{
+        //     value: msg.value
+        // }(msg.sender);
 
         // create validator
         SenseistakeServicesContract(payable(proxy)).createValidator(
