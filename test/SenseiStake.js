@@ -88,6 +88,23 @@ describe('SenseiStakeComplete', () => {
         )
         await expect(addValidator).to.be.revertedWith("NotEarlierThanOriginalDate");
     })
+    it('1.5 Should fail if tokenId provided already used', async function () {
+        await tokenContract.addValidator(
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['tokenId']),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['validatorPubKey']),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositSignature']),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositDataRoot']),
+            exitDate
+        )
+        const addValidator = tokenContract.addValidator(
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['tokenId']),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['validatorPubKey']),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositSignature']),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositDataRoot']),
+            exitDate
+        )
+        await expect(addValidator).to.be.revertedWith("TokenIdAlreadySetUp");
+    })
   });
 
   describe('2. createContract should fail if incorrect data provided', async function () {
