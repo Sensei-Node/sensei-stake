@@ -12,6 +12,7 @@ import {SenseistakeServicesContract} from "./SenseistakeServicesContract.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 // import {Helpers} from "./libraries/Helpers.sol";
+import "hardhat/console.sol";
 
 /// @title Main contract for handling SenseiStake Services
 /// @author Senseinode
@@ -263,6 +264,7 @@ contract SenseiStake is ERC721, Ownable {
         return
             string(
                 abi.encodePacked(
+                    "data:application/json;base64,",
                     Base64.encode(
                         bytes(
                             abi.encodePacked(
