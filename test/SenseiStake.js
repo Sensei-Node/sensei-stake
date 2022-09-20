@@ -8,7 +8,7 @@ const { deploymentVariables, waitConfirmations } = require("../helpers/variables
 const { network } = require("hardhat")
 const should = chai.should();
 
-describe('SenseiStakeComplete', () => {
+describe('SenseiStake', () => {
   let owner, aliceWhale, otherPerson, bob;
   let serviceContractIndex, tokenContract, contrService;
   let serviceContracts = [];
