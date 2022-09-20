@@ -45,14 +45,14 @@ contract SenseiStake is ERC721, Ownable {
     /// @return servicesContractImpl where the service contract template is implemented
     address public servicesContractImpl;
 
+    /// @notice Current tokenId that needs to be minted
+    Counters.Counter public tokenIdCounter;
+
     /// @notice Stores data used for creating the validator
-    mapping(uint256 => Validator) public validators;
+    mapping(uint256 => Validator) private validators;
 
     /// @notice Fixed amount of the deposit
     uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
-
-    /// @notice Current tokenId that needs to be minted
-    Counters.Counter private _tokenIdCounter;
 
     event CommissionRateChanged(uint32 newCommissionRate);
     event ContractCreated(uint256 tokenIdServiceContract);
@@ -159,8 +159,8 @@ contract SenseiStake is ERC721, Ownable {
         }
 
         // increment tokenid counter
-        _tokenIdCounter.increment();
-        uint256 tokenId = _tokenIdCounter.current();
+        tokenIdCounter.increment();
+        uint256 tokenId = tokenIdCounter.current();
         Validator memory validator = validators[tokenId];
 
         // check that validator exists
