@@ -58,9 +58,6 @@ contract SenseistakeServicesContract is Initializable {
     /// @notice Fixed amount of the deposit
     uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
 
-    /// @notice Max second in exit queue, used when a user calls endOperatorServices
-    uint256 private constant MAX_SECONDS_IN_EXIT_QUEUE = 360 days;
-
     /// @notice The state of the lifecyle of the service contract. This allows or forbids to make any action.
     /// @dev This uses the State enum
     /// @return state the state
@@ -128,7 +125,6 @@ contract SenseistakeServicesContract is Initializable {
         uint64 exitDate_,
         address depositor_
     ) external payable initializer {
-        // state = State.PreDeposit;
         commissionRate = commissionRate_;
         operatorAddress = operatorAddress_;
         tokenId = tokenId_;
@@ -136,16 +132,6 @@ contract SenseistakeServicesContract is Initializable {
         depositor = depositor_;
         emit Deposit(depositor_, msg.value);
     }
-
-    // /// @notice Used for handling client deposits
-    // /// @dev The ERC721 contract calls this method using fundMultipleContract. Its current State must be PreDeposit for allowing deposit
-    // /// @param depositor_ The ETH depositor
-    // function depositFrom(address depositor_) external payable {
-    //     if (state != State.PreDeposit) {
-    //         revert ValidatorAlreadyCreated();
-    //     }
-    //     _handleDeposit(depositor_);
-    // }
 
     /// @notice This creates the validator sending ethers to the deposit contract.
     /// @param validatorPubKey_ The validator public key
@@ -189,9 +175,9 @@ contract SenseistakeServicesContract is Initializable {
         if (
             (msg.sender == operatorAddress && block.timestamp < exitDate) ||
             (msg.sender == SenseiStake(tokenContractAddress).ownerOf(tokenId) &&
-                block.timestamp < exitDate + MAX_SECONDS_IN_EXIT_QUEUE) ||
+                block.timestamp < exitDate) ||
             (msg.sender == tokenContractAddress &&
-                block.timestamp < exitDate + MAX_SECONDS_IN_EXIT_QUEUE)
+                block.timestamp < exitDate)
         ) {
             revert NotAllowedAtCurrentTime();
         }
@@ -271,24 +257,4 @@ contract SenseistakeServicesContract is Initializable {
             address(this).balance - operatorClaimable
         );
     }
-
-    // /// @notice This is the main part of the deposit process.
-    // /// @param depositor_ is the user who made the deposit
-    // function _handleDeposit(address depositor_) internal {
-    //     if (msg.value < FULL_DEPOSIT_SIZE) {
-    //         revert DepositedAmountLowerThanFullDeposit();
-    //     }
-
-    //     uint256 surplus = (address(this).balance > 32 ether)
-    //         ? (address(this).balance - 32 ether)
-    //         : 0;
-
-    //     uint256 acceptedDeposit = msg.value - surplus;
-    //     depositor = depositor_;
-    //     emit Deposit(depositor_, acceptedDeposit);
-
-    //     if (surplus > 0) {
-    //         payable(depositor_).sendValue(surplus);
-    //     }
-    // }
 }

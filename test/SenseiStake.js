@@ -173,4 +173,35 @@ describe('SenseiStake', () => {
 
     });
   });
+
+  describe('7. transfer nft ownership', async function () {
+    const token_id = 1;
+    it('7.1 Should be successfull', async function () {
+        await tokenContract.connect(aliceWhale).createContract({
+            value: ethers.utils.parseEther("32")
+        });
+        const owner_before = await tokenContract.ownerOf(token_id);
+        const transfer = await tokenContract.connect(aliceWhale).transferFrom(
+            aliceWhale.address,
+            otherPerson.address,
+            token_id
+        );
+        const receipt = await transfer.wait(waitConfirmations[network.config.type]);
+        const owner_after = await tokenContract.ownerOf(token_id);
+        await expect(owner_before).to.be.equals(aliceWhale.address);
+        await expect(owner_after).to.be.equals(otherPerson.address);
+        await expect(owner_after).not.to.be.equals(owner_before);
+    });
+    it('7.2 Should fail if not owner', async function () {
+        await tokenContract.connect(aliceWhale).createContract({
+            value: ethers.utils.parseEther("32")
+        });
+        const transfer = tokenContract.connect(otherPerson).transferFrom(
+            aliceWhale.address,
+            otherPerson.address,
+            token_id
+        );
+        await expect(transfer).to.be.revertedWith("ERC721: caller is not token owner nor approved");
+    });
+  });
 });

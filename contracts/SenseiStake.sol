@@ -187,11 +187,6 @@ contract SenseiStake is ERC721, Ownable {
         }
         emit ContractCreated(tokenId);
 
-        // // deposit to service contract
-        // SenseistakeServicesContract(payable(proxy)).depositFrom{
-        //     value: msg.value
-        // }(msg.sender);
-
         // create validator
         SenseistakeServicesContract(payable(proxy)).createValidator(
             validator.validatorPubKey,

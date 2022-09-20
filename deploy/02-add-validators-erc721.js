@@ -1,26 +1,11 @@
 const axios = require('axios');
 const { BigNumber, utils } = ethers;
 const { deploymentVariables } = require("../helpers/variables");
-const strapi_url = process.env.STRAPI_URL;
-// const { deployServiceContract } = require("../scripts/full-service-contract-deploy");
 const fs = require('fs');
 const { network } = require("hardhat");
 const { Keystore } = require('@chainsafe/bls-keystore');
-// const { keccak256 } = utils;
-// const strapi_path = '/service-contracts'
 
 module.exports = async ({deployments, upgrades, run}) => {
-    let jwt;
-    try {
-        let { data } = await axios.post(strapi_url+'/auth/local', {
-            identifier: process.env.STRAPI_OPERATOR_IDENTIFIER,
-            password: process.env.STRAPI_OPERATOR_PASSWORD
-        });
-        jwt = data.jwt;
-    } catch (err) {
-        console.error(err);
-    }
-
     const lib = await import('../lib/senseistake-services-contract.mjs');
     ({
         bls,
@@ -57,7 +42,7 @@ module.exports = async ({deployments, upgrades, run}) => {
         const depositData = createOperatorDepositData(operatorPrivKey, contractAddress, network.config.type);
         const exitDate = BigNumber.from(new Date(2024, 0, 1).getTime() / 1000);
 
-        await tokenContract.addValidator(
+        const fcs = await tokenContract.addValidator(
             utils.hexZeroPad(utils.hexlify(index), 32),
             operatorPubKeyBytes,
             depositData.depositSignature,
