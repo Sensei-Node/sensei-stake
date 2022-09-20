@@ -4,7 +4,7 @@ const { randomBytes } = require('crypto');
 const axios = require('axios');
 const { BigNumber, utils } = ethers;
 const { deploymentVariables } = require("../helpers/variables");
-const { keccak256 } = utils;
+// const { keccak256 } = utils;
 const strapi_url = process.env.STRAPI_URL;
 const strapi_path = '/service-contracts'
 const fs = require('fs');
@@ -13,7 +13,7 @@ module.exports.deployServiceContract = async (deployments, upgrades, run, jwt) =
     const { deploy, log, save } = deployments;
     const [deployer] = await ethers.getSigners();
 
-    const tokenDeployment = await deployments.get("SenseistakeERC721");
+    const tokenDeployment = await deployments.get("SenseiStake");
 
     // Storage saving, doing it ASAP in case there is another call for this
     let index = 1;
@@ -60,7 +60,7 @@ module.exports.deployServiceContract = async (deployments, upgrades, run, jwt) =
     const saltBytes = randomBytes(32);
 
     const TokenContract = await ethers.getContractFactory(
-        'SenseistakeERC721'
+        'SenseiStake'
     );
     const tokenContract = await TokenContract.attach(tokenDeployment.address);
 
