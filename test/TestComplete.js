@@ -79,7 +79,7 @@ describe('Complete', () => {
     await withdrawAllToDepositor();
         
     expect(await sc.getWithdrawableAmount()).to.equal(0)
-    expect(await sc.state()).to.equal(2) // PostDeposit
+    expect(await sc.state()).to.equal(1) // PostDeposit
 
     await callToEOS(sc, tokenContract, aliceWhale);
     
