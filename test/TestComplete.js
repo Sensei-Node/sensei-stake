@@ -359,24 +359,6 @@ describe('Complete', () => {
 
     });
   });
-
-  describe('10. test depositFrom', () => {
-
-    let amount = "32000000000000000000"
-
-    it('1. should only access in state Predeposit', async function () {
-      await createContract(tokenContract, aliceWhale, amount);
-
-      const sc_addr = await tokenContract.getServiceContractAddress(1);
-      const sc = await contrService.attach(sc_addr);
-
-      const accion = sc.connect(aliceWhale).depositFrom(aliceWhale.address)
-      await expect(accion).to.be.revertedWith('ValidatorAlreadyCreated');
-
-    });
-
-  });
-
   describe('10. test create validator', () => {
 
     let amount = "32000000000000000000"
