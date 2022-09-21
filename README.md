@@ -129,3 +129,6 @@ The service contract will have no eth after run it and keep it in the deposit ad
 ![Create a Validator - SenseiStake.drawio.png](readme_assets/WithdrawNFT.png)
 
 
+## Complete diagram of all process
+![Complete Diagram - SenseiStake.drawio.png](diagramaUIsenseistakeNFT.png)
+
