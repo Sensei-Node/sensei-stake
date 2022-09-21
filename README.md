@@ -20,7 +20,7 @@ you can use tags to deploy diferent part of the deploy --tags XXX
 
 The deploy was made using [hardhat-deplpy plugin](https://github.com/wighawag/hardhat-deploy "hardhat-deplpy plugin").
 
-Is orgranized in 7 files described in following: 
+Is orgranized in 4 files described in following: 
 
 `00-deploy-deposit-contract.js` (tags : "all", "deposit_contract" )
 
@@ -28,32 +28,16 @@ Deploy the deposit service contract in case we want to test using our deposit co
 
 `00-deploy-service-implementation.js`  (tags: "all", "service_implementation")
 
-Use this deploy when you need to use the ServiceContract in verified way and interact in etherscan.
-
-`01-deploy-storage.js` (tags:  "all", "storage", "erc721" )
-
-Deploy the storage contract. This contract stores all the address of all the contract. 
-
-`02-deploy-erc721.js` (tags:  "all", "erc721" )
-
-Deploy the ERC721 contract.
-
-`03-deploy-contract-factory.js` (tags:  "all", "factory" )
-
-Desploy the factory contract. 
-Add the factory to ERC20.
-
-`04-deploy-service-contract.js` (tags:  "all", "service-contract" )
-
 This deploy uses some method from  `lib/senseistake-services-contract.mjs`.
 - * This deploy create the clone of service contract using a proxy
 - * create the deposit data with pubkey, depositSignature, and depositDataRoot to be able for the validator creation. 
 - All this information is stored in the backend
 
-`05-set-other-mappings.js` (tags:  "all", "mappings" )
+`01-deploy-erc721.js` (tags:  "all", "erc721" )
 
-Set all the addresses to storage contract.
-Set all the name sof every cotracts address.---
+Deploy the ERC721 contract. This is the new entry point.
+
+`02-add-validaror-erc721.js` (tags:  "all", "factory" )
 
 ## Step By Step Deploy
 
@@ -61,22 +45,15 @@ Set all the name sof every cotracts address.---
 - `cp .env.default .env` and update its values
 - `npx hardhat deploy --network goerli`
 
-- `npx hardhat deploy --network goerli`
-
-This is integrated with a off-chain backend where we store the information from the deploy to be able to create validator in the process.
-
 ---
 
 ### Step 1 fund the service contract
 
-The user must call the following method with msg.value and salts. 
+The user must call the following method with msg.value. 
 ```
 msg.value : multiple of 32 eth
-
-salt : the salt is generated in the deploy of a service Contract (04) and store in the backend. (Salt bytes:  2c0a756f47cf4394657373ec2ffe52fe841c4b4dcab7c93394ed7240498b3da3)
-
 ```
-SenseistakeServicesContractFactory.sol —> fundMultipleContracts
+SenseiStake.sol —> createContract
 During this execution the following acctions happen :
 1. For each 32 ethers using one salt to get to the serviceContract.
 2. Deposit 32 ethers in each service contracts.
