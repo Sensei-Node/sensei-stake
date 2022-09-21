@@ -1,6 +1,9 @@
 const { network } = require("hardhat")
 const { verify } = require("../utils/verify")
 const { deploymentVariables } = require("../helpers/variables");
+const sleep = (milliseconds) => {
+    return new Promise(resolve => setTimeout(resolve, milliseconds))
+}
 
 module.exports = async ({
     deployments,
@@ -12,9 +15,9 @@ module.exports = async ({
     let ethDepositContractAddress;
     try {
         ethDepositContractAddress = await deployments.get("DepositContract");
-        console.log(`\n --- UTILIZA DEPOSIT CONTRACT PROPIO: ${ethDepositContractAddress.address} --- \n`);
+        // console.log(`\n --- UTILIZA DEPOSIT CONTRACT PROPIO: ${ethDepositContractAddress.address} --- \n`);
     } catch(err) {
-        console.log('\n --- NO UTILIZA DEPOSIT CONTRACT PROPIO, USA EL DE LA RED --- \n');
+        // console.log('\n --- NO UTILIZA DEPOSIT CONTRACT PROPIO, USA EL DE LA RED --- \n');
         ethDepositContractAddress = deploymentVariables.depositContractAddress[network.config.chainId] ? 
         { address: deploymentVariables.depositContractAddress[network.config.chainId] } : { address: '0x00000000219ab540356cBB839Cbe05303d7705Fa' }
     }
@@ -30,6 +33,7 @@ module.exports = async ({
     })
 
     if (['testnet', 'mainnet'].includes(network.config.type) && process.env.ETHERSCAN_KEY) {
+        await sleep(30); // esto porque etherscan tarda en detectar bytecode a veces
         await verify(senseistakeERC721.address, args)
     }
 }

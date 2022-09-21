@@ -205,7 +205,13 @@ contract SenseistakeServicesContract is Initializable {
         if (state == State.PostDeposit) {
             revert ValidatorIsActive();
         }
-        _executeWithdrawal(beneficiary_);
+        payable(beneficiary_).sendValue(
+            address(this).balance - operatorClaimable
+        );
+        emit Withdrawal(
+            beneficiary_,
+            address(this).balance - operatorClaimable
+        );
     }
 
     /// @notice Get withdrawable amount of a user
@@ -215,18 +221,5 @@ contract SenseistakeServicesContract is Initializable {
             return 0;
         }
         return address(this).balance - operatorClaimable;
-    }
-
-    /// @notice Sends ethers to a beneficiary
-    /// @dev The transfer is made here and after that the NTF burn method is called only if in Withdrawn State.
-    /// @param beneficiary_ who can receive the deposit
-    function _executeWithdrawal(address beneficiary_) internal {
-        payable(beneficiary_).sendValue(
-            address(this).balance - operatorClaimable
-        );
-        emit Withdrawal(
-            beneficiary_,
-            address(this).balance - operatorClaimable
-        );
     }
 }

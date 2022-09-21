@@ -1,6 +1,9 @@
 const { network } = require("hardhat")
 const { verify } = require("../utils/verify")
 const { deploymentVariables } = require("../helpers/variables");
+const sleep = (milliseconds) => {
+    return new Promise(resolve => setTimeout(resolve, milliseconds))
+}
 
 module.exports = async ({
     deployments,
@@ -21,6 +24,7 @@ module.exports = async ({
     })
 
     if (['testnet', 'mainnet'].includes(network.config.type) && process.env.ETHERSCAN_KEY) {
+        await sleep(10); // esto porque etherscan tarda en detectar bytecode a veces
         await verify(senseistakeService.address, args)
     }
 }

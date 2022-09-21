@@ -28,6 +28,9 @@ module.exports = async ({deployments, upgrades, run}) => {
         CONTRACT_IMPL_ADDRESS: await tokenContract.servicesContractImpl()
     }
 
+    const _date = parseInt((new Date().getTime()) / 1000);
+    const _dir = __dirname + `/../keystores/${_date}`
+
     for (let index = 1; index <= serviceContractDeploys; index++) {
         // deposit data and keystores
         const operatorPrivKey = bls.SecretKey.fromKeygen();
@@ -68,14 +71,16 @@ module.exports = async ({deployments, upgrades, run}) => {
 
         // store keystore in keystores directory
         if (['testnet', 'mainnet'].includes(network.config.type)) {
-            const _date = parseInt((new Date().getTime()) / 1000);
+            if (!fs.existsSync(_dir)){
+                fs.mkdirSync(_dir);
+            }
             const keystoreName = `keystore-m_12381_3600_${index-1}_0_0-${_date}.json`
-            fs.writeFileSync(__dirname + `/../keystores/${keystoreName}`, JSON.stringify(keystore));
+            fs.writeFileSync(`${_dir}/${keystoreName}`, JSON.stringify(keystore));
         }
     }  
     
     if (['testnet', 'mainnet'].includes(network.config.type)) {
-        fs.writeFileSync(__dirname + `/../keystores/validator_public_keys.json`, JSON.stringify(validatorPublicKeys));
+        fs.writeFileSync(`${_dir}/validator_public_keys.json`, JSON.stringify(validatorPublicKeys));
     }
 }
 
