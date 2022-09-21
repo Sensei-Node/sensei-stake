@@ -120,13 +120,13 @@ The service contract will have no eth after run it and keep it in the deposit ad
 
 ### Create Validator
 
-![Deposit 32Eth - SenseiStake.drawio.png](readme_assets/createValidatorNFT.png)
+![Deposit 32Eth - SenseiStake.drawio.png](readme_assets/CreateValidatorNFT.png)
 
 
 
 ### Withdraw from validator (after the merge allows it)
 
-![Create a Validator - SenseiStake.drawio.png](readme_assets/createValidator.png)
+![Create a Validator - SenseiStake.drawio.png](readme_assets/withdrawNFT.png)
 
 
 
