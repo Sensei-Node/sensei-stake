@@ -134,8 +134,9 @@ describe('Complete', () => {
     const sc = await contrService.attach(sc_addr);
     
     await withdrawAllToDepositor();
-    
-    await expect (tokenContract.connect(aliceWhale).endOperatorServices(1)).to.be.revertedWith("NotAllowedAtCurrentTime()");
+
+    const eeop = tokenContract.connect(aliceWhale).endOperatorServices(1)
+    await expect (eeop).to.be.revertedWith("NotAllowedAtCurrentTime()");
   });
 
   it('2.3 endOperator Services in withdrawal state should be revert NotAllowedInCurrentState  ', async function () {

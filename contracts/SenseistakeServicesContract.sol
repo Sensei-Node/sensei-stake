@@ -154,6 +154,8 @@ contract SenseistakeServicesContract is Initializable {
             (msg.sender == SenseiStake(tokenContractAddress).ownerOf(tokenId) &&
                 block.timestamp < exitDate) ||
             (msg.sender == Ownable(tokenContractAddress).owner() &&
+                block.timestamp < exitDate) ||
+            (msg.sender == tokenContractAddress &&
                 block.timestamp < exitDate)
         ) {
             revert NotAllowedAtCurrentTime();
