@@ -54,6 +54,10 @@ Deploy the ERC721 contract. This is the new entry point.
 - `npx hardhat deploy --network goerli`
 
 ---
+### Step 0 addValidator prerequisite
+
+The deploy process ```02-add-validator-erc721``` to  need to populate the validator mapping with validator params. 
+
 
 ### Step 1 fund the service contract
 
@@ -114,13 +118,13 @@ The service contract will have no eth after run it and keep it in the deposit ad
 
 ## Sequence diagrams 
 
-### Deposit 32 eth
+### Create Validator
 
-![Deposit 32Eth - SenseiStake.drawio.png](readme_assets/deposit32Eth.png)
+![Deposit 32Eth - SenseiStake.drawio.png](readme_assets/createValidatorNFT.png)
 
 
 
-### Create a validator
+### Withdraw from validator (after the merge allows it)
 
 ![Create a Validator - SenseiStake.drawio.png](readme_assets/createValidator.png)
 
