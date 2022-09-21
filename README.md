@@ -2,8 +2,18 @@
 
 ## Description 
 
+## Description 
+
 This project is a non-custodial staking platform to Ethereum 2. When you create a validator you receive a NFT refering to your new validator. 
 
+## Technical Description
+
+To create a service contract we do it with [Clone proxy](#clone)<sup>1</sup>. To do that we need a salt (a unique identifier) and the contract implementation. We use a numeric sequence for the salt and use it as the nft tokenId. 
+The process of the create a validator we do it in a just simple function call createContract with no paramter, just the msg.value with 32 ethers.
+The create of services contract is made in the createContract. 
+
+
+<sup>1</sup><a name="clone"></a><sub>The Clones library provides a way to deploy minimal non-upgradeable proxies for cheap. This can be useful for applications that require deploying many instances of the same contract (for example one per user, or one per task). These instances are designed to be both cheap to deploy, and cheap to call.</sub>
 
 ## Useful commands 
 
