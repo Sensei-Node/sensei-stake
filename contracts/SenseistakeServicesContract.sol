@@ -58,16 +58,17 @@ contract SenseistakeServicesContract is Initializable {
     State public state;
 
     event Claim(address receiver, uint256 amount);
+    event ExitDateUpdated(uint64 newExitDate);
     event ServiceEnd();
     event ValidatorDeposited(bytes pubkey);
     event Withdrawal(address indexed to, uint256 value);
 
+    error CallerNotAllowed();
     error CannotEndZeroBalance();
     error NotAllowedAtCurrentTime();
     error NotAllowedInCurrentState();
     error NotEarlierThanOriginalDate();
     error NotOperator();
-    error NotTokenContract();
     error TransferNotEnabled();
     error ValidatorAlreadyCreated();
     error ValidatorIsActive();
@@ -121,13 +122,12 @@ contract SenseistakeServicesContract is Initializable {
         bytes32 depositDataRoot_
     ) external {
         if (msg.sender != tokenContractAddress) {
-            revert NotTokenContract();
+            revert CallerNotAllowed();
         }
         if (state != State.PreDeposit) {
             revert ValidatorAlreadyCreated();
         }
         state = State.PostDeposit;
-
         IDepositContract(depositContractAddress).deposit{
             value: FULL_DEPOSIT_SIZE
         }(
@@ -136,7 +136,6 @@ contract SenseistakeServicesContract is Initializable {
             depositSignature_,
             depositDataRoot_
         );
-
         emit ValidatorDeposited(validatorPubKey_);
     }
 
@@ -150,41 +149,35 @@ contract SenseistakeServicesContract is Initializable {
         if (state != State.PostDeposit) {
             revert NotAllowedInCurrentState();
         }
-        if (
-            (msg.sender == SenseiStake(tokenContractAddress).ownerOf(tokenId) &&
-                block.timestamp < exitDate) ||
-            (msg.sender == Ownable(tokenContractAddress).owner() &&
-                block.timestamp < exitDate) ||
-            (msg.sender == tokenContractAddress &&
-                block.timestamp < exitDate)
-        ) {
+        if (block.timestamp < exitDate) {
             revert NotAllowedAtCurrentTime();
         }
-
+        if (
+            (msg.sender != tokenContractAddress) &&
+            (msg.sender !=
+                SenseiStake(tokenContractAddress).ownerOf(tokenId)) &&
+            (msg.sender != Ownable(tokenContractAddress).owner())
+        ) {
+            revert CallerNotAllowed();
+        }
         state = State.Withdrawn;
-
         if (balance > 32 ether) {
             uint256 profit = balance - 32 ether;
             uint256 finalCommission = (profit * commissionRate) /
                 COMMISSION_RATE_SCALE;
             operatorClaimable += finalCommission;
         }
-
         emit ServiceEnd();
     }
 
     /// @notice Transfers to operator the claimable amount of eth
-    /// @return amount of eth the operator received
-    function operatorClaim() external onlyOperator returns (uint256) {
+    function operatorClaim() external onlyOperator {
         uint256 claimable = operatorClaimable;
         if (claimable > 0) {
             operatorClaimable = 0;
             payable(Ownable(tokenContractAddress).owner()).sendValue(claimable);
-
             emit Claim(Ownable(tokenContractAddress).owner(), claimable);
         }
-
-        return claimable;
     }
 
     /// @notice For updating the exitDate
@@ -198,6 +191,7 @@ contract SenseistakeServicesContract is Initializable {
             revert NotEarlierThanOriginalDate();
         }
         exitDate = exitDate_;
+        emit ExitDateUpdated(exitDate_);
     }
 
     /// @notice Withdraw the deposit to a beneficiary
@@ -206,7 +200,7 @@ contract SenseistakeServicesContract is Initializable {
     function withdrawTo(address beneficiary_) external {
         // callable only from senseistake erc721 contract
         if (msg.sender != tokenContractAddress) {
-            revert NotTokenContract();
+            revert CallerNotAllowed();
         }
         if (state == State.PostDeposit) {
             revert ValidatorIsActive();
@@ -220,7 +214,6 @@ contract SenseistakeServicesContract is Initializable {
         if (state == State.PostDeposit) {
             return 0;
         }
-
         return address(this).balance - operatorClaimable;
     }
 
@@ -228,11 +221,11 @@ contract SenseistakeServicesContract is Initializable {
     /// @dev The transfer is made here and after that the NTF burn method is called only if in Withdrawn State.
     /// @param beneficiary_ who can receive the deposit
     function _executeWithdrawal(address beneficiary_) internal {
-        emit Withdrawal(
-            beneficiary_,
+        payable(beneficiary_).sendValue(
             address(this).balance - operatorClaimable
         );
-        payable(beneficiary_).sendValue(
+        emit Withdrawal(
+            beneficiary_,
             address(this).balance - operatorClaimable
         );
     }

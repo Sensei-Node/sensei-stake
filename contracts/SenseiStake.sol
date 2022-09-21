@@ -59,6 +59,11 @@ contract SenseiStake is ERC721, Ownable {
     event ServiceImplementationChanged(
         address newServiceContractImplementationAdddress
     );
+    event ValidatorAdded(
+        uint256 tokenId,
+        bytes validatorPubKey,
+        uint64 exitDate
+    );
 
     error CommisionRateTooHigh(uint32 rate);
     error InvalidDepositSignature();
@@ -130,6 +135,7 @@ contract SenseiStake is ERC721, Ownable {
             exitDate_
         );
         validators[tokenId_] = validator;
+        emit ValidatorAdded(tokenId_, validatorPubKey_, exitDate_);
     }
 
     /// @notice Changes commission rate (senseistake service fees)
@@ -149,24 +155,20 @@ contract SenseiStake is ERC721, Ownable {
         if (msg.value != FULL_DEPOSIT_SIZE) {
             revert ValueSentDifferentThanFullDeposit();
         }
-
         // increment tokenid counter
         tokenIdCounter.increment();
         uint256 tokenId = tokenIdCounter.current();
         Validator memory validator = validators[tokenId];
-
         // check that validator exists
         if (validator.validatorPubKey.length == 0) {
             revert NoMoreValidatorsLoaded();
         }
-
         bytes memory initData = abi.encodeWithSignature(
             "initialize(uint32,uint256,uint64)",
             commissionRate,
             tokenId,
             validator.exitDate
         );
-
         address proxy = Clones.cloneDeterministic(
             servicesContractImpl,
             bytes32(tokenId)
@@ -176,14 +178,12 @@ contract SenseiStake is ERC721, Ownable {
             require(success, "Proxy init failed");
         }
         emit ContractCreated(tokenId);
-
         // create validator
         SenseistakeServicesContract(payable(proxy)).createValidator(
             validator.validatorPubKey,
             validator.depositSignature,
             validator.depositDataRoot
         );
-
         // mint the NFT
         _safeMint(msg.sender, tokenId);
     }
@@ -195,12 +195,10 @@ contract SenseiStake is ERC721, Ownable {
         if (msg.sender != ownerOf(tokenId_) && msg.sender != owner()) {
             revert NotOwner();
         }
-
         address proxy = Clones.predictDeterministicAddress(
             servicesContractImpl,
             bytes32(tokenId_)
         );
-
         SenseistakeServicesContract serviceContract = SenseistakeServicesContract(
                 payable(proxy)
             );
@@ -218,7 +216,6 @@ contract SenseiStake is ERC721, Ownable {
             servicesContractImpl,
             bytes32(tokenId_)
         );
-
         SenseistakeServicesContract serviceContract = SenseistakeServicesContract(
                 payable(proxy)
             );

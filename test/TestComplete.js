@@ -357,7 +357,7 @@ describe('Complete', () => {
       const sc = await contrService.attach(sc_addr);
 
       const accion = sc.connect(aliceWhale).withdrawTo(aliceWhale.address)
-      await expect(accion).to.be.revertedWith('NotTokenContract');
+      await expect(accion).to.be.revertedWith('CallerNotAllowed');
 
     });
   });
@@ -382,7 +382,7 @@ describe('Complete', () => {
         ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositSignature']),
         ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositDataRoot'])
       )
-      await expect(accion).to.be.revertedWith('NotTokenContract');
+      await expect(accion).to.be.revertedWith('CallerNotAllowed');
 
     });
   });
