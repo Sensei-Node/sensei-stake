@@ -333,12 +333,13 @@ describe('Complete', () => {
 
   describe('8. modifier OnlyOperator', () => {
 
-    it('1 should not access non operator in onlyOperator ', async function () {
-      const servciceContractDeployment = await deployments.get("SenseistakeServicesContract")
+    it('8.1 should not access non operator in onlyOperator ', async function () {
       const sContract = await ethers.getContractFactory(
         'SenseistakeServicesContract'
       );
-      scContract = await sContract.attach(servciceContractDeployment.address);
+      await createContract(tokenContract, aliceWhale, ethers.utils.parseEther('32'));
+      const sc_addr = await tokenContract.getServiceContractAddress(1);
+      scContract = await sContract.attach(sc_addr);
       await expect(scContract.connect(aliceWhale).operatorClaim()).to.be.revertedWith("NotOperator")
 
     });
@@ -348,7 +349,7 @@ describe('Complete', () => {
 
     let amount = "32000000000000000000"
 
-    it('1. should access by token contract', async function () {
+    it('9.1. should access by token contract', async function () {
       await createContract(tokenContract, aliceWhale, amount);
 
       const sc_addr = await tokenContract.getServiceContractAddress(1);
@@ -369,7 +370,7 @@ describe('Complete', () => {
         exitDate: 8
     }
 
-    it('1. should only access by token contract', async function () {
+    it('10.1. should only access by token contract', async function () {
       await createContract(tokenContract, aliceWhale, amount);
 
       const sc_addr = await tokenContract.getServiceContractAddress(1);

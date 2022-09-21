@@ -56,24 +56,18 @@ contract SenseiStake is ERC721, Ownable {
 
     event CommissionRateChanged(uint32 newCommissionRate);
     event ContractCreated(uint256 tokenIdServiceContract);
-    event ServiceContractDeposit(address indexed serviceContract);
     event ServiceImplementationChanged(
         address newServiceContractImplementationAdddress
     );
 
-    error BurnInvalid();
-    error CommissionRateScaleExceeded(uint32 rate);
     error CommisionRateTooHigh(uint32 rate);
     error InvalidDepositSignature();
     error InvalidPublicKey();
     error NoMoreValidatorsLoaded();
     error NotEarlierThanOriginalDate();
     error NotOwner();
-    error SafeMintAlreadyMade();
-    error SafeMintInvalid();
     error TokenIdAlreadySetUp();
     error ValueSentDifferentThanFullDeposit();
-    error ValueSentLowerThanMinimumDeposit();
 
     /// @notice Initializes the contract
     /// @dev Sets token name and symbol, also sets commissionRate and checks its validity
@@ -97,10 +91,8 @@ contract SenseiStake is ERC721, Ownable {
         );
         SenseistakeServicesContract(payable(servicesContractImpl)).initialize(
             0,
-            address(0),
             0,
-            0,
-            address(0)
+            0
         );
         emit ServiceImplementationChanged(address(servicesContractImpl));
     }
@@ -169,12 +161,10 @@ contract SenseiStake is ERC721, Ownable {
         }
 
         bytes memory initData = abi.encodeWithSignature(
-            "initialize(uint32,address,uint256,uint64,address)",
+            "initialize(uint32,uint256,uint64)",
             commissionRate,
-            owner(),
             tokenId,
-            validator.exitDate,
-            msg.sender
+            validator.exitDate
         );
 
         address proxy = Clones.cloneDeterministic(

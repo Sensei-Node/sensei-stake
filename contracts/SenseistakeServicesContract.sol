@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.4;
 
-import "@openzeppelin/contracts/proxy/utils/Initializable.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {IDepositContract} from "./interfaces/IDepositContract.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {SenseiStake} from "./SenseiStake.sol";
 
 /// @title A Service contract for handling SenseiStake Validators
@@ -35,10 +37,6 @@ contract SenseistakeServicesContract is Initializable {
     /// @notice The tokenId used to create this contract using the proxy clone
     uint256 public tokenId;
 
-    /// @notice Operator Address
-    /// @return operatorAddress operator address
-    address public operatorAddress;
-
     /// @notice The amount of eth the operator can claim
     /// @return state the operator claimable amount (in eth)
     uint256 public operatorClaimable;
@@ -51,10 +49,6 @@ contract SenseistakeServicesContract is Initializable {
     /// @return tokenContractAddress the token contract address (erc721)
     address public immutable tokenContractAddress;
 
-    /// @notice Depositor address for determining if user deposited
-    /// @return depositor the address of the depositor
-    address public depositor;
-
     /// @notice Fixed amount of the deposit
     uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
 
@@ -64,23 +58,14 @@ contract SenseistakeServicesContract is Initializable {
     State public state;
 
     event Claim(address receiver, uint256 amount);
-    event Deposit(address from, uint256 amount);
-    event DepositorChanged(address indexed from, address indexed to);
     event ServiceEnd();
-    event Transfer(address indexed from, address indexed to, uint256 amount);
     event ValidatorDeposited(bytes pubkey);
     event Withdrawal(address indexed to, uint256 value);
 
     error CannotEndZeroBalance();
-    error CommissionRateScaleExceeded(uint32 rate);
-    error CommissionRateTooHigh(uint32 rate);
-    error DepositedAmountLowerThanFullDeposit();
-    error DepositNotOwned();
-    error InvalidDepositSignature();
     error NotAllowedAtCurrentTime();
     error NotAllowedInCurrentState();
     error NotEarlierThanOriginalDate();
-    error NotEnoughBalance();
     error NotOperator();
     error NotTokenContract();
     error TransferNotEnabled();
@@ -90,7 +75,7 @@ contract SenseistakeServicesContract is Initializable {
 
     /// @notice Only the operator access.
     modifier onlyOperator() {
-        if (msg.sender != operatorAddress) {
+        if (msg.sender != Ownable(tokenContractAddress).owner()) {
             revert NotOperator();
         }
         _;
@@ -114,23 +99,16 @@ contract SenseistakeServicesContract is Initializable {
     /// @notice Initializes the contract
     /// @dev Sets the commission rate, the operator address, operator data commitment and the tokenId
     /// @param commissionRate_  The service commission rate
-    /// @param operatorAddress_ The operator address
     /// @param tokenId_ The token id that is used
     /// @param exitDate_ The exit date
-    /// @param depositor_ The depositor address
     function initialize(
         uint32 commissionRate_,
-        address operatorAddress_,
         uint256 tokenId_,
-        uint64 exitDate_,
-        address depositor_
+        uint64 exitDate_
     ) external payable initializer {
         commissionRate = commissionRate_;
-        operatorAddress = operatorAddress_;
         tokenId = tokenId_;
         exitDate = exitDate_;
-        depositor = depositor_;
-        emit Deposit(depositor_, msg.value);
     }
 
     /// @notice This creates the validator sending ethers to the deposit contract.
@@ -173,11 +151,11 @@ contract SenseistakeServicesContract is Initializable {
             revert NotAllowedInCurrentState();
         }
         if (
-            (msg.sender == operatorAddress && block.timestamp < exitDate) ||
+            (msg.sender == Ownable(tokenContractAddress).owner() &&
+                block.timestamp < exitDate) ||
             (msg.sender == SenseiStake(tokenContractAddress).ownerOf(tokenId) &&
                 block.timestamp < exitDate) ||
-            (msg.sender == tokenContractAddress &&
-                block.timestamp < exitDate)
+            (msg.sender == tokenContractAddress && block.timestamp < exitDate)
         ) {
             revert NotAllowedAtCurrentTime();
         }
@@ -200,9 +178,9 @@ contract SenseistakeServicesContract is Initializable {
         uint256 claimable = operatorClaimable;
         if (claimable > 0) {
             operatorClaimable = 0;
-            payable(operatorAddress).sendValue(claimable);
+            payable(Ownable(tokenContractAddress).owner()).sendValue(claimable);
 
-            emit Claim(operatorAddress, claimable);
+            emit Claim(Ownable(tokenContractAddress).owner(), claimable);
         }
 
         return claimable;
