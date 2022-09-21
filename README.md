@@ -2,8 +2,6 @@
 
 ## Description 
 
-## Description 
-
 This project is a non-custodial staking platform to Ethereum 2. When you create a validator you receive a NFT refering to your new validator. 
 
 ## Technical Description
