@@ -56,24 +56,23 @@ contract SenseiStake is ERC721, Ownable {
 
     event CommissionRateChanged(uint32 newCommissionRate);
     event ContractCreated(uint256 tokenIdServiceContract);
-    event ServiceContractDeposit(address indexed serviceContract);
     event ServiceImplementationChanged(
         address newServiceContractImplementationAdddress
     );
+    event ValidatorAdded(
+        uint256 tokenId,
+        bytes validatorPubKey,
+        uint64 exitDate
+    );
 
-    error BurnInvalid();
-    error CommissionRateScaleExceeded(uint32 rate);
     error CommisionRateTooHigh(uint32 rate);
     error InvalidDepositSignature();
     error InvalidPublicKey();
     error NoMoreValidatorsLoaded();
     error NotEarlierThanOriginalDate();
     error NotOwner();
-    error SafeMintAlreadyMade();
-    error SafeMintInvalid();
     error TokenIdAlreadySetUp();
     error ValueSentDifferentThanFullDeposit();
-    error ValueSentLowerThanMinimumDeposit();
 
     /// @notice Initializes the contract
     /// @dev Sets token name and symbol, also sets commissionRate and checks its validity
@@ -97,10 +96,8 @@ contract SenseiStake is ERC721, Ownable {
         );
         SenseistakeServicesContract(payable(servicesContractImpl)).initialize(
             0,
-            address(0),
             0,
-            0,
-            address(0)
+            0
         );
         emit ServiceImplementationChanged(address(servicesContractImpl));
     }
@@ -138,6 +135,7 @@ contract SenseiStake is ERC721, Ownable {
             exitDate_
         );
         validators[tokenId_] = validator;
+        emit ValidatorAdded(tokenId_, validatorPubKey_, exitDate_);
     }
 
     /// @notice Changes commission rate (senseistake service fees)
@@ -157,26 +155,20 @@ contract SenseiStake is ERC721, Ownable {
         if (msg.value != FULL_DEPOSIT_SIZE) {
             revert ValueSentDifferentThanFullDeposit();
         }
-
         // increment tokenid counter
         tokenIdCounter.increment();
         uint256 tokenId = tokenIdCounter.current();
         Validator memory validator = validators[tokenId];
-
         // check that validator exists
         if (validator.validatorPubKey.length == 0) {
             revert NoMoreValidatorsLoaded();
         }
-
         bytes memory initData = abi.encodeWithSignature(
-            "initialize(uint32,address,uint256,uint64,address)",
+            "initialize(uint32,uint256,uint64)",
             commissionRate,
-            owner(),
             tokenId,
-            validator.exitDate,
-            msg.sender
+            validator.exitDate
         );
-
         address proxy = Clones.cloneDeterministic(
             servicesContractImpl,
             bytes32(tokenId)
@@ -186,14 +178,12 @@ contract SenseiStake is ERC721, Ownable {
             require(success, "Proxy init failed");
         }
         emit ContractCreated(tokenId);
-
         // create validator
         SenseistakeServicesContract(payable(proxy)).createValidator(
             validator.validatorPubKey,
             validator.depositSignature,
             validator.depositDataRoot
         );
-
         // mint the NFT
         _safeMint(msg.sender, tokenId);
     }
@@ -205,12 +195,10 @@ contract SenseiStake is ERC721, Ownable {
         if (msg.sender != ownerOf(tokenId_) && msg.sender != owner()) {
             revert NotOwner();
         }
-
         address proxy = Clones.predictDeterministicAddress(
             servicesContractImpl,
             bytes32(tokenId_)
         );
-
         SenseistakeServicesContract serviceContract = SenseistakeServicesContract(
                 payable(proxy)
             );
@@ -228,7 +216,6 @@ contract SenseiStake is ERC721, Ownable {
             servicesContractImpl,
             bytes32(tokenId_)
         );
-
         SenseistakeServicesContract serviceContract = SenseistakeServicesContract(
                 payable(proxy)
             );
@@ -270,10 +257,10 @@ contract SenseiStake is ERC721, Ownable {
                             abi.encodePacked(
                                 '{"name":"Validator #',
                                 Strings.toString(tokenId_),
-                                '","description":"SenseiStake Validator",',
-                                '"external_url":"stake.senseinode.com",',
+                                '","description":"SenseiStake Validator is an ETH 2.0 validator that is being managed by SenseiNode.com",',
+                                '"external_url":"https://dashboard.senseinode.com/non-custodial/stake/eth",',
                                 '"image":"',
-                                "ipfs://bafybeic4e43syjzhjbticygjo75jgi4iouatxog377prtykapl5ehjgmpq",
+                                "ipfs://bafybeiazbrn2p3ucwfchow6pxa4uqgqufvnwoykbxcrcdrwbdysrjzsydy",
                                 '","attributes": [{"trait_type": "Validator Address", "value":"',
                                 bytesToHexString(
                                     validators[tokenId_].validatorPubKey
