@@ -27,7 +27,7 @@ module.exports = async ({
         // verify deposit contract
         await verify(depositDeployment.address, [])
         // verify service contract
-        await verify(serviceDeployment.address, [ethers.constants.AddressZero])
+        await verify(serviceDeployment.address, [ethDepositContractAddress.address])
         // verify erc721 contract
         await verify(erc721Deployment.address, ["SenseiStakeValidator", "SNSV", 100_000, ethDepositContractAddress.address])
     }
