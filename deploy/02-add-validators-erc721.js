@@ -13,6 +13,9 @@ module.exports = async ({deployments, upgrades, run}) => {
         saltBytesToContractAddress
     } = lib);
 
+    // start from
+    const start_ = 0;
+
     // amount of validators
     const serviceContractDeploys = deploymentVariables.servicesToDeploy;
     let validatorPublicKeys = []
@@ -31,8 +34,9 @@ module.exports = async ({deployments, upgrades, run}) => {
     const _date = parseInt((new Date().getTime()) / 1000);
     const _dir = __dirname + `/../keystores/${_date}`
 
-    for (let index = 1; index <= serviceContractDeploys; index++) {
+    for (let index = 1+start_; index <= serviceContractDeploys+start_; index++) {
         // deposit data and keystores
+        console.log('Adding Validator', index);
         const operatorPrivKey = bls.SecretKey.fromKeygen();
         const operatorPubKeyBytes = operatorPrivKey.toPublicKey().toBytes();
         const keystorePath = "m/12381/60/0/0";
@@ -84,4 +88,4 @@ module.exports = async ({deployments, upgrades, run}) => {
     }
 }
 
-module.exports.tags = ["all", "service-contract"]
+module.exports.tags = ["all", "service_contract"]

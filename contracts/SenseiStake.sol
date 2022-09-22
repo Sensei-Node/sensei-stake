@@ -6,12 +6,9 @@ import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {SenseistakeServicesContract} from "./SenseistakeServicesContract.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
-
-// import {Helpers} from "./libraries/Helpers.sol";
 
 /// @title Main contract for handling SenseiStake Services
 /// @author Senseinode
@@ -21,7 +18,6 @@ contract SenseiStake is ERC721, Ownable {
     using Address for address;
     using Address for address payable;
     using Counters for Counters.Counter;
-    // using Helpers for bytes;
 
     /// @notice Struct that specifies values that a service contract needs for creation
     /// @dev The token id for uniqueness proxy implementation generation and the operatorDataCommitment for the validator
@@ -265,13 +261,23 @@ contract SenseiStake is ERC721, Ownable {
                                 bytesToHexString(
                                     validators[tokenId_].validatorPubKey
                                 ),
-                                // validators[tokenId_].validatorPubKey.toHexString(),
                                 '"}]}'
                             )
                         )
                     )
                 )
             );
+    }
+
+    /// @notice For checking that there is a validator available for creation
+    /// @return bool true if next validator is available or else false
+    function validatorAvailable() external view returns (bool) {
+        if (
+            validators[tokenIdCounter.current() + 1].validatorPubKey.length == 0
+        ) {
+            return false;
+        }
+        return true;
     }
 
     /// @notice For removing ownership of an NFT from a wallet address
@@ -284,16 +290,19 @@ contract SenseiStake is ERC721, Ownable {
     /// @param buffer bytes data to convert
     /// @return string converted buffer
     function bytesToHexString(bytes memory buffer)
-        public
+        internal
         pure
         returns (string memory)
     {
         // Fixed buffer size for hexadecimal convertion
         bytes memory converted = new bytes(buffer.length * 2);
         bytes memory _base = "0123456789abcdef";
-        for (uint256 i = 0; i < buffer.length; i++) {
+        for (uint256 i = 0; i < buffer.length; ) {
             converted[i * 2] = _base[uint8(buffer[i]) / _base.length];
             converted[i * 2 + 1] = _base[uint8(buffer[i]) % _base.length];
+            unchecked {
+                ++i;
+            }
         }
         return string(abi.encodePacked("0x", converted));
     }

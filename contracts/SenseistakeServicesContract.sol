@@ -175,8 +175,9 @@ contract SenseistakeServicesContract is Initializable {
         uint256 claimable = operatorClaimable;
         if (claimable > 0) {
             operatorClaimable = 0;
-            payable(Ownable(tokenContractAddress).owner()).sendValue(claimable);
-            emit Claim(Ownable(tokenContractAddress).owner(), claimable);
+            address _owner = Ownable(tokenContractAddress).owner();
+            payable(_owner).sendValue(claimable);
+            emit Claim(_owner, claimable);
         }
     }
 
@@ -205,13 +206,9 @@ contract SenseistakeServicesContract is Initializable {
         if (state == State.PostDeposit) {
             revert ValidatorIsActive();
         }
-        payable(beneficiary_).sendValue(
-            address(this).balance - operatorClaimable
-        );
-        emit Withdrawal(
-            beneficiary_,
-            address(this).balance - operatorClaimable
-        );
+        uint256 amount = address(this).balance - operatorClaimable;
+        payable(beneficiary_).sendValue(amount);
+        emit Withdrawal(beneficiary_, amount);
     }
 
     /// @notice Get withdrawable amount of a user
