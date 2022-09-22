@@ -204,4 +204,29 @@ describe('SenseiStake', () => {
         await expect(transfer).to.be.revertedWith("ERC721: caller is not token owner nor approved");
     });
   });
+  describe('8. test validatorAvailable', async function () {
+    const correctLenBytes = {
+        validatorPubKey: 48,
+        depositSignature: 96,
+        depositDataRoot: 32,
+        exitDate: 8
+    }
+    const exitDate = ethers.BigNumber.from(new Date(2025, 0, 1).getTime() / 1000);
+    const token_id = 1;
+    it('8.1 Should be available vaidator', async function () {
+        await tokenContract.connect(aliceWhale).createContract({
+            value: ethers.utils.parseEther("32")
+        });
+        expect(await tokenContract.connect(otherPerson).validatorAvailable()).to.equal(true)
+    });
+    it('8.2 Should be not available vaidator', async function () {
+        await tokenContract.connect(aliceWhale).createContract({
+            value: ethers.utils.parseEther("32")
+        });
+        await tokenContract.connect(aliceWhale).createContract({
+            value: ethers.utils.parseEther("32")
+        });
+        expect(await tokenContract.connect(otherPerson).validatorAvailable()).to.equals(false);
+    });
+  });
 });
