@@ -13,6 +13,17 @@ contract StdAssertionsTest is Test
     TestTest t = new TestTest();
 
     /*//////////////////////////////////////////////////////////////////////////
+                                    ASSERT_EQ(UINT)
+    //////////////////////////////////////////////////////////////////////////*/
+
+    function testAssertions() public {
+        assertEqUint(uint32(1), uint32(1));
+        assertEqUint(uint64(1), uint64(1));
+        assertEqUint(uint96(1), uint96(1));
+        assertEqUint(uint128(1), uint128(1));
+    }
+
+    /*//////////////////////////////////////////////////////////////////////////
                                     FAIL(STRING)
     //////////////////////////////////////////////////////////////////////////*/
 
@@ -50,10 +61,8 @@ contract StdAssertionsTest is Test
                                     ASSERT_EQ(BOOL)
     //////////////////////////////////////////////////////////////////////////*/
 
-    function testAssertEq_Bool_Pass(bool a, bool b) external {
-        vm.assume(a == b);
-
-        t._assertEq(a, b, EXPECT_PASS);
+    function testAssertEq_Bool_Pass(bool a) external {
+        t._assertEq(a, a, EXPECT_PASS);
     }
 
     function testAssertEq_Bool_Fail(bool a, bool b) external {
@@ -64,10 +73,8 @@ contract StdAssertionsTest is Test
         t._assertEq(a, b, EXPECT_FAIL);
     }
 
-    function testAssertEq_BoolErr_Pass(bool a, bool b) external {
-        vm.assume(a == b);
-
-        t._assertEq(a, b, CUSTOM_ERROR, EXPECT_PASS);
+    function testAssertEq_BoolErr_Pass(bool a) external {
+        t._assertEq(a, a, CUSTOM_ERROR, EXPECT_PASS);
     }
 
     function testAssertEq_BoolErr_Fail(bool a, bool b) external {
@@ -82,10 +89,8 @@ contract StdAssertionsTest is Test
                                     ASSERT_EQ(BYTES)
     //////////////////////////////////////////////////////////////////////////*/
 
-    function testAssertEq_Bytes_Pass(bytes calldata a, bytes calldata b) external {
-        vm.assume(keccak256(a) == keccak256(b));
-
-        t._assertEq(a, b, EXPECT_PASS);
+    function testAssertEq_Bytes_Pass(bytes calldata a) external {
+        t._assertEq(a, a, EXPECT_PASS);
     }
 
     function testAssertEq_Bytes_Fail(bytes calldata a, bytes calldata b) external {
@@ -96,10 +101,8 @@ contract StdAssertionsTest is Test
         t._assertEq(a, b, EXPECT_FAIL);
     }
 
-    function testAssertEq_BytesErr_Pass(bytes calldata a, bytes calldata b) external {
-        vm.assume(keccak256(a) == keccak256(b));
-
-        t._assertEq(a, b, CUSTOM_ERROR, EXPECT_PASS);
+    function testAssertEq_BytesErr_Pass(bytes calldata a) external {
+        t._assertEq(a, a, CUSTOM_ERROR, EXPECT_PASS);
     }
 
     function testAssertEq_BytesErr_Fail(bytes calldata a, bytes calldata b) external {
