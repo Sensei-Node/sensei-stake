@@ -42,6 +42,7 @@ describe('SenseiStake', () => {
 
   describe('1. addValidator should fail if incorrect data provided', async function () {
     const correctLenBytes = {
+        tokenId:1,
         validatorPubKey: 48,
         depositSignature: 96,
         depositDataRoot: 32,
@@ -50,7 +51,7 @@ describe('SenseiStake', () => {
     const exitDate = ethers.BigNumber.from(new Date(2025, 0, 1).getTime() / 1000);
     it('1.1 Should fail if wrong length: validatorPubKey', async function () {
         const addValidator = tokenContract.addValidator(
-            ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['tokenId']),
+            correctLenBytes['tokenId'],
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['validatorPubKey']-2),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositSignature']),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositDataRoot']),
@@ -60,7 +61,7 @@ describe('SenseiStake', () => {
     })
     it('1.2 Should fail if wrong length: depositSignature', async function () {
         const addValidator = tokenContract.addValidator(
-            ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['tokenId']),
+            correctLenBytes['tokenId'],
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['validatorPubKey']),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositSignature']-2),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositDataRoot']),
@@ -70,7 +71,7 @@ describe('SenseiStake', () => {
     })
     it('1.3 Should fail if wrong length: depositDataRoot', async function () {
         const addValidator = tokenContract.addValidator(
-            ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['tokenId']),
+            correctLenBytes['tokenId'],
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['validatorPubKey']),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositSignature']),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositDataRoot']-2),
@@ -80,7 +81,7 @@ describe('SenseiStake', () => {
     })
     it('1.4 Should fail if exit date earlier than current block', async function () {
         const addValidator = tokenContract.addValidator(
-            ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['tokenId']),
+            correctLenBytes['tokenId'],
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['validatorPubKey']),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositSignature']),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositDataRoot']),
@@ -93,7 +94,7 @@ describe('SenseiStake', () => {
             value: ethers.utils.parseEther("32")
         });
         const addValidator = tokenContract.addValidator(
-            ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['tokenId']),
+            correctLenBytes['tokenId'],
             ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['validatorPubKey']),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositSignature']),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositDataRoot']),
@@ -214,15 +215,6 @@ describe('SenseiStake', () => {
             value: ethers.utils.parseEther("32")
         });
         expect(await tokenContract.connect(otherPerson).validatorAvailable()).to.equal(true)
-    });
-    it('8.2 Should be not available vaidator', async function () {
-        await tokenContract.connect(aliceWhale).createContract({
-            value: ethers.utils.parseEther("32")
-        });
-        await tokenContract.connect(aliceWhale).createContract({
-            value: ethers.utils.parseEther("32")
-        });
-        expect(await tokenContract.connect(otherPerson).validatorAvailable()).to.equals(false);
     });
   });
 });
