@@ -60,6 +60,7 @@ describe('Complete', () => {
       8. withdraw
     */
     let amount = "32000000000000000000"
+    expect(amount).to.equal(ethers.utils.parseEther("32"));
 
     balances.alice.deposit_before_token = (await tokenContract.balanceOf(aliceWhale.address)).toString();
 
@@ -67,27 +68,27 @@ describe('Complete', () => {
     await createContract(tokenContract, aliceWhale, amount);
     balances.alice.deposit_after_token = (await tokenContract.balanceOf(aliceWhale.address)).toString();
     
-    const tokenURI_ = await tokenContract.tokenURI(1);
+    // const tokenURI_ = await tokenContract.tokenURI(1);
 
     const sc_addr = await tokenContract.getServiceContractAddress(1);
     const sc = await contrService.attach(sc_addr);
     expect(parseInt((await ethers.provider.getBalance(sc_addr)).toString())).to.equal(0);
-    expect(amount).to.equal(ethers.utils.parseEther("32"));
 
     // withdraw from deposit contract
     await withdrawAllToDepositor();
-        
+    
     expect(await sc.getWithdrawableAmount()).to.equal(0)
-    expect(await sc.state()).to.equal(1) // PostDeposit
+    expect(await sc.validatorActive()).to.equal(true) // active
 
     await callToEOS(sc, tokenContract, aliceWhale);
     
     // operator Claim
-    const claimable = (await sc.operatorClaim());
-    expect(claimable.value).to.equal(0)
+    const claim = sc.operatorClaim();
+    await expect(claim).to.be.revertedWith('EmptyClaimableForOperator()')
 
     balances.alice.withdraw_before_token = (await tokenContract.balanceOf(aliceWhale.address)).toString();
     balances.sc.withdraw_before_eth = (await ethers.provider.getBalance(sc_addr)).toString()
+    
     // 8. withdraw
     await tokenContract.connect(aliceWhale).withdraw(1);
     balances.alice.withdraw_after_token = (await tokenContract.balanceOf(aliceWhale.address)).toString();
@@ -97,7 +98,6 @@ describe('Complete', () => {
     expect(parseInt(balances.sc.withdraw_before_eth) - parseInt(balances.sc.withdraw_after_eth)).to.equal(parseInt(amount));
 
   });
-
 
   it('2.1 endOperator Services without had withdrawn before should be revert CannotEndZeroBalance ', async function () {
     /*
@@ -116,7 +116,7 @@ describe('Complete', () => {
     await expect (tokenContract.connect(aliceWhale).endOperatorServices(1)).to.be.revertedWith("CannotEndZeroBalance");
   });
 
-  it('2.2 endOperator Services out of time should be revert NotAllowedAtCurrentTime  ', async function () {
+  it('2.2 endOperator Services out of time should be revert NotAllowedAtCurrentTime', async function () {
     /*
       1. deposit 32 eth
       2. EndOperator services before exit date
@@ -136,29 +136,6 @@ describe('Complete', () => {
 
     const eeop = tokenContract.connect(aliceWhale).endOperatorServices(1)
     await expect (eeop).to.be.revertedWith("NotAllowedAtCurrentTime()");
-  });
-
-  it('2.3 endOperator Services in withdrawal state should be revert NotAllowedInCurrentState  ', async function () {
-    /*
-      1. deposit 32 eth
-      2. EndOperator services after another endOperator Service
-    */
-    let amount = "32000000000000000000"
-
-    // 1. deposit 32 eth (and create contract)
-    await createContract(tokenContract, aliceWhale, amount);
-
-    const sc_addr = await tokenContract.getServiceContractAddress(1);
-    const sc = await contrService.attach(sc_addr);
-    
-    await withdrawAllToDepositor();
-  
-    // pre 5.0 change block time post exit date (2025/09/15)
-    await ethers.provider.send("evm_mine", [parseInt(new Date(2025, 0, 2).getTime() / 1000)])
-
-    expect (await tokenContract.connect(aliceWhale).endOperatorServices(1)).to.be.ok;
-    await expect (tokenContract.connect(aliceWhale).endOperatorServices(1)).to.be.revertedWith("NotAllowedInCurrentState()");
-
   });
 
   it('3.0 update ExitDate (happy path)', async function () {
@@ -195,8 +172,8 @@ describe('Complete', () => {
     const sc_addr = await tokenContract.getServiceContractAddress(1);
     const sc = await contrService.attach(sc_addr);
 
-    await expect(sc.updateExitDate(parseInt(new Date(2023, 0, 2).getTime() / 1000))).to.be.revertedWith("NotEarlierThanOriginalDate");
-    
+    const tx2 = sc.updateExitDate(parseInt(new Date(2023, 0, 2).getTime() / 1000));
+    await expect(tx2).to.be.revertedWith("NotEarlierThanOriginalDate");
   });
 
   it('3.2 update ExitDate in withdrawal state revert with ValidatorNotActive', async function () {
@@ -369,21 +346,6 @@ describe('Complete', () => {
         depositDataRoot: 32,
         exitDate: 8
     }
-
-    it('10.1. should only access by token contract', async function () {
-      await createContract(tokenContract, aliceWhale, amount);
-
-      const sc_addr = await tokenContract.getServiceContractAddress(1);
-      const sc = await contrService.attach(sc_addr);
-
-      const accion = sc.connect(aliceWhale).createValidator(
-        ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['validatorPubKey']-2),
-        ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositSignature']),
-        ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositDataRoot'])
-      )
-      await expect(accion).to.be.revertedWith('CallerNotAllowed');
-
-    });
   });
 });
 

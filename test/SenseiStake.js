@@ -88,22 +88,18 @@ describe('SenseiStake', () => {
         )
         await expect(addValidator).to.be.revertedWith("NotEarlierThanOriginalDate");
     })
-    it('1.5 Should fail if tokenId provided already used', async function () {
-        await tokenContract.addValidator(
-            ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['tokenId']),
-            ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['validatorPubKey']),
-            ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositSignature']),
-            ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositDataRoot']),
-            exitDate
-        )
+    it('1.5 Should fail if tokenId provided already used (and minted)', async function () {
+        await tokenContract.connect(aliceWhale).createContract({
+            value: ethers.utils.parseEther("32")
+        });
         const addValidator = tokenContract.addValidator(
-            ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['tokenId']),
-            ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['validatorPubKey']),
-            ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositSignature']),
-            ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositDataRoot']),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['tokenId']),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['validatorPubKey']),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositSignature']),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositDataRoot']),
             exitDate
         )
-        await expect(addValidator).to.be.revertedWith("TokenIdAlreadySetUp");
+        await expect(addValidator).to.be.revertedWith("TokenIdAlreadyMinted");
     })
   });
 

@@ -15,7 +15,7 @@ contract SenseistakeServicesContract is Initializable {
     using Address for address payable;
 
     /// @notice Determines whether the validator is active or not
-    bool public validatorActive = true;
+    bool public validatorActive;
 
     /// @notice Used in conjuction with `COMMISSION_RATE_SCALE` for determining service fees
     /// @dev Is set up on the constructor and can be modified with provided setter aswell
@@ -113,6 +113,7 @@ contract SenseistakeServicesContract is Initializable {
             depositSignature_,
             depositDataRoot_
         );
+        validatorActive = true;
         emit ValidatorDeposited(validatorPubKey_);
     }
 
