@@ -124,7 +124,7 @@ contract SenseiStake is ERC721, Ownable {
             depositDataRoot_,
             exitDate_
         );
-        validators[tokenId_] = validator;
+        _validators[tokenId_] = validator;
         emit ValidatorAdded(tokenId_, validatorPubKey_, exitDate_);
     }
 
@@ -148,7 +148,7 @@ contract SenseiStake is ERC721, Ownable {
         // increment tokenid counter
         tokenIdCounter.increment();
         uint256 tokenId = tokenIdCounter.current();
-        Validator memory validator = validators[tokenId];
+        Validator memory validator = _validators[tokenId];
         // check that validator exists
         if (validator.validatorPubKey.length == 0) {
             revert NoMoreValidatorsLoaded();
@@ -250,7 +250,7 @@ contract SenseiStake is ERC721, Ownable {
                                 "ipfs://bafybeifgh6572j2e6ioxrrtyxamzciadd7anmnpyxq4b33wafqhpnncg7m",
                                 '","attributes": [{"trait_type": "Validator Address", "value":"',
                                 _bytesToHexString(
-                                    validators[tokenId_].validatorPubKey
+                                    _validators[tokenId_].validatorPubKey
                                 ),
                                 '"}]}'
                             )
@@ -263,7 +263,7 @@ contract SenseiStake is ERC721, Ownable {
     /// @notice For checking that there is a validator available for creation
     /// @return bool true if next validator is available or else false
     function validatorAvailable() external view returns (bool) {
-        return validators[tokenIdCounter.current() + 1].validatorPubKey.length > 0;
+        return _validators[tokenIdCounter.current() + 1].validatorPubKey.length > 0;
     }
 
     /// @notice For removing ownership of an NFT from a wallet address
