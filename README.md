@@ -6,10 +6,9 @@ This project is a non-custodial staking platform to Ethereum 2. When you create 
 
 ## Technical Description
 
-To create a service contract we do it with [Clone proxy](#clone)<sup>1</sup>. To do that we need a salt (a unique identifier) and the contract implementation. We use a numeric sequence for the salt and use it as the nft tokenId. 
+To create a service contract we do it with [Clone proxy](#clone)<sup>1</sup>. To do it we need a salt (a unique identifier) and the contract implementation. We use a numeric sequence as the salt and use it as the nft tokenId. 
 The process of the create a validator we do it in a just simple function call createContract with no paramter, just the msg.value with 32 ethers.
-The create of services contract is made in the createContract. 
-
+The create validator process is made with this call. This call group several actions like receive your deposit, send it to the eth deposit contract and mint your nft.
 
 <sup>1</sup><a name="clone"></a><sub>The Clones library provides a way to deploy minimal non-upgradeable proxies for cheap. This can be useful for applications that require deploying many instances of the same contract (for example one per user, or one per task). These instances are designed to be both cheap to deploy, and cheap to call.</sub>
 
@@ -36,16 +35,20 @@ Deploy the deposit service contract in case we want to test using our deposit co
 
 `00-deploy-service-implementation.js`  (tags: "all", "service_implementation")
 
-This deploy uses some method from  `lib/senseistake-services-contract.mjs`.
-- * This deploy create the clone of service contract using a proxy
-- * create the deposit data with pubkey, depositSignature, and depositDataRoot to be able for the validator creation. 
-- All this information is stored in the backend
+This step deploy the implementation of the service conttract.
 
 `01-deploy-erc721.js` (tags:  "all", "erc721" )
 
 Deploy the ERC721 contract. This is the new entry point.
 
 `02-add-validaror-erc721.js` (tags:  "all", "factory" )
+
+This deploy uses some method from  `lib/senseistake-services-contract.mjs`. 
+This prepares all the data to create a validator. 
+
+`03-verify-contracts.js`
+
+This step verify all the contract in etherscan
 
 ## Step By Step Deploy
 
