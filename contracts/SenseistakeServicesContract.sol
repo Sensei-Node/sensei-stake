@@ -14,12 +14,8 @@ import {SenseiStake} from "./SenseiStake.sol";
 contract SenseistakeServicesContract is Initializable {
     using Address for address payable;
 
-    /// @notice The life cycle of a services contract.
-    enum State {
-        PreDeposit,
-        PostDeposit,
-        Withdrawn
-    }
+    /// @notice Determines whether the validator is active or not
+    bool public validatorActive = true;
 
     /// @notice Used in conjuction with `COMMISSION_RATE_SCALE` for determining service fees
     /// @dev Is set up on the constructor and can be modified with provided setter aswell
@@ -30,7 +26,6 @@ contract SenseistakeServicesContract is Initializable {
     uint32 private constant COMMISSION_RATE_SCALE = 1_000_000;
 
     /// @notice Used for determining from when the user deposit can be withdrawn.
-    /// @dev The call of endOperatorServices function is the first step to withdraw the deposit. It changes the state to Withdrawn
     /// @return exitDate the exit date
     uint64 public exitDate;
 
@@ -52,12 +47,11 @@ contract SenseistakeServicesContract is Initializable {
     /// @notice Fixed amount of the deposit
     uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
 
-    /// @notice The state of the lifecyle of the service contract. This allows or forbids to make any action.
-    /// @dev This uses the State enum
-    /// @return state the state
-    State public state;
+    // /// @notice Withdrawal credentials parameter, needed for deposit contract
+    // /// @dev withdrawal_credentials Commitment to a public key for withdrawals.
+    // bytes32 private immutable _withdrawalCredentials;
 
-    event Claim(address receiver, uint256 amount);
+    event Claim(address indexed receiver, uint256 amount);
     event ExitDateUpdated(uint64 newExitDate);
     event ServiceEnd();
     event ValidatorDeposited(bytes pubkey);
@@ -65,11 +59,11 @@ contract SenseistakeServicesContract is Initializable {
 
     error CallerNotAllowed();
     error CannotEndZeroBalance();
+    error EmptyClaimableForOperator();
     error NotAllowedAtCurrentTime();
     error NotAllowedInCurrentState();
     error NotEarlierThanOriginalDate();
     error NotOperator();
-    error TransferNotEnabled();
     error ValidatorAlreadyCreated();
     error ValidatorIsActive();
     error ValidatorNotActive();
@@ -88,46 +82,31 @@ contract SenseistakeServicesContract is Initializable {
     constructor(address ethDepositContractAddress_) {
         tokenContractAddress = msg.sender;
         depositContractAddress = ethDepositContractAddress_;
+        // _withdrawalCredentials = bytes32(abi.encodePacked(uint96(0x010000000000000000000000), address(this)));
     }
 
     /// @notice This is the receive function called when a user performs a transfer to this contract address
-    receive() external payable {
-        if (state == State.PreDeposit) {
-            revert TransferNotEnabled();
-        }
-    }
+    receive() external payable {}
 
-    /// @notice Initializes the contract
-    /// @dev Sets the commission rate, the operator address, operator data commitment and the tokenId
+    /// @notice Initializes the contract and creates validator
+    /// @dev Sets the commission rate, the operator address, operator data commitment, the tokenId and creates the validator
     /// @param commissionRate_  The service commission rate
     /// @param tokenId_ The token id that is used
     /// @param exitDate_ The exit date
+    /// @param validatorPubKey_ The validator public key
+    /// @param depositSignature_ The deposit_data.json signature
+    /// @param depositDataRoot_ The deposit_data.json data root
     function initialize(
         uint32 commissionRate_,
         uint256 tokenId_,
-        uint64 exitDate_
+        uint64 exitDate_,
+        bytes calldata validatorPubKey_,
+        bytes calldata depositSignature_,
+        bytes32 depositDataRoot_
     ) external payable initializer {
         commissionRate = commissionRate_;
         tokenId = tokenId_;
         exitDate = exitDate_;
-    }
-
-    /// @notice This creates the validator sending ethers to the deposit contract.
-    /// @param validatorPubKey_ The validator public key
-    /// @param depositSignature_ The deposit_data.json signature
-    /// @param depositDataRoot_ The deposit_data.json data root
-    function createValidator(
-        bytes calldata validatorPubKey_,
-        bytes calldata depositSignature_,
-        bytes32 depositDataRoot_
-    ) external {
-        if (msg.sender != tokenContractAddress) {
-            revert CallerNotAllowed();
-        }
-        if (state != State.PreDeposit) {
-            revert ValidatorAlreadyCreated();
-        }
-        state = State.PostDeposit;
         IDepositContract(depositContractAddress).deposit{
             value: FULL_DEPOSIT_SIZE
         }(
@@ -146,7 +125,7 @@ contract SenseistakeServicesContract is Initializable {
         if (balance == 0) {
             revert CannotEndZeroBalance();
         }
-        if (state != State.PostDeposit) {
+        if (!validatorActive) {
             revert NotAllowedInCurrentState();
         }
         if (block.timestamp < exitDate) {
@@ -160,32 +139,35 @@ contract SenseistakeServicesContract is Initializable {
         ) {
             revert CallerNotAllowed();
         }
-        state = State.Withdrawn;
+        validatorActive = false;
         if (balance > 32 ether) {
-            uint256 profit = balance - 32 ether;
-            uint256 finalCommission = (profit * commissionRate) /
-                COMMISSION_RATE_SCALE;
-            operatorClaimable += finalCommission;
+            unchecked {
+                uint256 profit = balance - 32 ether;
+                uint256 finalCommission = (profit * commissionRate) /
+                    COMMISSION_RATE_SCALE;
+                operatorClaimable += finalCommission;
+            }
         }
         emit ServiceEnd();
     }
 
     /// @notice Transfers to operator the claimable amount of eth
     function operatorClaim() external onlyOperator {
-        uint256 claimable = operatorClaimable;
-        if (claimable > 0) {
-            operatorClaimable = 0;
-            address _owner = Ownable(tokenContractAddress).owner();
-            payable(_owner).sendValue(claimable);
-            emit Claim(_owner, claimable);
+        if (operatorClaimable == 0) {
+            revert EmptyClaimableForOperator();
         }
+        uint256 claimable = operatorClaimable;
+        operatorClaimable = 0;
+        address _owner = Ownable(tokenContractAddress).owner();
+        emit Claim(_owner, claimable);
+        payable(_owner).sendValue(claimable);
     }
 
     /// @notice For updating the exitDate
-    /// @dev The exit date must be after the current exit date and it's only possible in PostDeposit state
+    /// @dev The exit date must be after the current exit date and it's only possible in validatorActive == true
     /// @param exitDate_ The new exit date
     function updateExitDate(uint64 exitDate_) external onlyOperator {
-        if (state != State.PostDeposit) {
+        if (!validatorActive) {
             revert ValidatorNotActive();
         }
         if (exitDate_ < exitDate) {
@@ -196,25 +178,25 @@ contract SenseistakeServicesContract is Initializable {
     }
 
     /// @notice Withdraw the deposit to a beneficiary
-    /// @dev The beneficiary must have deposted before. Is not possible to withdraw in PostDeposit state. Can only be called from the ERC721 contract
+    /// @dev The beneficiary must have deposted before. Is not possible to withdraw in validatorActive == true. Can only be called from the ERC721 contract
     /// @param beneficiary_ Who will receive the deposit
     function withdrawTo(address beneficiary_) external {
         // callable only from senseistake erc721 contract
         if (msg.sender != tokenContractAddress) {
             revert CallerNotAllowed();
         }
-        if (state == State.PostDeposit) {
+        if (validatorActive) {
             revert ValidatorIsActive();
         }
         uint256 amount = address(this).balance - operatorClaimable;
-        payable(beneficiary_).sendValue(amount);
         emit Withdrawal(beneficiary_, amount);
+        payable(beneficiary_).sendValue(amount);
     }
 
     /// @notice Get withdrawable amount of a user
     /// @return amount the depositor is allowed withdraw
     function getWithdrawableAmount() external view returns (uint256) {
-        if (state == State.PostDeposit) {
+        if (validatorActive) {
             return 0;
         }
         return address(this).balance - operatorClaimable;

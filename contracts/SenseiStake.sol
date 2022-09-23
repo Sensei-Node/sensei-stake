@@ -39,7 +39,7 @@ contract SenseiStake is ERC721, Ownable {
     /// @notice Template service contract implementation address
     /// @dev It is used for generating clones, using hardhats proxy clone
     /// @return servicesContractImpl where the service contract template is implemented
-    address public servicesContractImpl;
+    address public immutable servicesContractImpl;
 
     /// @notice Current tokenId that needs to be minted
     Counters.Counter public tokenIdCounter;
@@ -56,8 +56,8 @@ contract SenseiStake is ERC721, Ownable {
         address newServiceContractImplementationAdddress
     );
     event ValidatorAdded(
-        uint256 tokenId,
-        bytes validatorPubKey,
+        uint256 indexed tokenId,
+        bytes indexed validatorPubKey,
         uint64 exitDate
     );
 
@@ -67,7 +67,7 @@ contract SenseiStake is ERC721, Ownable {
     error NoMoreValidatorsLoaded();
     error NotEarlierThanOriginalDate();
     error NotOwner();
-    error TokenIdAlreadySetUp();
+    error TokenIdAlreadyMinted();
     error ValueSentDifferentThanFullDeposit();
 
     /// @notice Initializes the contract
@@ -90,12 +90,6 @@ contract SenseiStake is ERC721, Ownable {
         servicesContractImpl = address(
             new SenseistakeServicesContract(ethDepositContractAddress_)
         );
-        SenseistakeServicesContract(payable(servicesContractImpl)).initialize(
-            0,
-            0,
-            0
-        );
-        emit ServiceImplementationChanged(address(servicesContractImpl));
     }
 
     /// @notice Adds validator info to validators mapping
@@ -112,8 +106,8 @@ contract SenseiStake is ERC721, Ownable {
         bytes32 depositDataRoot_,
         uint64 exitDate_
     ) external onlyOwner {
-        if (validators[tokenId_].validatorPubKey.length != 0) {
-            revert TokenIdAlreadySetUp();
+        if (tokenId_ <= tokenIdCounter.current()) {
+            revert TokenIdAlreadyMinted();
         }
         if (validatorPubKey_.length != 48) {
             revert InvalidPublicKey();
@@ -160,26 +154,23 @@ contract SenseiStake is ERC721, Ownable {
             revert NoMoreValidatorsLoaded();
         }
         bytes memory initData = abi.encodeWithSignature(
-            "initialize(uint32,uint256,uint64)",
+            "initialize(uint32,uint256,uint64,bytes,bytes,bytes32)",
             commissionRate,
             tokenId,
-            validator.exitDate
+            validator.exitDate,
+            validator.validatorPubKey,
+            validator.depositSignature,
+            validator.depositDataRoot
         );
         address proxy = Clones.cloneDeterministic(
             servicesContractImpl,
             bytes32(tokenId)
         );
-        if (initData.length > 0) {
-            (bool success, ) = proxy.call{value: msg.value}(initData);
-            require(success, "Proxy init failed");
-        }
+        (bool success, ) = proxy.call{value: msg.value}(initData);
+        require(success, "Proxy init failed");
+
         emit ContractCreated(tokenId);
-        // create validator
-        SenseistakeServicesContract(payable(proxy)).createValidator(
-            validator.validatorPubKey,
-            validator.depositSignature,
-            validator.depositDataRoot
-        );
+
         // mint the NFT
         _safeMint(msg.sender, tokenId);
     }
@@ -215,8 +206,8 @@ contract SenseiStake is ERC721, Ownable {
         SenseistakeServicesContract serviceContract = SenseistakeServicesContract(
                 payable(proxy)
             );
-        serviceContract.withdrawTo(payable(msg.sender));
         _burn(tokenId_);
+        serviceContract.withdrawTo(payable(msg.sender));
     }
 
     /// @notice Gets service contract address
@@ -272,12 +263,7 @@ contract SenseiStake is ERC721, Ownable {
     /// @notice For checking that there is a validator available for creation
     /// @return bool true if next validator is available or else false
     function validatorAvailable() external view returns (bool) {
-        if (
-            validators[tokenIdCounter.current() + 1].validatorPubKey.length == 0
-        ) {
-            return false;
-        }
-        return true;
+        return validators[tokenIdCounter.current() + 1].validatorPubKey.length > 0;
     }
 
     /// @notice For removing ownership of an NFT from a wallet address
