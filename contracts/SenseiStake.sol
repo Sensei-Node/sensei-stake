@@ -52,9 +52,6 @@ contract SenseiStake is ERC721, Ownable {
 
     event CommissionRateChanged(uint32 newCommissionRate);
     event ContractCreated(uint256 tokenIdServiceContract);
-    event ServiceImplementationChanged(
-        address newServiceContractImplementationAdddress
-    );
     event ValidatorAdded(
         uint256 indexed tokenId,
         bytes indexed validatorPubKey,
@@ -263,7 +260,9 @@ contract SenseiStake is ERC721, Ownable {
     /// @notice For checking that there is a validator available for creation
     /// @return bool true if next validator is available or else false
     function validatorAvailable() external view returns (bool) {
-        return _validators[tokenIdCounter.current() + 1].validatorPubKey.length > 0;
+        return
+            _validators[tokenIdCounter.current() + 1].validatorPubKey.length >
+            0;
     }
 
     /// @notice For removing ownership of an NFT from a wallet address

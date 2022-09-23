@@ -68,7 +68,7 @@ describe('Complete', () => {
     await createContract(tokenContract, aliceWhale, amount);
     balances.alice.deposit_after_token = (await tokenContract.balanceOf(aliceWhale.address)).toString();
     
-    // const tokenURI_ = await tokenContract.tokenURI(1);
+    const tokenURI_ = await tokenContract.tokenURI(1);
 
     const sc_addr = await tokenContract.getServiceContractAddress(1);
     const sc = await contrService.attach(sc_addr);

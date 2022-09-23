@@ -45,7 +45,8 @@ contract SenseistakeServicesContract is Initializable {
     uint32 private constant COMMISSION_RATE_SCALE = 1_000_000;
 
     /// @notice Prefix of eth1 address for withdrawal credentials
-    uint96 private constant ETH1_ADDRESS_WITHDRAWAL_PREFIX = uint96(0x010000000000000000000000);
+    uint96 private constant ETH1_ADDRESS_WITHDRAWAL_PREFIX =
+        uint96(0x010000000000000000000000);
 
     /// @notice Fixed amount of the deposit
     uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
@@ -63,7 +64,6 @@ contract SenseistakeServicesContract is Initializable {
     error NotAllowedInCurrentState();
     error NotEarlierThanOriginalDate();
     error NotOperator();
-    error ValidatorAlreadyCreated();
     error ValidatorIsActive();
     error ValidatorNotActive();
 
