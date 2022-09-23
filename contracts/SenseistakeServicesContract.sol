@@ -179,7 +179,7 @@ contract SenseistakeServicesContract is Initializable {
     }
 
     /// @notice Withdraw the deposit to a beneficiary
-    /// @dev The beneficiary must have deposted before. Is not possible to withdraw in validatorActive == true. Can only be called from the ERC721 contract
+    /// @dev Is not possible to withdraw in validatorActive == true. Can only be called from the ERC721 contract
     /// @param beneficiary_ Who will receive the deposit
     function withdrawTo(address beneficiary_) external {
         // callable only from senseistake erc721 contract
