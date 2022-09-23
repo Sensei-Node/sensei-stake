@@ -36,16 +36,20 @@ Deploy the deposit service contract in case we want to test using our deposit co
 
 `00-deploy-service-implementation.js`  (tags: "all", "service_implementation")
 
-This deploy uses some method from  `lib/senseistake-services-contract.mjs`.
-- * This deploy create the clone of service contract using a proxy
-- * create the deposit data with pubkey, depositSignature, and depositDataRoot to be able for the validator creation. 
-- All this information is stored in the backend
+This step deploy the implementation of the service conttract.
 
 `01-deploy-erc721.js` (tags:  "all", "erc721" )
 
 Deploy the ERC721 contract. This is the new entry point.
 
 `02-add-validaror-erc721.js` (tags:  "all", "factory" )
+
+This deploy uses some method from  `lib/senseistake-services-contract.mjs`. 
+This prepares all the data to create a validator. 
+
+`03-verify-contracts.js`
+
+This step verify all the contract in etherscan
 
 ## Step By Step Deploy
 
