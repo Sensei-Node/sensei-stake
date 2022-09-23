@@ -47,9 +47,8 @@ contract SenseistakeServicesContract is Initializable {
     /// @notice Fixed amount of the deposit
     uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
 
-    // /// @notice Withdrawal credentials parameter, needed for deposit contract
-    // /// @dev withdrawal_credentials Commitment to a public key for withdrawals.
-    // bytes32 private immutable _withdrawalCredentials;
+    /// @notice Prefix of eth1 address for withdrawal credentials
+    uint96 private constant ETH1_ADDRESS_WITHDRAWAL_PREFIX = uint96(0x010000000000000000000000);
 
     event Claim(address indexed receiver, uint256 amount);
     event ExitDateUpdated(uint64 newExitDate);
@@ -82,7 +81,6 @@ contract SenseistakeServicesContract is Initializable {
     constructor(address ethDepositContractAddress_) {
         tokenContractAddress = msg.sender;
         depositContractAddress = ethDepositContractAddress_;
-        // _withdrawalCredentials = bytes32(abi.encodePacked(uint96(0x010000000000000000000000), address(this)));
     }
 
     /// @notice This is the receive function called when a user performs a transfer to this contract address
@@ -111,7 +109,7 @@ contract SenseistakeServicesContract is Initializable {
             value: FULL_DEPOSIT_SIZE
         }(
             validatorPubKey_,
-            abi.encodePacked(uint96(0x010000000000000000000000), address(this)),
+            abi.encodePacked(ETH1_ADDRESS_WITHDRAWAL_PREFIX, address(this)),
             depositSignature_,
             depositDataRoot_
         );
