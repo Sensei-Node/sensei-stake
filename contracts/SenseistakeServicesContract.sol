@@ -15,6 +15,7 @@ contract SenseistakeServicesContract is Initializable {
     using Address for address payable;
 
     /// @notice Determines whether the validator is active or not
+    /// @return validatorActive is true if user holds NFT and validator is active, false if validator inactive and endOperatorServices called
     bool public validatorActive;
 
     /// @notice Used in conjuction with `COMMISSION_RATE_SCALE` for determining service fees
@@ -27,6 +28,7 @@ contract SenseistakeServicesContract is Initializable {
     uint64 public exitDate;
 
     /// @notice The tokenId used to create this contract using the proxy clone
+    /// @return tokenId of the NFT related to the service contract
     uint256 public tokenId;
 
     /// @notice The amount of eth the operator can claim

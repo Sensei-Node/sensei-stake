@@ -38,7 +38,7 @@ contract SenseiStake is ERC721, Ownable {
     /// @return servicesContractImpl where the service contract template is implemented
     address public immutable servicesContractImpl;
 
-    /// @notice Current tokenId that needs to be minted
+    /// @notice Token counter for handling NFT
     Counters.Counter public tokenIdCounter;
 
     /// @notice Scale for getting the commission rate (service fee)
@@ -72,7 +72,7 @@ contract SenseiStake is ERC721, Ownable {
     /// @param name_ The token name
     /// @param symbol_ The token symbol
     /// @param commissionRate_ The service commission rate
-    /// @param commissionRate_ The service commission rate
+    /// @param ethDepositContractAddress_ The ethereum deposit contract address for validator creation
     constructor(
         string memory name_,
         string memory symbol_,
