@@ -33,9 +33,6 @@ contract SenseiStake is ERC721, Ownable {
     /// @return commissionRate the commission rate
     uint32 public commissionRate;
 
-    /// @notice Scale for getting the commission rate (service fee)
-    uint32 private constant COMMISSION_RATE_SCALE = 1_000_000;
-
     /// @notice Template service contract implementation address
     /// @dev It is used for generating clones, using hardhats proxy clone
     /// @return servicesContractImpl where the service contract template is implemented
@@ -44,11 +41,14 @@ contract SenseiStake is ERC721, Ownable {
     /// @notice Current tokenId that needs to be minted
     Counters.Counter public tokenIdCounter;
 
-    /// @notice Stores data used for creating the validator
-    mapping(uint256 => Validator) private validators;
+    /// @notice Scale for getting the commission rate (service fee)
+    uint32 private constant COMMISSION_RATE_SCALE = 1_000_000;
 
     /// @notice Fixed amount of the deposit
     uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
+
+    /// @notice Stores data used for creating the validator
+    mapping(uint256 => Validator) private _validators;
 
     event CommissionRateChanged(uint32 newCommissionRate);
     event ContractCreated(uint256 tokenIdServiceContract);
@@ -247,9 +247,9 @@ contract SenseiStake is ERC721, Ownable {
                                 '","description":"SenseiStake Validator is an ETH 2.0 validator that is being managed by SenseiNode.com",',
                                 '"external_url":"https://dashboard.senseinode.com/non-custodial/stake/eth",',
                                 '"image":"',
-                                "ipfs://bafybeiazbrn2p3ucwfchow6pxa4uqgqufvnwoykbxcrcdrwbdysrjzsydy",
+                                "ipfs://bafybeifgh6572j2e6ioxrrtyxamzciadd7anmnpyxq4b33wafqhpnncg7m",
                                 '","attributes": [{"trait_type": "Validator Address", "value":"',
-                                bytesToHexString(
+                                _bytesToHexString(
                                     validators[tokenId_].validatorPubKey
                                 ),
                                 '"}]}'
@@ -275,7 +275,7 @@ contract SenseiStake is ERC721, Ownable {
     /// @notice Helper function for converting bytes to hex string
     /// @param buffer bytes data to convert
     /// @return string converted buffer
-    function bytesToHexString(bytes memory buffer)
+    function _bytesToHexString(bytes memory buffer)
         internal
         pure
         returns (string memory)

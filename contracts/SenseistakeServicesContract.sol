@@ -22,9 +22,6 @@ contract SenseistakeServicesContract is Initializable {
     /// @return commissionRate the commission rate
     uint32 public commissionRate;
 
-    /// @notice Scale for getting the commission rate (service fee)
-    uint32 private constant COMMISSION_RATE_SCALE = 1_000_000;
-
     /// @notice Used for determining from when the user deposit can be withdrawn.
     /// @return exitDate the exit date
     uint64 public exitDate;
@@ -44,11 +41,14 @@ contract SenseistakeServicesContract is Initializable {
     /// @return tokenContractAddress the token contract address (erc721)
     address public immutable tokenContractAddress;
 
-    /// @notice Fixed amount of the deposit
-    uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
+    /// @notice Scale for getting the commission rate (service fee)
+    uint32 private constant COMMISSION_RATE_SCALE = 1_000_000;
 
     /// @notice Prefix of eth1 address for withdrawal credentials
     uint96 private constant ETH1_ADDRESS_WITHDRAWAL_PREFIX = uint96(0x010000000000000000000000);
+
+    /// @notice Fixed amount of the deposit
+    uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
 
     event Claim(address indexed receiver, uint256 amount);
     event ExitDateUpdated(uint64 newExitDate);
