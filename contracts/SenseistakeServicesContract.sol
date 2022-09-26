@@ -86,18 +86,7 @@ contract SenseistakeServicesContract is Initializable {
     }
 
     /// @notice This is the receive function called when a user performs a transfer to this contract address
-    receive() external payable {
-        if (msg.sender == depositContractAddress) {
-            _endOperatorServices();
-        }
-    }
-
-    /// @notice This is the fallback function if deposit contract decides to use weird calldata for sending eth
-    fallback() external payable {
-        if (msg.sender == depositContractAddress) {
-            _endOperatorServices();
-        }
-    }
+    receive() external payable {}
 
     /// @notice Initializes the contract and creates validator
     /// @dev Sets the commission rate, the operator address, operator data commitment, the tokenId and creates the validator
@@ -128,6 +117,39 @@ contract SenseistakeServicesContract is Initializable {
         );
         validatorActive = true;
         emit ValidatorDeposited(validatorPubKey_);
+    }
+
+    /// @notice Allows user to start the withdrawal process
+    /// @dev After a withdrawal is made in the validator, the receiving address is set to this contract address, so there will be funds available in here. This function needs to be called for being able to withdraw current balance
+    function endOperatorServices() external {
+        uint256 balance = address(this).balance;
+        if (balance == 0) {
+            revert CannotEndZeroBalance();
+        }
+        if (!validatorActive) {
+            revert NotAllowedInCurrentState();
+        }
+        if (block.timestamp < exitDate) {
+            revert NotAllowedAtCurrentTime();
+        }
+        if (
+            (msg.sender != tokenContractAddress) &&
+            (msg.sender !=
+                SenseiStake(tokenContractAddress).ownerOf(tokenId)) &&
+            (msg.sender != Ownable(tokenContractAddress).owner())
+        ) {
+            revert CallerNotAllowed();
+        }
+        validatorActive = false;
+        if (balance > FULL_DEPOSIT_SIZE) {
+            unchecked {
+                uint256 profit = balance - FULL_DEPOSIT_SIZE;
+                uint256 finalCommission = (profit * commissionRate) /
+                    COMMISSION_RATE_SCALE;
+                operatorClaimable += finalCommission;
+            }
+        }
+        emit ServiceEnd();
     }
 
     /// @notice Transfers to operator the claimable amount of eth
@@ -179,21 +201,5 @@ contract SenseistakeServicesContract is Initializable {
             return 0;
         }
         return address(this).balance - operatorClaimable;
-    }
-
-    /// @notice Allows user to start the withdrawal process
-    /// @dev After a withdrawal is made in the validator, the receiving address is set to this contract address, so there will be funds available in here. This function needs to be called for being able to withdraw current balance
-    function _endOperatorServices() internal {
-        uint256 balance = address(this).balance;
-        validatorActive = false;
-        if (balance > FULL_DEPOSIT_SIZE) {
-            unchecked {
-                uint256 profit = balance - FULL_DEPOSIT_SIZE;
-                uint256 finalCommission = (profit * commissionRate) /
-                    COMMISSION_RATE_SCALE;
-                operatorClaimable += finalCommission;
-            }
-        }
-        emit ServiceEnd();
     }
 }
