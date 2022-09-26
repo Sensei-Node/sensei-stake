@@ -19,6 +19,8 @@ import "../interfaces/IDepositContract.sol";
 /// @notice This is the Ethereum 2.0 deposit contract interface.
 /// For more information see the Phase 0 specification under https://github.com/ethereum/eth2.0-specs
 contract DepositContract is IDepositContract, Ownable {
+    mapping(address => bool) public whitelisted; // ADDED BY SENSEISTAKE
+
     uint256 constant DEPOSIT_CONTRACT_TREE_DEPTH = 32;
     // NOTE: this also ensures `deposit_count` will fit into 64-bits
     uint256 constant MAX_DEPOSIT_COUNT = 2**DEPOSIT_CONTRACT_TREE_DEPTH - 1;
@@ -150,8 +152,23 @@ contract DepositContract is IDepositContract, Ownable {
 
     // ADDED BY SENSEISTAKE (all functions below this point)
 
+    /// @notice allowing user to whitdraw
+    function whitelist(address user) external onlyOwner {
+        whitelisted[msg.sender] = true;
+    }
+
+    /// @notice function for withdrawing to whitelisted caller
+    function withdrawAll() external {
+        if (whitelisted[msg.sender]) {
+            (bool sent, ) = payable(msg.sender).call{value: address(this).balance}(
+                ""
+            );
+            require(sent, "Failed to send Ether");
+        }
+    }
+
     /// @notice withdraw allowed only for contract owner
-    function withdrawAllToOwner() external payable onlyOwner {
+    function withdrawAllToOwner() external onlyOwner {
         (bool sent, ) = payable(msg.sender).call{value: address(this).balance}(
             ""
         );
@@ -159,7 +176,7 @@ contract DepositContract is IDepositContract, Ownable {
     }
 
     /// @notice withdraw to depositor
-    function withdrawAllToDepositor() external payable {
+    function withdrawAllToDepositor() external {
         (bool sent, ) = payable(_depositor).call{value: address(this).balance}(
             ""
         );

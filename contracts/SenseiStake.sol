@@ -172,23 +172,6 @@ contract SenseiStake is ERC721, Ownable {
         _safeMint(msg.sender, tokenId);
     }
 
-    /// @notice Allows user or contract owner to start the withdrawal process
-    /// @dev Calls end operator services in service contract
-    /// @param tokenId_ the token id to end
-    function endOperatorServices(uint256 tokenId_) external {
-        if (msg.sender != ownerOf(tokenId_) && msg.sender != owner()) {
-            revert NotOwner();
-        }
-        address proxy = Clones.predictDeterministicAddress(
-            servicesContractImpl,
-            bytes32(tokenId_)
-        );
-        SenseistakeServicesContract serviceContract = SenseistakeServicesContract(
-                payable(proxy)
-            );
-        serviceContract.endOperatorServices();
-    }
-
     /// @notice Performs withdraw of balance in service contract
     /// @dev The `tokenId_` is used for deterining the the service contract from which the owner can perform a withdraw (if possible)
     /// @param tokenId_ Is the token Id
