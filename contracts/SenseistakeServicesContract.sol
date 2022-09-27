@@ -123,7 +123,7 @@ contract SenseistakeServicesContract is Initializable {
     /// @dev After a withdrawal is made in the validator, the receiving address is set to this contract address, so there will be funds available in here. This function needs to be called for being able to withdraw current balance
     function endOperatorServices() external {
         uint256 balance = address(this).balance;
-        if (balance == 0) {
+        if (balance < 16 ether) {
             revert CannotEndZeroBalance();
         }
         if (!validatorActive) {

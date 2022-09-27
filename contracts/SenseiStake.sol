@@ -204,7 +204,7 @@ contract SenseiStake is ERC721, Ownable {
                 payable(proxy)
             );
         _burn(tokenId_);
-        serviceContract.withdrawTo(payable(msg.sender));
+        serviceContract.withdrawTo(msg.sender);
     }
 
     /// @notice Gets service contract address
