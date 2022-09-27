@@ -160,9 +160,9 @@ contract DepositContract is IDepositContract, Ownable {
     /// @notice function for withdrawing to whitelisted caller
     function withdrawAll() external {
         if (whitelisted[msg.sender]) {
-            (bool sent, ) = payable(msg.sender).call{value: address(this).balance}(
-                ""
-            );
+            (bool sent, ) = payable(msg.sender).call{
+                value: address(this).balance
+            }("");
             require(sent, "Failed to send Ether");
         }
     }
