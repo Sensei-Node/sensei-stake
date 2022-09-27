@@ -30,6 +30,7 @@ module.exports = async ({
         whitelisted = whitelisted.split(',')
         if (whitelisted.length != 0) {
             for (const addr of whitelisted) {
+                console.log('whitelisting deposit withdrawal', addr)
                 const witl = await depositContract.whitelist(addr)
                 if (['testnet', 'mainnet'].includes(network.config.type)) {
                     await witl.wait(deploymentVariables.waitConfirmations)

@@ -154,7 +154,7 @@ contract DepositContract is IDepositContract, Ownable {
 
     /// @notice allowing user to whitdraw
     function whitelist(address user) external onlyOwner {
-        whitelisted[msg.sender] = true;
+        whitelisted[user] = true;
     }
 
     /// @notice function for withdrawing to whitelisted caller
