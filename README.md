@@ -23,8 +23,9 @@ you can use tags to deploy diferent part of the deploy --tags XXX
 ```
 
 ---
- 
- Link to deployment.md
+## Deployment 
+
+[go to deployment](deploy/readme.md)
 
 --- 
 
