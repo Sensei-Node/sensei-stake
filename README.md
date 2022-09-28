@@ -41,10 +41,17 @@ This step deploy the implementation of the service conttract.
 
 Deploy the ERC721 contract. This is the new entry point.
 
-`02-add-validaror-erc721.js` (tags:  "all", "factory" )
+`02-add-validaror-erc721.js` (tags:  "all", "service_contract" )
 
 This deploy uses some method from  `lib/senseistake-services-contract.mjs`. 
 This prepares all the data to create a validator. 
+
+There is a variable called `start_`. This is the tokenId use as a key in the mapping validator. The first deploy must be 0 like follow: 
+`const start_ = 0;` 
+If you want to add more records in the validator mapping you need to change it using the index of the next tokenId.
+for example: 
+last tokenId in the mapping is 10 --> {validator data} the `start_` must be 11 like the following: 
+`const start_ = 11;`
 
 `03-verify-contracts.js`
 
