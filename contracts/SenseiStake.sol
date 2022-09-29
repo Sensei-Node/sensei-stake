@@ -239,11 +239,13 @@ contract SenseiStake is ERC721, Ownable {
                     Base64.encode(
                         bytes(
                             abi.encodePacked(
-                                '{"name":"Validator #',
+                                '{"name":"ETH Validator #',
                                 Strings.toString(tokenId_),
                                 '","description":"SenseiStake Validator is an ETH 2.0 validator that is being managed by SenseiNode.com",',
-                                '"external_url":"https://dashboard.senseinode.com/non-custodial/stake/eth",',
-                                '"image":"',
+                                '"external_url":"https://dashboard.senseinode.com/senseistake",',
+                                '"minted_at":',
+                                Strings.toString(block.timestamp),
+                                ',"image":"',
                                 "ipfs://bafybeifgh6572j2e6ioxrrtyxamzciadd7anmnpyxq4b33wafqhpnncg7m",
                                 '","attributes": [{"trait_type": "Validator Address", "value":"',
                                 _bytesToHexString(
