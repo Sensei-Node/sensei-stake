@@ -50,6 +50,9 @@ contract SenseiStake is ERC721, Ownable {
     /// @notice Stores data used for creating the validator
     mapping(uint256 => Validator) private _validators;
 
+    /// @notice For determining if a validator pubkey was already added or not
+    mapping(bytes => bool) private _addedValidators;
+
     event CommissionRateChanged(uint32 newCommissionRate);
     event ContractCreated(uint256 tokenIdServiceContract);
     event ValidatorAdded(
@@ -58,6 +61,7 @@ contract SenseiStake is ERC721, Ownable {
         uint64 exitDate
     );
 
+    error ValidatorAlreadyAdded();
     error CommisionRateTooHigh(uint32 rate);
     error InvalidDepositSignature();
     error InvalidPublicKey();
@@ -105,6 +109,9 @@ contract SenseiStake is ERC721, Ownable {
     ) external onlyOwner {
         if (tokenId_ <= tokenIdCounter.current()) {
             revert TokenIdAlreadyMinted();
+        }
+        if (_addedValidators[validatorPubKey_]) {
+            revert ValidatorAlreadyAdded();
         }
         if (validatorPubKey_.length != 48) {
             revert InvalidPublicKey();
@@ -176,7 +183,7 @@ contract SenseiStake is ERC721, Ownable {
     /// @dev Calls end operator services in service contract
     /// @param tokenId_ the token id to end
     function endOperatorServices(uint256 tokenId_) external {
-        if (msg.sender != ownerOf(tokenId_) && msg.sender != owner()) {
+        if (_isApprovedOrOwner(msg.sender, tokenId_) && msg.sender != owner()) {
             revert NotOwner();
         }
         address proxy = Clones.predictDeterministicAddress(
@@ -189,11 +196,22 @@ contract SenseiStake is ERC721, Ownable {
         serviceContract.endOperatorServices();
     }
 
+
+    /// @notice Redefinition of internal function `_isApprovedOrOwner`
+    /// @dev Returns whether `spender` is allowed to manage `tokenId`.
+    /// @param spender: the address to check if it has approval or ownership of tokenId
+    /// @param tokenId: the asset to check
+    /// @return bool whether it is approved or owner of the token
+    function isApprovedOrOwner(address spender, uint256 tokenId) external view returns (bool) {
+        address owner = ERC721.ownerOf(tokenId);
+        return (spender == owner || isApprovedForAll(owner, spender) || getApproved(tokenId) == spender);
+    }
+
     /// @notice Performs withdraw of balance in service contract
     /// @dev The `tokenId_` is used for deterining the the service contract from which the owner can perform a withdraw (if possible)
     /// @param tokenId_ Is the token Id
     function withdraw(uint256 tokenId_) external {
-        if (msg.sender != ownerOf(tokenId_)) {
+        if (_isApprovedOrOwner(msg.sender, tokenId_)) {
             revert NotOwner();
         }
         address proxy = Clones.predictDeterministicAddress(
@@ -250,7 +268,15 @@ contract SenseiStake is ERC721, Ownable {
                                 '","attributes": [{"trait_type": "Validator Address", "value":"',
                                 _bytesToHexString(
                                     _validators[tokenId_].validatorPubKey
-                                ),
+                                ),'",',
+                                '"trait_type": "Exit Date", "value":"',
+                                Strings.toString(
+                                    _validators[tokenId_].exitDate
+                                ),'",',
+                                '"trait_type": "Commission Rate", "value":"',
+                                Strings.toString(
+                                    commissionRate
+                                ),'",',
                                 '"}]}'
                             )
                         )

@@ -134,8 +134,7 @@ contract SenseistakeServicesContract is Initializable {
         }
         if (
             (msg.sender != tokenContractAddress) &&
-            (msg.sender !=
-                SenseiStake(tokenContractAddress).ownerOf(tokenId)) &&
+            (SenseiStake(tokenContractAddress).isApprovedOrOwner(msg.sender, tokenId)) &&
             (msg.sender != Ownable(tokenContractAddress).owner())
         ) {
             revert CallerNotAllowed();
