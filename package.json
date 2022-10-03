@@ -16,7 +16,7 @@
     "coverage": "npx hardhat coverage",
     "lint": "eslint test/*.js",
     "lint:fix": "eslint test/*.js --fix",
-    "prettier": "prettier --write 'contracts/**/*.sol'",
+    "prettier": "prettier --write 'contracts/**/*.sol' --write 'test/foundry/**/*.sol'",
     "slither": "slither ./contracts --solc-remaps '@openzeppelin=node_modules/@openzeppelin' --exclude naming-convention,external-function,low-level-calls"
   },
   "devDependencies": {

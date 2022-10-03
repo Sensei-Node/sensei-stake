@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.6.0 <0.9.0;
 
-import "./Vm.sol";
 import "./console.sol";
 import "./console2.sol";
+import "./StdJson.sol";
 
 abstract contract Script {
     bool public IS_SCRIPT = true;
@@ -35,5 +35,10 @@ abstract contract Script {
 
     function addressFromLast20Bytes(bytes32 bytesValue) internal pure returns (address) {
         return address(uint160(uint256(bytesValue)));
+    }
+
+    function deriveRememberKey(string memory mnemonic, uint32 index) internal returns (address who, uint256 privateKey) {
+        privateKey = vm.deriveKey(mnemonic, index);
+        who = vm.rememberKey(privateKey);
     }
 }
