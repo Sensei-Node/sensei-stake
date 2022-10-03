@@ -25,7 +25,7 @@ you can use tags to deploy diferent part of the deploy --tags XXX
 ---
 ## Deployment 
 
-[go to deployment](deploy/readme.md)
+[go to deployment](deployment.md)
 
 --- 
 

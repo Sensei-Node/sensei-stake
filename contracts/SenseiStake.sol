@@ -183,7 +183,7 @@ contract SenseiStake is ERC721, Ownable {
     /// @dev Calls end operator services in service contract
     /// @param tokenId_ the token id to end
     function endOperatorServices(uint256 tokenId_) external {
-        if (_isApprovedOrOwner(msg.sender, tokenId_) && msg.sender != owner()) {
+        if (!_isApprovedOrOwner(msg.sender, tokenId_) && msg.sender != owner()) {
             revert NotOwner();
         }
         address proxy = Clones.predictDeterministicAddress(
@@ -211,7 +211,7 @@ contract SenseiStake is ERC721, Ownable {
     /// @dev The `tokenId_` is used for deterining the the service contract from which the owner can perform a withdraw (if possible)
     /// @param tokenId_ Is the token Id
     function withdraw(uint256 tokenId_) external {
-        if (_isApprovedOrOwner(msg.sender, tokenId_)) {
+        if (!_isApprovedOrOwner(msg.sender, tokenId_)) {
             revert NotOwner();
         }
         address proxy = Clones.predictDeterministicAddress(
