@@ -25,6 +25,7 @@ contract SenseiStake is ERC721, Ownable {
         bytes validatorPubKey;
         bytes depositSignature;
         bytes32 depositDataRoot;
+        bytes32 depositMessageRoot;
         uint64 exitDate;
     }
 
@@ -33,13 +34,16 @@ contract SenseiStake is ERC721, Ownable {
     /// @return commissionRate the commission rate
     uint32 public commissionRate;
 
+    /// @notice Token counter for handling NFT
+    Counters.Counter public tokenIdCounter;
+
+    /// @notice Stores data used for creating the validator
+    mapping(uint256 => Validator) public validators;
+
     /// @notice Template service contract implementation address
     /// @dev It is used for generating clones, using hardhats proxy clone
     /// @return servicesContractImpl where the service contract template is implemented
     address public immutable servicesContractImpl;
-
-    /// @notice Token counter for handling NFT
-    Counters.Counter public tokenIdCounter;
 
     /// @notice Scale for getting the commission rate (service fee)
     uint32 private constant COMMISSION_RATE_SCALE = 1_000_000;
@@ -47,11 +51,8 @@ contract SenseiStake is ERC721, Ownable {
     /// @notice Fixed amount of the deposit
     uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
 
-    /// @notice Stores data used for creating the validator
-    mapping(uint256 => Validator) private _validators;
-
     /// @notice For determining if a validator pubkey was already added or not
-    mapping(bytes => bool) private _addedValidators;
+    mapping(bytes => bool) public _addedValidators;
 
     event CommissionRateChanged(uint32 newCommissionRate);
     event ContractCreated(uint256 tokenIdServiceContract);
@@ -105,6 +106,7 @@ contract SenseiStake is ERC721, Ownable {
         bytes calldata validatorPubKey_,
         bytes calldata depositSignature_,
         bytes32 depositDataRoot_,
+        bytes32 depositMessageRoot_,
         uint64 exitDate_
     ) external onlyOwner {
         if (tokenId_ <= tokenIdCounter.current()) {
@@ -126,10 +128,11 @@ contract SenseiStake is ERC721, Ownable {
             validatorPubKey_,
             depositSignature_,
             depositDataRoot_,
+            depositMessageRoot_,
             exitDate_
         );
         _addedValidators[validatorPubKey_] = true;
-        _validators[tokenId_] = validator;
+        validators[tokenId_] = validator;
         emit ValidatorAdded(tokenId_, validatorPubKey_, exitDate_);
     }
 
@@ -153,7 +156,7 @@ contract SenseiStake is ERC721, Ownable {
         // increment tokenid counter
         tokenIdCounter.increment();
         uint256 tokenId = tokenIdCounter.current();
-        Validator memory validator = _validators[tokenId];
+        Validator memory validator = validators[tokenId];
         // check that validator exists
         if (validator.validatorPubKey.length == 0) {
             revert NoMoreValidatorsLoaded();
@@ -268,11 +271,11 @@ contract SenseiStake is ERC721, Ownable {
                                 "ipfs://bafybeifgh6572j2e6ioxrrtyxamzciadd7anmnpyxq4b33wafqhpnncg7m",
                                 '","attributes": [{"trait_type": "Validator Address", "value":"',
                                 _bytesToHexString(
-                                    _validators[tokenId_].validatorPubKey
+                                    validators[tokenId_].validatorPubKey
                                 ),'"},{',
                                 '"trait_type": "Exit Date", "value":',
                                 Strings.toString(
-                                    _validators[tokenId_].exitDate
+                                    validators[tokenId_].exitDate
                                 ),'},{',
                                 '"trait_type": "Commission Rate", "value":"',
                                 Strings.toString(
@@ -290,7 +293,7 @@ contract SenseiStake is ERC721, Ownable {
     /// @return bool true if next validator is available or else false
     function validatorAvailable() external view returns (bool) {
         return
-            _validators[tokenIdCounter.current() + 1].validatorPubKey.length >
+            validators[tokenIdCounter.current() + 1].validatorPubKey.length >
             0;
     }
 

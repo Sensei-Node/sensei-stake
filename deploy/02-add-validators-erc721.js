@@ -11,7 +11,8 @@ module.exports = async ({deployments, upgrades, run}) => {
         bls,
         createOperatorDepositData,
         saltBytesToContractAddress,
-        verifySignature
+        verifySignature,
+        bufferHex
     } = lib);
 
     // start from
@@ -50,13 +51,10 @@ module.exports = async ({deployments, upgrades, run}) => {
         const depositData = createOperatorDepositData(operatorPrivKey, contractAddress, network.config.type);
         const exitDate = BigNumber.from(new Date(2024, 0, 1).getTime() / 1000);
 
-        let validSignature = true;
-        // if (['testnet', 'mainnet'].includes(network.config.type)) {
-        //     validSignature = verifySignature(depositData)
-        // }
-
+        // Local check for signature validity
+        const validSignature = verifySignature(depositData)
         if (!validSignature) {
-            console.error('Deposit signature invalid for pubkey',  utils.hexlify(depositData.validatorPubKey));
+            console.error('Deposit signature invalid for pubkey', utils.hexlify(depositData.validatorPubKey));
             break;
         }
         
@@ -65,11 +63,30 @@ module.exports = async ({deployments, upgrades, run}) => {
             operatorPubKeyBytes,
             depositData.depositSignature,
             depositData.depositDataRoot,
+            depositData.depositMessageRoot,
             exitDate
         )
         if (['testnet', 'mainnet'].includes(network.config.type)) {
             await fcs.wait(deploymentVariables.waitConfirmations)
         }
+
+        // Blockchain validator check for signature validity
+        // First we get uploaded validator data
+        const validator_bc = await tokenContract.validators(index);
+        const validator_corrected = {
+            // validatorPubKey: bufferHex('b43c3e2192124c3c7bb3871d65dd0bbbf467bd534f2c45a40db02cddcdd4a0245bf7368908f9ffac102d4bfb84efd5bb'), // this should fail and break
+            validatorPubKey: bufferHex(validator_bc.validatorPubKey.slice(2)),
+            depositSignature: bufferHex(validator_bc.depositSignature.slice(2)),
+            depositMessageRoot: bufferHex(validator_bc.depositMessageRoot.slice(2)),
+            network: network.config.type
+        }
+        // Then we format it with buffer and verify it
+        const validSignature_blockchain = verifySignature(validator_corrected)
+        if (!validSignature_blockchain) {
+            console.error('Deposit signature invalid for pubkey', validator_bc.validatorPubKey);
+            break;
+        }
+
         validatorPublicKeys.push(utils.hexlify(operatorPubKeyBytes));
     
         // console.log("\n-- Validator (operator) deposit data --")
