@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.4;
+pragma solidity ^0.8.0;
 
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
@@ -62,6 +62,7 @@ contract SenseistakeServicesContract is Initializable {
     error CallerNotAllowed();
     error CannotEndZeroBalance();
     error EmptyClaimableForOperator();
+    error IncrementTooHigh();
     error NotAllowedAtCurrentTime();
     error NotAllowedInCurrentState();
     error NotEarlierThanOriginalDate();
@@ -134,8 +135,7 @@ contract SenseistakeServicesContract is Initializable {
         }
         if (
             (msg.sender != tokenContractAddress) &&
-            (msg.sender !=
-                SenseiStake(tokenContractAddress).ownerOf(tokenId)) &&
+            (!SenseiStake(tokenContractAddress).isApprovedOrOwner(msg.sender, tokenId)) &&
             (msg.sender != Ownable(tokenContractAddress).owner())
         ) {
             revert CallerNotAllowed();
@@ -173,6 +173,9 @@ contract SenseistakeServicesContract is Initializable {
         }
         if (exitDate_ < exitDate) {
             revert NotEarlierThanOriginalDate();
+        }
+        if (exitDate_ > (exitDate + 720 days)) {
+            revert IncrementTooHigh();
         }
         exitDate = exitDate_;
         emit ExitDateUpdated(exitDate_);

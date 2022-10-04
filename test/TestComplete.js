@@ -152,7 +152,7 @@ describe('Complete', () => {
     const sc_addr = await tokenContract.getServiceContractAddress(1);
     const sc = await contrService.attach(sc_addr);
 
-    await expect(sc.updateExitDate(parseInt(new Date(2026, 0, 2).getTime() / 1000))).to.be.ok;
+    await expect(sc.updateExitDate(parseInt(new Date(2024, 0, 2).getTime() / 1000))).to.be.ok;
     
   });
 
@@ -196,7 +196,7 @@ describe('Complete', () => {
     await callToEOS(sc, tokenContract, aliceWhale);
 
     await expect(sc.updateExitDate(
-      parseInt(new Date(2026, 0, 2).getTime() / 1000))).to.be.revertedWith("ValidatorNotActive");
+      parseInt(new Date(2024, 0, 2).getTime() / 1000))).to.be.revertedWith("ValidatorNotActive");
     
   });
 

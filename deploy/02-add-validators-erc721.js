@@ -10,7 +10,8 @@ module.exports = async ({deployments, upgrades, run}) => {
     ({
         bls,
         createOperatorDepositData,
-        saltBytesToContractAddress
+        saltBytesToContractAddress,
+        verifySignature
     } = lib);
 
     // start from
@@ -49,6 +50,16 @@ module.exports = async ({deployments, upgrades, run}) => {
         const depositData = createOperatorDepositData(operatorPrivKey, contractAddress, network.config.type);
         const exitDate = BigNumber.from(new Date(2024, 0, 1).getTime() / 1000);
 
+        let validSignature = true;
+        // if (['testnet', 'mainnet'].includes(network.config.type)) {
+        //     validSignature = verifySignature(depositData)
+        // }
+
+        if (!validSignature) {
+            console.error('Deposit signature invalid for pubkey',  utils.hexlify(depositData.validatorPubKey));
+            break;
+        }
+        
         const fcs = await tokenContract.addValidator(
             utils.hexZeroPad(utils.hexlify(index), 32),
             operatorPubKeyBytes,
@@ -59,7 +70,6 @@ module.exports = async ({deployments, upgrades, run}) => {
         if (['testnet', 'mainnet'].includes(network.config.type)) {
             await fcs.wait(deploymentVariables.waitConfirmations)
         }
-
         validatorPublicKeys.push(utils.hexlify(operatorPubKeyBytes));
     
         // console.log("\n-- Validator (operator) deposit data --")
@@ -68,7 +78,6 @@ module.exports = async ({deployments, upgrades, run}) => {
         // console.log("Validator deposit data root: ", utils.hexlify(service_contract.depositData.depositDataRoot));
         // console.log("Exit date: ", utils.hexlify(service_contract.exitDate));
         // console.log("-- EOF --\n")
-    
         // console.log("\n-- Validator (operator) keystore --")
         // console.log(JSON.stringify(service_contract.keystore));
         // console.log("-- EOF --\n")

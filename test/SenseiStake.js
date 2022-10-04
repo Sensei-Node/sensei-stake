@@ -102,6 +102,23 @@ describe('SenseiStake', () => {
         )
         await expect(addValidator).to.be.revertedWith("TokenIdAlreadyMinted");
     })
+    it('1.6 Should fail if validator was already added', async function () {
+        const addValidator = await tokenContract.addValidator(
+            correctLenBytes['tokenId'],
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['validatorPubKey']),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositSignature']),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositDataRoot']),
+            exitDate
+        )
+        const addValidator2 = tokenContract.addValidator(
+            correctLenBytes['tokenId'],
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['validatorPubKey']),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositSignature']),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositDataRoot']),
+            exitDate
+        )
+        await expect(addValidator2).to.be.revertedWith("ValidatorAlreadyAdded");
+    });
   });
 
   describe('2. createContract should fail if incorrect data provided', async function () {
@@ -201,6 +218,7 @@ describe('SenseiStake', () => {
         await expect(transfer).to.be.revertedWith("ERC721: caller is not token owner nor approved");
     });
   });
+
   describe('8. test validatorAvailable', async function () {
     const correctLenBytes = {
         validatorPubKey: 48,
@@ -215,6 +233,20 @@ describe('SenseiStake', () => {
             value: ethers.utils.parseEther("32")
         });
         expect(await tokenContract.connect(otherPerson).validatorAvailable()).to.equal(true)
+    });
+  });
+
+  describe('9. update exitDate', async function () {
+    it('9.1 Should revert if exitDate > 2 years', async function () {
+        await tokenContract.connect(aliceWhale).createContract({
+            value: ethers.utils.parseEther("32")
+        });
+
+        const sc_addr = await tokenContract.getServiceContractAddress(1);
+        const sc = await contrService.attach(sc_addr);
+        const updateExitDate = sc.updateExitDate(parseInt(new Date(2028, 0, 2).getTime() / 1000));
+
+        await expect(updateExitDate).to.be.revertedWith("IncrementTooHigh");
     });
   });
 });
