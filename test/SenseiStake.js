@@ -102,6 +102,23 @@ describe('SenseiStake', () => {
         )
         await expect(addValidator).to.be.revertedWith("TokenIdAlreadyMinted");
     })
+    it('1.6 Should fail if validator was already added', async function () {
+        const addValidator = await tokenContract.addValidator(
+            correctLenBytes['tokenId'],
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['validatorPubKey']),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositSignature']),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositDataRoot']),
+            exitDate
+        )
+        const addValidator2 = tokenContract.addValidator(
+            correctLenBytes['tokenId'],
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['validatorPubKey']),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositSignature']),
+            ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositDataRoot']),
+            exitDate
+        )
+        await expect(addValidator2).to.be.revertedWith("ValidatorAlreadyAdded");
+    });
   });
 
   describe('2. createContract should fail if incorrect data provided', async function () {

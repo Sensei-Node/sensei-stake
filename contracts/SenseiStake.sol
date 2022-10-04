@@ -128,6 +128,7 @@ contract SenseiStake is ERC721, Ownable {
             depositDataRoot_,
             exitDate_
         );
+        _addedValidators[validatorPubKey_] = true;
         _validators[tokenId_] = validator;
         emit ValidatorAdded(tokenId_, validatorPubKey_, exitDate_);
     }
