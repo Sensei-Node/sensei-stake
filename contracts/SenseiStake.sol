@@ -269,16 +269,16 @@ contract SenseiStake is ERC721, Ownable {
                                 '","attributes": [{"trait_type": "Validator Address", "value":"',
                                 _bytesToHexString(
                                     _validators[tokenId_].validatorPubKey
-                                ),'",',
-                                '"trait_type": "Exit Date", "value":"',
+                                ),'"},{',
+                                '"trait_type": "Exit Date", "value":',
                                 Strings.toString(
                                     _validators[tokenId_].exitDate
-                                ),'",',
+                                ),'},{',
                                 '"trait_type": "Commission Rate", "value":"',
                                 Strings.toString(
-                                    commissionRate
-                                ),'",',
-                                '"}]}'
+                                    (COMMISSION_RATE_SCALE / commissionRate)
+                                ),
+                                '%"}]}'
                             )
                         )
                     )
