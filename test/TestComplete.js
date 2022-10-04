@@ -1,12 +1,10 @@
 const {deployments} = require('hardhat');
 const {ethers} = require('hardhat');
-const {utils} = {ethers};
 const chai = require('chai');
 require('solidity-coverage');
 const expect = chai.expect;
 const { deploymentVariables, waitConfirmations } = require("../helpers/variables");
 const { network } = require("hardhat")
-const should = chai.should();
 
 describe('Complete', () => {
   let owner, aliceWhale, operator, bob;
@@ -110,8 +108,16 @@ describe('Complete', () => {
   });
 
   describe('2. test end Operator Services', () => {
-
-    it('2.1 endOperator Services without had withdrawn before should be revert CannotEndZeroBalance ', async function () {
+    it('2.1 endOperator Services working ', async function () {
+      /*
+        1. deposit 32 eth (and create contract)
+        2. EndOperator services 
+      */
+      await withdrawAllToDepositor();
+      await callToEOS(sc, tokenContract, aliceWhale);
+      expect (await sc.validatorActive()).to.equal(false);
+    }); 
+    it('2.2 endOperator Services without had withdrawn before should be revert CannotEndZeroBalance ', async function () {
       /*
         1. deposit 32 eth (and create contract)
         2. EndOperator services without had withdrawn before
@@ -119,6 +125,7 @@ describe('Complete', () => {
       */
 
       await expect (tokenContract.connect(aliceWhale).endOperatorServices(1)).to.be.revertedWith("CannotEndZeroBalance");
+      expect (await sc.validatorActive()).to.equal(true);
     });
     it('2.2 endOperator Services out of time should be revert NotAllowedAtCurrentTime', async function () {
       /*
@@ -129,6 +136,7 @@ describe('Complete', () => {
       await withdrawAllToDepositor();
       const eeop = tokenContract.connect(aliceWhale).endOperatorServices(1)
       await expect (eeop).to.be.revertedWith("NotAllowedAtCurrentTime()");
+      expect (await sc.validatorActive()).to.equal(true);
     });
   });
   describe('3. test update ExitDate', () => {
@@ -137,9 +145,9 @@ describe('Complete', () => {
         1. deposit 32 eth
         2. update exit date
       */
-
-      await expect(sc.updateExitDate(parseInt(new Date(2024, 0, 2).getTime() / 1000))).to.be.ok;
-      
+      const newExitDate = parseInt(new Date(2025, 0, 2).getTime() / 1000);
+      expect(await sc.updateExitDate(newExitDate)).to.be.ok;
+      expect(await sc.exitDate()).to.be.eq(newExitDate);
     });
     it('3.2 update ExitDate earlier time param should revert with NotEarlierThanOriginalDate', async function () {
       /*
@@ -149,9 +157,11 @@ describe('Complete', () => {
       */
 
       // 2. update exit date with params of earlier date
-      const tx2 = sc.updateExitDate(parseInt(new Date(2023, 0, 2).getTime() / 1000));
+      const newExitDate = parseInt(new Date(2023, 0, 1).getTime() / 1000);
+      const tx2 = sc.updateExitDate(newExitDate);
       // 3. revert with NotEarlierThanOriginalDate
       await expect(tx2).to.be.revertedWith("NotEarlierThanOriginalDate");
+      expect(await sc.exitDate()).to.be.above(newExitDate);
     });
 
     it('3.3 update ExitDate in withdrawal state revert with ValidatorNotActive', async function () {
@@ -194,7 +204,7 @@ describe('Complete', () => {
         3. try to send eth to the contract
       */
 
-      const txSend = await aliceWhale.sendTransaction({
+      await aliceWhale.sendTransaction({
         to:sc_addr, 
         value: ethers.utils.parseUnits("3","ether")
       });
@@ -277,7 +287,6 @@ describe('Complete', () => {
   });
   describe('10. test create validator', () => {
 
-    let amount = "32000000000000000000"
     const correctLenBytes = {
         validatorPubKey: 48,
         depositSignature: 96,
