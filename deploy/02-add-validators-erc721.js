@@ -56,7 +56,6 @@ module.exports = async ({deployments, upgrades, run}) => {
         let dDate = new Date(new Date().toISOString().slice(0, 10));
         dDate.setMonth(dDate.getMonth() + 6);
         const exitDate = BigNumber.from(dDate.getTime() / 1000);
-        console.log(exitDate.toString())
 
         // Local check for signature validity
         const validSignature = verifySignatureDepositMessageRoot(depositData)

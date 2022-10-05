@@ -14,9 +14,14 @@ import {SenseiStake} from "./SenseiStake.sol";
 contract SenseistakeServicesContract is Initializable {
     using Address for address payable;
 
-    /// @notice Determines whether the validator is active or not
-    /// @return validatorActive is true if user holds NFT and validator is active, false if validator inactive and endOperatorServices called
-    bool public validatorActive;
+    /// @notice Struct used for transactions that could be needed, only created by protocol owner and executed by token owner/allowed
+    struct Transaction {
+        address to;
+        uint256 value;
+        bytes data;
+        bool executed;
+        string description;
+    }
 
     /// @notice Used in conjuction with `COMMISSION_RATE_SCALE` for determining service fees
     /// @dev Is set up on the constructor and can be modified with provided setter aswell
@@ -34,6 +39,13 @@ contract SenseistakeServicesContract is Initializable {
     /// @notice The amount of eth the operator can claim
     /// @return state the operator claimable amount (in eth)
     uint256 public operatorClaimable;
+
+    /// @notice List of transactions that might be proposed
+    Transaction[] public transactions;
+
+    /// @notice Determines whether the validator is active or not
+    /// @return validatorActive is true if user holds NFT and validator is active, false if validator inactive and endOperatorServices called
+    bool public validatorActive;
 
     /// @notice The address for being able to deposit to the ethereum deposit contract
     /// @return depositContractAddress deposit contract address
@@ -54,8 +66,15 @@ contract SenseistakeServicesContract is Initializable {
     uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
 
     event Claim(address indexed receiver, uint256 amount);
+    event ExecuteTransaction(uint256 indexed index);
     event ExitDateUpdated(uint64 newExitDate);
     event ServiceEnd();
+    event SubmitTransaction(
+        uint256 indexed index,
+        address indexed to,
+        uint256 value,
+        bytes data
+    );
     event ValidatorDeposited(bytes pubkey);
     event Withdrawal(address indexed to, uint256 value);
 
@@ -67,6 +86,9 @@ contract SenseistakeServicesContract is Initializable {
     error NotAllowedInCurrentState();
     error NotEarlierThanOriginalDate();
     error NotOperator();
+    error TransactionAlreadyExecuted();
+    error TransactionIndexInvalid();
+    error TransactionCallFailed();
     error ValidatorIsActive();
     error ValidatorNotActive();
 
@@ -74,6 +96,24 @@ contract SenseistakeServicesContract is Initializable {
     modifier onlyOperator() {
         if (msg.sender != Ownable(tokenContractAddress).owner()) {
             revert NotOperator();
+        }
+        _;
+    }
+
+    /// @notice For determining if specified index for transactions list is valid
+    /// @param index_: Transaction index to verify
+    modifier txExists(uint256 index_) {
+        if (index_ >= transactions.length) {
+            revert TransactionIndexInvalid();
+        }
+        _;
+    }
+
+    /// @notice For determining if specified transaction index was not executed
+    /// @param index_: Transaction index to verify
+    modifier notExecuted(uint256 index_) {
+        if (transactions[index_].executed) {
+            revert TransactionAlreadyExecuted();
         }
         _;
     }
@@ -135,7 +175,12 @@ contract SenseistakeServicesContract is Initializable {
         }
         if (
             (msg.sender != tokenContractAddress) &&
-            (!SenseiStake(tokenContractAddress).isApprovedOrOwner(msg.sender, tokenId)) &&
+            (
+                !SenseiStake(tokenContractAddress).isApprovedOrOwner(
+                    msg.sender,
+                    tokenId
+                )
+            ) &&
             (msg.sender != Ownable(tokenContractAddress).owner())
         ) {
             revert CallerNotAllowed();
@@ -152,6 +197,36 @@ contract SenseistakeServicesContract is Initializable {
         emit ServiceEnd();
     }
 
+    /// @notice Executes transaction index_
+    /// @dev Only allowed to be called by token owner or allowed
+    /// @param index_: transaction at index to be executed
+    function executeTransaction(uint256 index_)
+        external
+        txExists(index_)
+        notExecuted(index_)
+    {
+        if (
+            !SenseiStake(tokenContractAddress).isApprovedOrOwner(
+                msg.sender,
+                tokenId
+            )
+        ) {
+            revert CallerNotAllowed();
+        }
+
+        Transaction storage transaction = transactions[index_];
+        transaction.executed = true;
+
+        (bool success, ) = transaction.to.call{value: transaction.value}(
+            transaction.data
+        );
+        if (!success) {
+            revert TransactionCallFailed();
+        }
+
+        emit ExecuteTransaction(index_);
+    }
+
     /// @notice Transfers to operator the claimable amount of eth
     function operatorClaim() external onlyOperator {
         if (operatorClaimable == 0) {
@@ -162,6 +237,29 @@ contract SenseistakeServicesContract is Initializable {
         address _owner = Ownable(tokenContractAddress).owner();
         emit Claim(_owner, claimable);
         payable(_owner).sendValue(claimable);
+    }
+
+    /// @notice Only protocol owner can submit a new transaction
+    /// @param to_: address to call to
+    /// @param value_: transaction value
+    /// @param data_: transaction data
+    /// @param description_: transaction description for easy read
+    function submitTransaction(
+        address to_,
+        uint256 value_,
+        bytes calldata data_,
+        string calldata description_
+    ) external onlyOperator {
+        transactions.push(
+            Transaction({
+                to: to_,
+                value: value_,
+                data: data_,
+                executed: false,
+                description: description_
+            })
+        );
+        emit SubmitTransaction(transactions.length, to_, value_, data_);
     }
 
     /// @notice For updating the exitDate
@@ -195,6 +293,12 @@ contract SenseistakeServicesContract is Initializable {
         uint256 amount = address(this).balance - operatorClaimable;
         emit Withdrawal(beneficiary_, amount);
         payable(beneficiary_).sendValue(amount);
+    }
+
+    /// @notice Get current transaction count
+    /// @return count of transactions
+    function getTransactionCount() public view returns (uint256) {
+        return transactions.length;
     }
 
     /// @notice Get withdrawable amount of a user

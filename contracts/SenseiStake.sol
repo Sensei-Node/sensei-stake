@@ -171,7 +171,9 @@ contract SenseiStake is ERC721, Ownable {
     /// @dev Calls end operator services in service contract
     /// @param tokenId_ the token id to end
     function endOperatorServices(uint256 tokenId_) external {
-        if (!_isApprovedOrOwner(msg.sender, tokenId_) && msg.sender != owner()) {
+        if (
+            !_isApprovedOrOwner(msg.sender, tokenId_) && msg.sender != owner()
+        ) {
             revert NotOwner();
         }
         address proxy = Clones.predictDeterministicAddress(
@@ -184,15 +186,20 @@ contract SenseiStake is ERC721, Ownable {
         serviceContract.endOperatorServices();
     }
 
-
     /// @notice Redefinition of internal function `_isApprovedOrOwner`
     /// @dev Returns whether `spender` is allowed to manage `tokenId`.
     /// @param spender: the address to check if it has approval or ownership of tokenId
     /// @param tokenId: the asset to check
     /// @return bool whether it is approved or owner of the token
-    function isApprovedOrOwner(address spender, uint256 tokenId) external view returns (bool) {
+    function isApprovedOrOwner(address spender, uint256 tokenId)
+        external
+        view
+        returns (bool)
+    {
         address owner = ERC721.ownerOf(tokenId);
-        return (spender == owner || isApprovedForAll(owner, spender) || getApproved(tokenId) == spender);
+        return (spender == owner ||
+            isApprovedForAll(owner, spender) ||
+            getApproved(tokenId) == spender);
     }
 
     /// @notice Performs withdraw of balance in service contract
@@ -256,11 +263,11 @@ contract SenseiStake is ERC721, Ownable {
                                 '","attributes": [{"trait_type": "Validator Address","value":"',
                                 _bytesToHexString(
                                     validators[tokenId_].validatorPubKey
-                                ),'"},{',
+                                ),
+                                '"},{',
                                 '"trait_type":"Exit Date","display_type":"date","value":"',
-                                Strings.toString(
-                                    validators[tokenId_].exitDate
-                                ),'"},{',
+                                Strings.toString(validators[tokenId_].exitDate),
+                                '"},{',
                                 '"trait_type": "Commission Rate","display_type":"string","value":"',
                                 Strings.toString(
                                     (COMMISSION_RATE_SCALE / commissionRate)
@@ -277,8 +284,7 @@ contract SenseiStake is ERC721, Ownable {
     /// @return bool true if next validator is available or else false
     function validatorAvailable() external view returns (bool) {
         return
-            validators[tokenIdCounter.current() + 1].validatorPubKey.length >
-            0;
+            validators[tokenIdCounter.current() + 1].validatorPubKey.length > 0;
     }
 
     /// @notice For removing ownership of an NFT from a wallet address
