@@ -25,7 +25,6 @@ contract SenseiStake is ERC721, Ownable {
         bytes validatorPubKey;
         bytes depositSignature;
         bytes32 depositDataRoot;
-        bytes32 depositMessageRoot;
         uint64 exitDate;
     }
 
@@ -54,7 +53,6 @@ contract SenseiStake is ERC721, Ownable {
     /// @notice For determining if a validator pubkey was already added or not
     mapping(bytes => bool) public _addedValidators;
 
-    event CommissionRateChanged(uint32 newCommissionRate);
     event ContractCreated(uint256 tokenIdServiceContract);
     event ValidatorAdded(
         uint256 indexed tokenId,
@@ -88,7 +86,6 @@ contract SenseiStake is ERC721, Ownable {
             revert CommisionRateTooHigh(commissionRate_);
         }
         commissionRate = commissionRate_;
-        emit CommissionRateChanged(commissionRate_);
         servicesContractImpl = address(
             new SenseistakeServicesContract(ethDepositContractAddress_)
         );
@@ -106,7 +103,6 @@ contract SenseiStake is ERC721, Ownable {
         bytes calldata validatorPubKey_,
         bytes calldata depositSignature_,
         bytes32 depositDataRoot_,
-        bytes32 depositMessageRoot_,
         uint64 exitDate_
     ) external onlyOwner {
         if (tokenId_ <= tokenIdCounter.current()) {
@@ -128,23 +124,11 @@ contract SenseiStake is ERC721, Ownable {
             validatorPubKey_,
             depositSignature_,
             depositDataRoot_,
-            depositMessageRoot_,
             exitDate_
         );
         _addedValidators[validatorPubKey_] = true;
         validators[tokenId_] = validator;
         emit ValidatorAdded(tokenId_, validatorPubKey_, exitDate_);
-    }
-
-    /// @notice Changes commission rate (senseistake service fees)
-    /// @dev Cannot be more than 50% commission
-    /// @param commissionRate_ New commission rate
-    function changeCommissionRate(uint32 commissionRate_) external onlyOwner {
-        if (commissionRate_ > (COMMISSION_RATE_SCALE / 2)) {
-            revert CommisionRateTooHigh(commissionRate_);
-        }
-        commissionRate = commissionRate_;
-        emit CommissionRateChanged(commissionRate_);
     }
 
     /// @notice Creates service contract based on implementation

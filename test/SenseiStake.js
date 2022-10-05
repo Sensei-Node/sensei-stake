@@ -56,7 +56,7 @@ describe('SenseiStake', () => {
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['validatorPubKey']-2),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositSignature']),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositDataRoot']),
-            ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositMessageRoot']),
+            // ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositMessageRoot']),
             exitDate
         )
         await expect(addValidator).to.be.revertedWith("InvalidPublicKey");
@@ -67,7 +67,7 @@ describe('SenseiStake', () => {
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['validatorPubKey']),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositSignature']-2),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositDataRoot']),
-            ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositMessageRoot']),
+            // ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositMessageRoot']),
             exitDate
         )
         await expect(addValidator).to.be.revertedWith("InvalidDepositSignature");
@@ -78,7 +78,7 @@ describe('SenseiStake', () => {
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['validatorPubKey']),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositSignature']),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositDataRoot']-2),
-            ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositMessageRoot']),
+            // ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositMessageRoot']),
             exitDate
         )
         await expect(addValidator).to.be.reverted;
@@ -89,7 +89,7 @@ describe('SenseiStake', () => {
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['validatorPubKey']),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositSignature']),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositDataRoot']),
-            ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositMessageRoot']),
+            // ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositMessageRoot']),
             ethers.BigNumber.from(new Date(2021, 0, 1).getTime() / 1000)
         )
         await expect(addValidator).to.be.revertedWith("NotEarlierThanOriginalDate");
@@ -103,7 +103,7 @@ describe('SenseiStake', () => {
             ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['validatorPubKey']),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositSignature']),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositDataRoot']),
-            ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositMessageRoot']),
+            // ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositMessageRoot']),
             exitDate
         )
         await expect(addValidator).to.be.revertedWith("TokenIdAlreadyMinted");
@@ -114,7 +114,7 @@ describe('SenseiStake', () => {
             ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['validatorPubKey']),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositSignature']),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositDataRoot']),
-            ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositMessageRoot']),
+            // ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositMessageRoot']),
             exitDate
         )
         const addValidator2 = tokenContract.addValidator(
@@ -122,7 +122,7 @@ describe('SenseiStake', () => {
             ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['validatorPubKey']),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositSignature']),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositDataRoot']),
-            ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositMessageRoot']),
+            // ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositMessageRoot']),
             exitDate
         )
         await expect(addValidator2).to.be.revertedWith("ValidatorAlreadyAdded");
