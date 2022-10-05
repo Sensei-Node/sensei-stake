@@ -139,6 +139,29 @@ describe('Transactions', () => {
         await expect(executeTransaction).to.be.revertedWith('CallerNotAllowed');
     });
 
+    it('9.5 Should fail if same transaction executed twice', async function () {
+        await tokenContract.connect(aliceWhale).createContract({
+            value: ethers.utils.parseEther("32")
+        });
 
+        const sc_addr = await tokenContract.getServiceContractAddress(1);
+        const sc = await contrService.attach(sc_addr);
+
+        // whitelisting address so that we can call withdrawAll
+        await depositContract.whitelist(sc_addr);
+
+        const iface = new ethers.utils.Interface(depositContractDeployment.abi);
+        const data = iface.encodeFunctionData('withdrawAll', []);
+        const submitTransaction = await sc.submitTransaction(
+            depositContract.address,
+            0,
+            data,
+            'Testing Withdraw All to ServiceContract'
+        );
+        await sc.connect(aliceWhale).executeTransaction(0);
+        const executeTransaction = sc.connect(aliceWhale).executeTransaction(0);
+
+        await expect(executeTransaction).to.be.revertedWith('TransactionAlreadyExecuted')
+    });
   });
 });
