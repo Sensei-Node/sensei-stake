@@ -180,6 +180,7 @@ describe('Complete', () => {
       
     });
   });
+  
   describe('4. test receive ethers', () => {
     it('4.1 Service contract should not receive eth', async function () {
       /*
@@ -223,32 +224,9 @@ describe('Complete', () => {
       const profitOwner = (ownerAfter).sub(ownerBefore)
       const tx_fee = ethers.utils.parseEther("0.005");
       expect(parseInt(profitOwner.add(tx_fee))).to.greaterThanOrEqual(parseInt(ethers.utils.parseEther("0.3")))
-      
+    });
+  });
 
-    });
-  });
-  describe('6. test Change commission rate', () => {
-    it('6.1 Change commission rate', async function () {
-      await expect(tokenContract.changeCommissionRate(200_000)).to.be.ok
-      .to.emit(tokenContract, 'CommissionRateChanged').withArgs(200_000);       
-      await expect(tokenContract.changeCommissionRate(0)).to.be.ok
-      .to.emit(tokenContract, 'CommissionRateChanged').withArgs(0);
-      await expect(tokenContract.changeCommissionRate(10)).to.be.ok
-      .to.emit(tokenContract, 'CommissionRateChanged').withArgs(10);
-      await expect( tokenContract.changeCommissionRate(2_000_000)).to.be.reverted
-      tokenContract.should.not.emit("CommissionRateChanged");
-      await expect(tokenContract.changeCommissionRate(500_000)).to.be.ok
-      .to.emit(tokenContract, 'CommissionRateChanged').withArgs(500_000);
-      await expect(tokenContract.changeCommissionRate(500_001)).to.be.reverted
-      tokenContract.should.not.emit("CommissionRateChanged");
-      await expect(tokenContract.changeCommissionRate(undefined)).to.be.reverted
-      tokenContract.should.not.emit("CommissionRateChanged");
-      await expect(tokenContract.changeCommissionRate(-1)).to.be.reverted
-      tokenContract.should.not.emit("CommissionRateChanged");
-      await expect(tokenContract.changeCommissionRate()).to.be.reverted
-      tokenContract.should.not.emit("CommissionRateChanged");
-    });
-  });
   describe('7. test getWithdrawableAmount', () => {
     it('7.1 getWithdrawableAmount: shouldnt amount to withdraw ', async function () {
       
@@ -285,6 +263,7 @@ describe('Complete', () => {
 
     });
   });
+  
   describe('10. test create validator', () => {
 
     const correctLenBytes = {
