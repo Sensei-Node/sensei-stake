@@ -48,9 +48,15 @@ module.exports = async ({deployments, upgrades, run}) => {
             operatorPrivKey.toBytes(),
             operatorPubKeyBytes,
             keystorePath);
+        // console.log('PRIVATE KEY', operatorPrivKey.toHex())
+        // const keystoreDecryptedPrivKey = '0x' + (await keystore.decrypt(deploymentVariables.keystorePassword)).toString('hex')
+        // console.log('DECRYPTED KEYSTORE', keystoreDecryptedPrivKey)
         const contractAddress = saltBytesToContractAddress(utils.hexZeroPad(utils.hexlify(index), 32), NNETWK);
         const depositData = createOperatorDepositData(operatorPrivKey, contractAddress, network.config.type);
-        const exitDate = BigNumber.from(new Date(2024, 0, 1).getTime() / 1000);
+        let dDate = new Date(new Date().toISOString().slice(0, 10));
+        dDate.setMonth(dDate.getMonth() + 6);
+        const exitDate = BigNumber.from(dDate.getTime() / 1000);
+        console.log(exitDate.toString())
 
         // Local check for signature validity
         const validSignature = verifySignatureDepositMessageRoot(depositData)
