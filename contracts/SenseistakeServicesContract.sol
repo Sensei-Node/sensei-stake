@@ -111,7 +111,7 @@ contract SenseistakeServicesContract is Initializable {
 
     /// @notice For determining if specified transaction index was not executed
     /// @param index_: Transaction index to verify
-    modifier notExecuted(uint256 index_) {
+    modifier txNotExecuted(uint256 index_) {
         if (transactions[index_].executed) {
             revert TransactionAlreadyExecuted();
         }
@@ -203,7 +203,7 @@ contract SenseistakeServicesContract is Initializable {
     function executeTransaction(uint256 index_)
         external
         txExists(index_)
-        notExecuted(index_)
+        txNotExecuted(index_)
     {
         if (
             !SenseiStake(tokenContractAddress).isApprovedOrOwner(
