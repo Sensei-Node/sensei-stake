@@ -14,14 +14,27 @@ import {SenseiStake} from "./SenseiStake.sol";
 contract SenseistakeServicesContract is Initializable {
     using Address for address payable;
 
-    /// @notice Struct used for transactions that could be needed, only created by protocol owner and executed by token owner/allowed
-    struct Transaction {
+    /// @notice Struct used for single atomic transaction 
+    struct Operation {
         address to;
         uint256 value;
         bytes data;
-        bool executed;
+    }
+
+    /// @notice Struct used for transactions (single or batch) that could be needed, only created by protocol owner and executed by token owner/allowed
+    struct Transaction {
+        // mapping(uint8 => Operation) operations;
+        // uint8 operationsSize;
+        Operation operation;
+        uint8 executed;
+        uint8 confirmed;
+        uint8 valid;
+        uint16 prev;
+        uint16 next;
         string description;
     }
+
+    // mapping(uint256 => Operation[]) public operations;
 
     /// @notice Used in conjuction with `COMMISSION_RATE_SCALE` for determining service fees
     /// @dev Is set up on the constructor and can be modified with provided setter aswell
@@ -31,6 +44,10 @@ contract SenseistakeServicesContract is Initializable {
     /// @notice Used for determining from when the user deposit can be withdrawn.
     /// @return exitDate the exit date
     uint64 public exitDate;
+
+    // /// @notice Pointer for last transaction index
+    // /// @return lastTransactionIndex index of last transaction of transactions array
+    // uint16 public lastTransactionIndex;
 
     /// @notice The tokenId used to create this contract using the proxy clone
     /// @return tokenId of the NFT related to the service contract
@@ -71,9 +88,13 @@ contract SenseistakeServicesContract is Initializable {
     event ServiceEnd();
     event SubmitTransaction(
         uint256 indexed index,
-        address indexed to,
-        uint256 value,
-        bytes data
+        string indexed description
+    );
+    event CancelTransaction(
+        uint256 indexed index
+    );
+    event ConfirmTransaction(
+        uint256 indexed index
     );
     event ValidatorDeposited(bytes pubkey);
     event Withdrawal(address indexed to, uint256 value);
@@ -86,9 +107,13 @@ contract SenseistakeServicesContract is Initializable {
     error NotAllowedInCurrentState();
     error NotEarlierThanOriginalDate();
     error NotOperator();
+    error PreviousValidTransactionNotExecuted(uint16 index);
     error TransactionAlreadyExecuted();
+    error TransactionAlreadyConfirmed();
     error TransactionIndexInvalid();
     error TransactionCallFailed();
+    error TransactionNotValid();
+    error TransactionNotConfirmed();
     error ValidatorIsActive();
     error ValidatorNotActive();
 
@@ -112,8 +137,26 @@ contract SenseistakeServicesContract is Initializable {
     /// @notice For determining if specified transaction index was not executed
     /// @param index_: Transaction index to verify
     modifier txNotExecuted(uint256 index_) {
-        if (transactions[index_].executed) {
+        if (transactions[index_].executed == 1) {
             revert TransactionAlreadyExecuted();
+        }
+        _;
+    }
+
+    /// @notice For determining if specified transaction index was not confirmed by owner/allowed user
+    /// @param index_: Transaction index to verify
+    modifier txNotConfirmed(uint256 index_) {
+        if (transactions[index_].confirmed == 1) {
+            revert TransactionAlreadyConfirmed();
+        }
+        _;
+    }
+
+    /// @notice For determining if specified transaction index is valid (not canceled by protocol owner)
+    /// @param index_: Transaction index to verify
+    modifier txValid(uint256 index_) {
+        if (transactions[index_].valid == 0) {
+            revert TransactionNotValid();
         }
         _;
     }
@@ -160,6 +203,64 @@ contract SenseistakeServicesContract is Initializable {
         emit ValidatorDeposited(validatorPubKey_);
     }
 
+    /// @notice For canceling a submited transaction if needed
+    /// @dev Only protocol owner can do so
+    /// @param index_: transaction index
+    function cancelTransaction(uint256 index_)
+        external
+        txExists(index_)
+        txValid(index_)
+        txNotExecuted(index_)
+        onlyOperator
+    {
+        if (transactions[index_].prev == transactions[index_].next) {
+            // if it is the only element in the list
+            delete transactions[index_];
+            transactions.pop();
+        } else {
+            // if it is not the only element in the list
+            if (transactions[index_].prev == type(uint16).max) {
+                // if it is the first
+                Transaction storage transactionNext = transactions[transactions[index_].next];
+                transactionNext.prev = type(uint16).max;
+            } else if (transactions[index_].next == type(uint16).max) {
+                // if it is the last
+                Transaction storage transactionPrev = transactions[transactions[index_].prev];
+                transactionPrev.next = type(uint16).max;
+            } else {
+                // if it is in the middle
+                Transaction storage transactionPrev = transactions[transactions[index_].prev];
+                Transaction storage transactionNext = transactions[transactions[index_].next];
+                transactionPrev.next = transactions[index_].next;
+                transactionNext.prev = transactions[index_].prev;
+            }
+            delete transactions[index_];
+        }
+        emit CancelTransaction(index_);
+    }
+
+    /// @notice Token owner or allowed confirmation to execute transaction by protocol owner
+    /// @param index_: transaction index to confirm
+    function confirmTransaction(uint256 index_)
+        external
+        txExists(index_)
+        txValid(index_)
+        txNotConfirmed(index_)
+        txNotExecuted(index_)
+    {
+        if (
+            !SenseiStake(tokenContractAddress).isApprovedOrOwner(
+                msg.sender,
+                tokenId
+            )
+        ) {
+            revert CallerNotAllowed();
+        }
+        Transaction storage transaction = transactions[index_];
+        transaction.confirmed = 1;
+        emit ConfirmTransaction(index_);
+    }
+
     /// @notice Allows user to start the withdrawal process
     /// @dev After a withdrawal is made in the validator, the receiving address is set to this contract address, so there will be funds available in here. This function needs to be called for being able to withdraw current balance
     function endOperatorServices() external {
@@ -197,33 +298,49 @@ contract SenseistakeServicesContract is Initializable {
         emit ServiceEnd();
     }
 
-    /// @notice Executes transaction index_
-    /// @dev Only allowed to be called by token owner or allowed
+    /// @notice Executes transaction index_ that is valid, confirmed and not executed
+    /// @dev Requires previous transaction valid to be executed
     /// @param index_: transaction at index to be executed
     function executeTransaction(uint256 index_)
         external
+        onlyOperator
         txExists(index_)
+        txValid(index_)
         txNotExecuted(index_)
     {
-        if (
-            !SenseiStake(tokenContractAddress).isApprovedOrOwner(
-                msg.sender,
-                tokenId
-            )
-        ) {
-            revert CallerNotAllowed();
-        }
-
         Transaction storage transaction = transactions[index_];
-        transaction.executed = true;
+        
+        if (transaction.confirmed == 0) {
+            revert TransactionNotConfirmed();
+        }
+        if (transaction.prev != type(uint16).max) {
+            if (transactions[transaction.prev].executed == 0) {
+                revert PreviousValidTransactionNotExecuted(transaction.prev);
+            }
+        }
+        
+        transaction.executed = 1;
 
-        (bool success, ) = transaction.to.call{value: transaction.value}(
-            transaction.data
+        (bool success, ) = transaction.operation.to.call{value: transaction.operation.value}(
+            transaction.operation.data
         );
         if (!success) {
             revert TransactionCallFailed();
         }
+        // Operation[] memory ops = operations[index_];
 
+        // for (uint8 i = 0; i < transaction.operations.length; ) {
+        //     (bool success, ) = transaction.operations[i].to.call{value: transaction.operations[i].value}(
+        //         transaction.operations[i].data
+        //     );
+        //     if (!success) {
+        //         revert TransactionCallFailed();
+        //     }
+        //     unchecked {
+        //         ++i;
+        //     }
+        // }
+        
         emit ExecuteTransaction(index_);
     }
 
@@ -240,26 +357,85 @@ contract SenseistakeServicesContract is Initializable {
     }
 
     /// @notice Only protocol owner can submit a new transaction
-    /// @param to_: address to call to
-    /// @param value_: transaction value
-    /// @param data_: transaction data
+    /// @param operation_: mapping of operations to be executed (could be just one or batch)
+    // /// @param operationsSize_: amount of operations included in transaction
     /// @param description_: transaction description for easy read
     function submitTransaction(
-        address to_,
-        uint256 value_,
-        bytes calldata data_,
+        Operation calldata operation_,
+        // Operation[] calldata operationsSize_,
         string calldata description_
     ) external onlyOperator {
-        transactions.push(
-            Transaction({
-                to: to_,
-                value: value_,
-                data: data_,
-                executed: false,
-                description: description_
-            })
-        );
-        emit SubmitTransaction(transactions.length, to_, value_, data_);
+        // for (uint256 i = 0; i < operations_.length; ) {
+        //     ops.push(
+        //         Operation({
+        //             to: operations_[i].to,
+        //             value: operations_[i].value,
+        //             data: operations_[i].data
+        //         })
+        //     );
+        //     unchecked {
+        //         ++i;
+        //     }
+        // }
+
+        uint16 txLen = uint16(transactions.length);
+        uint16 prev = type(uint16).max;
+        uint16 next = type(uint16).max;
+
+        if (txLen > 0) {
+            prev = txLen - 1;
+            Transaction storage transactionPrev = transactions[txLen - 1];
+            transactionPrev.next = txLen;
+        }
+
+        transactions.push(Transaction({
+            operation: operation_,
+            executed: 0,
+            confirmed: 0,
+            valid: 1,
+            prev: prev,
+            next: next,
+            description: description_
+        }));
+
+        // operations[txLen - 1] = operations_;
+
+            // operations: [Operation({
+            //     to: operations_[0].to,
+            //     value: operations_[0].value,
+            //     data: operations_[0].data
+            // })],
+        
+
+        // Transaction storage transaction = transactions[txLen - 1];
+        // transaction.executed = 0;
+        // transaction.confirmed = 0;
+        // transaction.valid = 1;
+        // transaction.description = description_;
+
+        // if (txLen > 1) {
+        //     Transaction storage transactionPrev = transactions[txLen - 1];
+        //     transaction.prev = txLen - 1;
+        //     transactionPrev.next = txLen;
+        // } else {
+        //     transaction.prev = type(uint16).max;
+        // }
+        // transaction.next = type(uint16).max;
+
+        // for (uint256 i = 0; i < operations_.length; ) {
+        //     transaction.operations.push(
+        //         Operation({
+        //             to: operations_[i].to,
+        //             value: operations_[i].value,
+        //             data: operations_[i].data
+        //         })
+        //     );
+        //     unchecked {
+        //         ++i;
+        //     }
+        // }
+
+        emit SubmitTransaction(transactions.length, description_);
     }
 
     /// @notice For updating the exitDate
