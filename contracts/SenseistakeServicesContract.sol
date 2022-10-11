@@ -23,8 +23,6 @@ contract SenseistakeServicesContract is Initializable {
 
     /// @notice Struct used for transactions (single or batch) that could be needed, only created by protocol owner and executed by token owner/allowed
     struct Transaction {
-        // mapping(uint8 => Operation) operations;
-        // uint8 operationsSize;
         Operation operation;
         uint8 executed;
         uint8 confirmed;
@@ -34,8 +32,6 @@ contract SenseistakeServicesContract is Initializable {
         string description;
     }
 
-    // mapping(uint256 => Operation[]) public operations;
-
     /// @notice Used in conjuction with `COMMISSION_RATE_SCALE` for determining service fees
     /// @dev Is set up on the constructor and can be modified with provided setter aswell
     /// @return commissionRate the commission rate
@@ -44,10 +40,6 @@ contract SenseistakeServicesContract is Initializable {
     /// @notice Used for determining from when the user deposit can be withdrawn.
     /// @return exitDate the exit date
     uint64 public exitDate;
-
-    // /// @notice Pointer for last transaction index
-    // /// @return lastTransactionIndex index of last transaction of transactions array
-    // uint16 public lastTransactionIndex;
 
     /// @notice The tokenId used to create this contract using the proxy clone
     /// @return tokenId of the NFT related to the service contract
@@ -327,20 +319,7 @@ contract SenseistakeServicesContract is Initializable {
         if (!success) {
             revert TransactionCallFailed();
         }
-        // Operation[] memory ops = operations[index_];
 
-        // for (uint8 i = 0; i < transaction.operations.length; ) {
-        //     (bool success, ) = transaction.operations[i].to.call{value: transaction.operations[i].value}(
-        //         transaction.operations[i].data
-        //     );
-        //     if (!success) {
-        //         revert TransactionCallFailed();
-        //     }
-        //     unchecked {
-        //         ++i;
-        //     }
-        // }
-        
         emit ExecuteTransaction(index_);
     }
 
@@ -358,26 +337,11 @@ contract SenseistakeServicesContract is Initializable {
 
     /// @notice Only protocol owner can submit a new transaction
     /// @param operation_: mapping of operations to be executed (could be just one or batch)
-    // /// @param operationsSize_: amount of operations included in transaction
     /// @param description_: transaction description for easy read
     function submitTransaction(
         Operation calldata operation_,
-        // Operation[] calldata operationsSize_,
         string calldata description_
     ) external onlyOperator {
-        // for (uint256 i = 0; i < operations_.length; ) {
-        //     ops.push(
-        //         Operation({
-        //             to: operations_[i].to,
-        //             value: operations_[i].value,
-        //             data: operations_[i].data
-        //         })
-        //     );
-        //     unchecked {
-        //         ++i;
-        //     }
-        // }
-
         uint16 txLen = uint16(transactions.length);
         uint16 prev = type(uint16).max;
         uint16 next = type(uint16).max;
@@ -397,43 +361,6 @@ contract SenseistakeServicesContract is Initializable {
             next: next,
             description: description_
         }));
-
-        // operations[txLen - 1] = operations_;
-
-            // operations: [Operation({
-            //     to: operations_[0].to,
-            //     value: operations_[0].value,
-            //     data: operations_[0].data
-            // })],
-        
-
-        // Transaction storage transaction = transactions[txLen - 1];
-        // transaction.executed = 0;
-        // transaction.confirmed = 0;
-        // transaction.valid = 1;
-        // transaction.description = description_;
-
-        // if (txLen > 1) {
-        //     Transaction storage transactionPrev = transactions[txLen - 1];
-        //     transaction.prev = txLen - 1;
-        //     transactionPrev.next = txLen;
-        // } else {
-        //     transaction.prev = type(uint16).max;
-        // }
-        // transaction.next = type(uint16).max;
-
-        // for (uint256 i = 0; i < operations_.length; ) {
-        //     transaction.operations.push(
-        //         Operation({
-        //             to: operations_[i].to,
-        //             value: operations_[i].value,
-        //             data: operations_[i].data
-        //         })
-        //     );
-        //     unchecked {
-        //         ++i;
-        //     }
-        // }
 
         emit SubmitTransaction(transactions.length, description_);
     }
