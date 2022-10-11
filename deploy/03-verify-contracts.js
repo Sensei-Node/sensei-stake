@@ -24,8 +24,10 @@ module.exports = async ({
     if (['testnet', 'mainnet'].includes(network.config.type) && process.env.ETHERSCAN_KEY) {
         console.log('WAITING 10 seconds')
         await sleep(10000);
-        // verify deposit contract
-        await verify(depositDeployment.address, [])
+        try {
+            // verify deposit contract
+            await verify(depositDeployment.address, [])
+        } catch {}
         // verify service contract
         await verify(serviceDeployment.address, [ethDepositContractAddress.address])
         // verify erc721 contract
