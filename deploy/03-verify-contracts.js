@@ -33,4 +33,4 @@ module.exports = async ({
     }
 }
 
-module.exports.tags = ["all", "verify"]
+module.exports.tags = ["all", "verify", "without_dc"]

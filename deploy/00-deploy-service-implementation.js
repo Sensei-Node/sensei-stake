@@ -28,4 +28,4 @@ module.exports = async ({
     })
 }
 
-module.exports.tags = ["all", "service_implementation"]
+module.exports.tags = ["all", "service_implementation", "without_dc"]

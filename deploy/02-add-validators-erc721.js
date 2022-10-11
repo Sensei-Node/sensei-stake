@@ -22,6 +22,7 @@ module.exports = async ({deployments, upgrades, run}) => {
     // amount of validators
     const serviceContractDeploys = deploymentVariables.servicesToDeploy;
     let validatorPublicKeys = []
+    let validatorsData = {}
 
     // token contract
     const TokenContract = await ethers.getContractFactory(
@@ -36,6 +37,7 @@ module.exports = async ({deployments, upgrades, run}) => {
 
     const _date = parseInt((new Date().getTime()) / 1000);
     const _dir = __dirname + `/../keystores/${_date}`
+    const _dir_validators = __dirname + `/../validators_data/${_date}`
 
     for (let index = 1+start_; index <= serviceContractDeploys+start_; index++) {
         // deposit data and keystores
@@ -83,9 +85,20 @@ module.exports = async ({deployments, upgrades, run}) => {
             validatorPubKey: bufferHex(validator_bc.validatorPubKey.slice(2)),
             depositSignature: bufferHex(validator_bc.depositSignature.slice(2)),
             depositDataRoot: bufferHex(validator_bc.depositDataRoot.slice(2)),
-            network: network.config.type
+            network: network.config.type,
+            exitDate: exitDate,
+            index: utils.hexZeroPad(utils.hexlify(index), 32)
         }
 
+        // For storing validator data in case later on needed
+        validatorsData[index] = {
+            index: utils.hexZeroPad(utils.hexlify(index), 32),
+            validatorPubKey: operatorPubKeyBytes,
+            depositSignature: depositData.depositSignature,
+            depositDataRoot: depositData.depositDataRoot,
+            network: network.config.type,
+            exitDate,
+        };
 
         // Checking signature of uploaded depositDataRoot with uploaded validatorPubKey (the signature was created on createOperatorDepositData.depositDataSignature)
         const validSignatureDepositData = verifySignatureGeneric(validator_corrected.validatorPubKey, validator_corrected.depositDataRoot, depositData.depositDataSignature)
@@ -118,7 +131,12 @@ module.exports = async ({deployments, upgrades, run}) => {
     
     if (['testnet', 'mainnet'].includes(network.config.type)) {
         fs.writeFileSync(`${_dir}/validator_public_keys.json`, JSON.stringify(validatorPublicKeys));
+        if (!fs.existsSync(_dir_validators)){
+            fs.mkdirSync(_dir_validators);
+        }
+        fs.writeFileSync(`${_dir_validators}/validators_data.json`, JSON.stringify(validatorsData));
     }
 }
 
-module.exports.tags = ["all", "service_contract"]
+module.exports.tags = ["all", "service_contract", "without_dc"]
+module.exports.dependencies = ['SenseiStake'];

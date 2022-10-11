@@ -38,8 +38,6 @@ module.exports = async ({
             }
         }
     }
-
-
 }
 
 module.exports.tags = ["all", "deposit_contract"]

@@ -29,4 +29,4 @@ module.exports = async ({
     })
 }
 
-module.exports.tags = ["all", "erc721"]
+module.exports.tags = ["all", "erc721", "without_dc"]
