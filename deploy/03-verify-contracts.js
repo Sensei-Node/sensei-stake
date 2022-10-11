@@ -10,24 +10,24 @@ module.exports = async ({
     upgrades, 
     run
 }) => {
-    const depositDeployment = await deployments.get('DepositContract')
+    let depositDeployment;
+    try {
+        depositDeployment = await deployments.get('DepositContract')
+    } catch {}
     const serviceDeployment = await deployments.get('SenseistakeServicesContract')
     const erc721Deployment = await deployments.get('SenseiStake')
     let ethDepositContractAddress;
-    try {
-        ethDepositContractAddress = await deployments.get("DepositContract");
-    } catch(err) {
+    if (!depositDeployment) {
         ethDepositContractAddress = deploymentVariables.depositContractAddress[network.config.chainId] ? 
         { address: deploymentVariables.depositContractAddress[network.config.chainId] } : { address: '0x00000000219ab540356cBB839Cbe05303d7705Fa' }
     }
-
     if (['testnet', 'mainnet'].includes(network.config.type) && process.env.ETHERSCAN_KEY) {
         console.log('WAITING 10 seconds')
         await sleep(10000);
-        try {
+        if (depositDeployment) {
             // verify deposit contract
             await verify(depositDeployment.address, [])
-        } catch {}
+        }
         // verify service contract
         await verify(serviceDeployment.address, [ethDepositContractAddress.address])
         // verify erc721 contract
