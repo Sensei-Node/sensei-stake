@@ -23,7 +23,7 @@ contract SenseistakeServicesContract is Initializable {
 
     /// @notice Struct used for transactions (single or batch) that could be needed, only created by protocol owner and executed by token owner/allowed
     struct Transaction {
-        Operation operation;
+        Operation[] operations;
         uint8 executed;
         uint8 confirmed;
         uint8 valid;
@@ -313,11 +313,16 @@ contract SenseistakeServicesContract is Initializable {
         
         transaction.executed = 1;
 
-        (bool success, ) = transaction.operation.to.call{value: transaction.operation.value}(
-            transaction.operation.data
-        );
-        if (!success) {
-            revert TransactionCallFailed();
+        for (uint256 i = 0; i < transaction.operations.length; ) {    
+            (bool success, ) = transaction.operations[i].to.call{value: transaction.operations[i].value}(
+                transaction.operations[i].data
+            );
+            if (!success) {
+                revert TransactionCallFailed();
+            }
+            unchecked {
+                ++i;
+            }
         }
 
         emit ExecuteTransaction(index_);
@@ -339,7 +344,7 @@ contract SenseistakeServicesContract is Initializable {
     /// @param operation_: mapping of operations to be executed (could be just one or batch)
     /// @param description_: transaction description for easy read
     function submitTransaction(
-        Operation calldata operation_,
+        Operation[] calldata operation_,
         string calldata description_
     ) external onlyOperator {
         uint16 txLen = uint16(transactions.length);
@@ -353,7 +358,7 @@ contract SenseistakeServicesContract is Initializable {
         }
 
         transactions.push(Transaction({
-            operation: operation_,
+            operations: operation_,
             executed: 0,
             confirmed: 0,
             valid: 1,
