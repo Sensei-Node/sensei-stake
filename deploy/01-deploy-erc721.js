@@ -19,7 +19,7 @@ module.exports = async ({
     }
 
     // name, symbol, commissionRate
-    const args = ["SenseiStakeValidator", "SNSV", 100_000, ethDepositContractAddress.address];
+    const args = ["SenseiStake Ethereum Validator", "SSEV", 100_000, ethDepositContractAddress.address];
     const senseistakeERC721 = await deploy("SenseiStake", {
         contract: "SenseiStake",
         from: deployer.address,

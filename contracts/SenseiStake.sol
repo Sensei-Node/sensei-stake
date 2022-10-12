@@ -254,7 +254,7 @@ contract SenseiStake is ERC721, Ownable {
                             abi.encodePacked(
                                 '{"name":"ETH Validator #',
                                 Strings.toString(tokenId_),
-                                '","description":"SenseiStake Validator is an ETH 2.0 validator that is being managed by SenseiNode.com",',
+                                '","description":"Sensei Stake is a non-custodial staking platform for Ethereum 2.0, that uses a top-performance node infrastructure provided by Sensei Node. Each NFT of this collection certifies the ownership receipt for one active ETH2 Validator and its accrued proceeds from protocol issuance and transaction processing fees. These nodes are distributed across the Latin American region, on local or regional hosting service providers, outside centralized global cloud vendors. Together we are fostering decentralization and strengthening the Ethereum ecosystem. One node at a time. Decentralization matters.",',
                                 '"external_url":"https://dashboard.senseinode.com/senseistake",',
                                 '"minted_at":',
                                 Strings.toString(block.timestamp),
