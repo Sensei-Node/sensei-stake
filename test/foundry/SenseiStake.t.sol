@@ -17,8 +17,8 @@ contract SenseiStakeTest is Test {
 
         depositContract = new MockDepositContract();
         senseistake = new SenseiStake(
-            "SENSEI",
-            "SNSV",
+            "SenseiStake Ethereum Validator",
+            "SSEV",
             100_000,
             address(depositContract)
         );
