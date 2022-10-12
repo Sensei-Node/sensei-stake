@@ -80,6 +80,7 @@ module.exports = async ({deployments, upgrades, run}) => {
                 depositDataRoot: utils.hexlify(depositData.depositDataRoot),
                 network: network.config.type,
                 exitDate: utils.hexlify(exitDate),
+                serviceContractAddress: utils.hexlify(contractAddress)
             };
         } else {
             const fcs = await tokenContract.addValidator(

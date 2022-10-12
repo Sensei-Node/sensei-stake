@@ -20,7 +20,7 @@ describe('ERC721Deployment', async () => {
     }
     const { deploy, log } = deployments;
     const [deployer] = await ethers.getSigners();
-    const args = ["SenseiStakeValidator", "SNSV", 100_000_000, ethDepositContractAddress.address];
+    const args = ["SenseiStake Ethereum Validator", "SSEV", 100_000_000, ethDepositContractAddress.address];
     const senseistakeERC721 = deploy("SenseiStake", {
         contract: "SenseiStake",
         from: deployer.address,
