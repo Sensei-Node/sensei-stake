@@ -308,52 +308,15 @@ describe('Transactions', () => {
         await expect(executeTransaction).to.be.revertedWith('PreviousValidTransactionNotExecuted');
     });
 
-    // it('1.4 Should revert if caller is not token owner', async function () {
-    //     await tokenContract.connect(aliceWhale).createContract({
-    //         value: ethers.utils.parseEther("32")
-    //     });
+    // it('1.9 Payload Test Generate', async function () {
+    //     const contract = '0x15BA78D6B957EfF05a4b0a692d6E7B560D8Dc2DE'
 
-    //     const sc_addr = await tokenContract.getServiceContractAddress(1);
-    //     const sc = await contrService.attach(sc_addr);
-
-    //     const iface = new ethers.utils.Interface(depositContractDeployment.abi);
-    //     const data = iface.encodeFunctionData('withdrawAll', []);
-
-    //     const submitTransaction = await sc.submitTransaction(
-    //         depositContract.address,
-    //         0,
-    //         data,
-    //         'Testing Get Depositor Address'
-    //     );
-
-    //     const executeTransaction = sc.executeTransaction(0);
+    //     const iface = new ethers.utils.Interface([{"inputs":[{"internalType":"address","name":"_senseistake","type":"address"}],"stateMutability":"nonpayable","type":"constructor"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"CounterIncremented","type":"event"},{"anonymous":false,"inputs":[{"indexed":false,"internalType":"uint256","name":"value","type":"uint256"}],"name":"DidNothing","type":"event"},{"inputs":[],"name":"counter","outputs":[{"internalType":"uint256","name":"","type":"uint256"}],"stateMutability":"view","type":"function"},{"inputs":[{"internalType":"uint256","name":"tokenId","type":"uint256"}],"name":"incrementar","outputs":[],"stateMutability":"nonpayable","type":"function"},{"inputs":[],"name":"senseistake","outputs":[{"internalType":"contract SenseiStake","name":"","type":"address"}],"stateMutability":"view","type":"function"}]);
+    //     const data = iface.encodeFunctionData('incrementar', [1]);
         
-    //     await expect(executeTransaction).to.be.revertedWith('CallerNotAllowed');
-    // });
+    //     console.log([contract, 0, data], 'Testing External Contract Segunda Function...');
 
-    // it('1.5 Should fail if same transaction executed twice', async function () {
-    //     await tokenContract.connect(aliceWhale).createContract({
-    //         value: ethers.utils.parseEther("32")
-    //     });
-
-    //     const sc_addr = await tokenContract.getServiceContractAddress(1);
-    //     const sc = await contrService.attach(sc_addr);
-
-    //     // whitelisting address so that we can call withdrawAll
-    //     await depositContract.whitelist(sc_addr);
-
-    //     const iface = new ethers.utils.Interface(depositContractDeployment.abi);
-    //     const data = iface.encodeFunctionData('withdrawAll', []);
-    //     const submitTransaction = await sc.submitTransaction(
-    //         depositContract.address,
-    //         0,
-    //         data,
-    //         'Testing Withdraw All to ServiceContract'
-    //     );
-    //     await sc.connect(aliceWhale).executeTransaction(0);
-    //     const executeTransaction = sc.connect(aliceWhale).executeTransaction(0);
-
-    //     await expect(executeTransaction).to.be.revertedWith('TransactionAlreadyExecuted')
+    //     // ["0x15BA78D6B957EfF05a4b0a692d6E7B560D8Dc2DE", 0, "0xb9e30ac60000000000000000000000000000000000000000000000000000000000000001"]
     // });
   });
 

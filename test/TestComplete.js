@@ -139,47 +139,6 @@ describe('Complete', () => {
       expect (await sc.validatorActive()).to.equal(true);
     });
   });
-  describe('3. test update ExitDate', () => {
-    it('3.1 update ExitDate (happy path)', async function () {
-      /*
-        1. deposit 32 eth
-        2. update exit date
-      */
-      const newExitDate = parseInt(new Date(2025, 0, 2).getTime() / 1000);
-      expect(await sc.updateExitDate(newExitDate)).to.be.ok;
-      expect(await sc.exitDate()).to.be.eq(newExitDate);
-    });
-    it('3.2 update ExitDate earlier time param should revert with NotEarlierThanOriginalDate', async function () {
-      /*
-        1. deposit 32 eth
-        2. update exit date with params of earlier date
-        3. revert with NotEarlierThanOriginalDate
-      */
-
-      // 2. update exit date with params of earlier date
-      const newExitDate = parseInt(new Date(2023, 0, 1).getTime() / 1000);
-      const tx2 = sc.updateExitDate(newExitDate);
-      // 3. revert with NotEarlierThanOriginalDate
-      await expect(tx2).to.be.revertedWith("NotEarlierThanOriginalDate");
-      expect(await sc.exitDate()).to.be.above(newExitDate);
-    });
-
-    it('3.3 update ExitDate in withdrawal state revert with ValidatorNotActive', async function () {
-      /*
-        1. deposit 32 eth
-        2. create validator (mint nft)
-        3. update exit date
-      */
-
-      await withdrawAllToDepositor();
-      
-      await callToEOS(sc, tokenContract, aliceWhale);
-
-      await expect(sc.updateExitDate(
-        parseInt(new Date(2024, 0, 2).getTime() / 1000))).to.be.revertedWith("ValidatorNotActive");
-      
-    });
-  });
   
   describe('4. test receive ethers', () => {
     it('4.1 Service contract should not receive eth', async function () {

@@ -19,7 +19,7 @@ module.exports = async ({deployments, upgrades, run}) => {
     const [deployer] = await ethers.getSigners();
 
     // start from
-    const start_ = 5;
+    const start_ = 0;
 
     // amount of validators
     const serviceContractDeploys = deploymentVariables.servicesToDeploy;
