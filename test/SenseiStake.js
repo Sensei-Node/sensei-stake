@@ -243,18 +243,4 @@ describe('SenseiStake', () => {
         expect(await tokenContract.connect(otherPerson).validatorAvailable()).to.equal(true)
     });
   });
-
-  describe('9. update exitDate', async function () {
-    it('9.1 Should revert if exitDate > 2 years', async function () {
-        await tokenContract.connect(aliceWhale).createContract({
-            value: ethers.utils.parseEther("32")
-        });
-
-        const sc_addr = await tokenContract.getServiceContractAddress(1);
-        const sc = await contrService.attach(sc_addr);
-        const updateExitDate = sc.updateExitDate(parseInt(new Date(2028, 0, 2).getTime() / 1000));
-
-        await expect(updateExitDate).to.be.revertedWith("IncrementTooHigh");
-    });
-  });
 });

@@ -365,23 +365,6 @@ contract SenseistakeServicesContract is Initializable {
         emit SubmitTransaction(transactions.length, description_);
     }
 
-    /// @notice For updating the exitDate
-    /// @dev The exit date must be after the current exit date and it's only possible in validatorActive == true
-    /// @param exitDate_ The new exit date
-    function updateExitDate(uint64 exitDate_) external onlyOperator {
-        if (!validatorActive) {
-            revert ValidatorNotActive();
-        }
-        if (exitDate_ < exitDate) {
-            revert NotEarlierThanOriginalDate();
-        }
-        if (exitDate_ > (exitDate + 720 days)) {
-            revert IncrementTooHigh();
-        }
-        exitDate = exitDate_;
-        emit ExitDateUpdated(exitDate_);
-    }
-
     /// @notice Withdraw the deposit to a beneficiary
     /// @dev Is not possible to withdraw in validatorActive == true. Can only be called from the ERC721 contract
     /// @param beneficiary_ Who will receive the deposit

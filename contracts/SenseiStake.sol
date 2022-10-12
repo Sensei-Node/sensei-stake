@@ -188,18 +188,18 @@ contract SenseiStake is ERC721, Ownable {
 
     /// @notice Redefinition of internal function `_isApprovedOrOwner`
     /// @dev Returns whether `spender` is allowed to manage `tokenId`.
-    /// @param spender: the address to check if it has approval or ownership of tokenId
-    /// @param tokenId: the asset to check
+    /// @param spender_: the address to check if it has approval or ownership of tokenId
+    /// @param tokenId_: the asset to check
     /// @return bool whether it is approved or owner of the token
-    function isApprovedOrOwner(address spender, uint256 tokenId)
+    function isApprovedOrOwner(address spender_, uint256 tokenId_)
         external
         view
         returns (bool)
     {
-        address owner = ERC721.ownerOf(tokenId);
-        return (spender == owner ||
-            isApprovedForAll(owner, spender) ||
-            getApproved(tokenId) == spender);
+        address owner = ERC721.ownerOf(tokenId_);
+        return (spender_ == owner ||
+            isApprovedForAll(owner, spender_) ||
+            getApproved(tokenId_) == spender_);
     }
 
     /// @notice Performs withdraw of balance in service contract
@@ -294,19 +294,19 @@ contract SenseiStake is ERC721, Ownable {
     }
 
     /// @notice Helper function for converting bytes to hex string
-    /// @param buffer bytes data to convert
+    /// @param buffer_ bytes data to convert
     /// @return string converted buffer
-    function _bytesToHexString(bytes memory buffer)
+    function _bytesToHexString(bytes memory buffer_)
         internal
         pure
         returns (string memory)
     {
         // Fixed buffer size for hexadecimal convertion
-        bytes memory converted = new bytes(buffer.length * 2);
+        bytes memory converted = new bytes(buffer_.length * 2);
         bytes memory _base = "0123456789abcdef";
-        for (uint256 i = 0; i < buffer.length; ) {
-            converted[i * 2] = _base[uint8(buffer[i]) / _base.length];
-            converted[i * 2 + 1] = _base[uint8(buffer[i]) % _base.length];
+        for (uint256 i = 0; i < buffer_.length; ) {
+            converted[i * 2] = _base[uint8(buffer_[i]) / _base.length];
+            converted[i * 2 + 1] = _base[uint8(buffer_[i]) % _base.length];
             unchecked {
                 ++i;
             }
