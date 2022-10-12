@@ -76,7 +76,6 @@ contract SenseistakeServicesContract is Initializable {
 
     event Claim(address indexed receiver, uint256 amount);
     event ExecuteTransaction(uint256 indexed index);
-    event ExitDateUpdated(uint64 newExitDate);
     event ServiceEnd();
     event SubmitTransaction(
         uint256 indexed index,
