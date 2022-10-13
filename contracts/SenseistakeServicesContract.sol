@@ -58,11 +58,11 @@ contract SenseistakeServicesContract is Initializable {
 
     /// @notice The address for being able to deposit to the ethereum deposit contract
     /// @return depositContractAddress deposit contract address
-    address public immutable depositContractAddress;
+    address public depositContractAddress;
 
     /// @notice The address of Senseistakes ERC721 contract address
     /// @return tokenContractAddress the token contract address (erc721)
-    address public immutable tokenContractAddress;
+    address public tokenContractAddress;
 
     /// @notice Scale for getting the commission rate (service fee)
     uint32 private constant COMMISSION_RATE_SCALE = 1_000_000;
@@ -152,13 +152,13 @@ contract SenseistakeServicesContract is Initializable {
         _;
     }
 
-    /// @notice Initializes the contract
-    /// @dev Sets the eth deposit contract address
-    /// @param ethDepositContractAddress_ The eth deposit contract address for creating validator
-    constructor(address ethDepositContractAddress_) {
-        tokenContractAddress = msg.sender;
-        depositContractAddress = ethDepositContractAddress_;
-    }
+    // /// @notice Initializes the contract
+    // /// @dev Sets the eth deposit contract address
+    // /// @param ethDepositContractAddress_ The eth deposit contract address for creating validator
+    // constructor(address ethDepositContractAddress_) {
+    //     tokenContractAddress = msg.sender;
+    //     depositContractAddress = ethDepositContractAddress_;
+    // }
 
     /// @notice This is the receive function called when a user performs a transfer to this contract address
     receive() external payable {}
@@ -177,11 +177,14 @@ contract SenseistakeServicesContract is Initializable {
         uint64 exitDate_,
         bytes calldata validatorPubKey_,
         bytes calldata depositSignature_,
-        bytes32 depositDataRoot_
+        bytes32 depositDataRoot_,
+        address ethDepositContractAddress_
     ) external payable initializer {
         commissionRate = commissionRate_;
         tokenId = tokenId_;
         exitDate = exitDate_;
+        tokenContractAddress = msg.sender;
+        depositContractAddress = ethDepositContractAddress_;
         IDepositContract(depositContractAddress).deposit{
             value: FULL_DEPOSIT_SIZE
         }(

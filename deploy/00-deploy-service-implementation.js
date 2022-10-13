@@ -17,7 +17,7 @@ module.exports = async ({
         { address: deploymentVariables.depositContractAddress[network.config.chainId] } : { address: '0x00000000219ab540356cBB839Cbe05303d7705Fa' }
     }
 
-    const args = [ethDepositContractAddress.address];
+    const args = [];
 
     const senseistakeService = await deploy("SenseistakeServicesContract", {
         contract: "SenseistakeServicesContract",

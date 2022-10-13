@@ -33,6 +33,10 @@ contract SenseiStake is ERC721, Ownable {
     /// @return commissionRate the commission rate
     uint32 public commissionRate;
 
+    /// @notice The address for being able to deposit to the ethereum deposit contract
+    /// @return depositContractAddress deposit contract address
+    address public immutable depositContractAddress;
+
     /// @notice Token counter for handling NFT
     Counters.Counter public tokenIdCounter;
 
@@ -86,8 +90,9 @@ contract SenseiStake is ERC721, Ownable {
             revert CommisionRateTooHigh(commissionRate_);
         }
         commissionRate = commissionRate_;
+        depositContractAddress = ethDepositContractAddress_;
         servicesContractImpl = address(
-            new SenseistakeServicesContract(ethDepositContractAddress_)
+            new SenseistakeServicesContract()
         );
     }
 
@@ -146,13 +151,14 @@ contract SenseiStake is ERC721, Ownable {
             revert NoMoreValidatorsLoaded();
         }
         bytes memory initData = abi.encodeWithSignature(
-            "initialize(uint32,uint256,uint64,bytes,bytes,bytes32)",
+            "initialize(uint32,uint256,uint64,bytes,bytes,bytes32,address)",
             commissionRate,
             tokenId,
             validator.exitDate,
             validator.validatorPubKey,
             validator.depositSignature,
-            validator.depositDataRoot
+            validator.depositDataRoot,
+            depositContractAddress
         );
         address proxy = Clones.cloneDeterministic(
             servicesContractImpl,
