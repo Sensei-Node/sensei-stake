@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.17;
 
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
@@ -32,6 +32,10 @@ contract SenseiStake is ERC721, Ownable {
     /// @dev Is set up on the constructor and can be modified with provided setter aswell
     /// @return commissionRate the commission rate
     uint32 public commissionRate;
+
+    /// @notice The address for being able to deposit to the ethereum deposit contract
+    /// @return depositContractAddress deposit contract address
+    address public immutable depositContractAddress;
 
     /// @notice Token counter for handling NFT
     Counters.Counter public tokenIdCounter;
@@ -86,8 +90,9 @@ contract SenseiStake is ERC721, Ownable {
             revert CommisionRateTooHigh(commissionRate_);
         }
         commissionRate = commissionRate_;
+        depositContractAddress = ethDepositContractAddress_;
         servicesContractImpl = address(
-            new SenseistakeServicesContract(ethDepositContractAddress_)
+            new SenseistakeServicesContract()
         );
     }
 
@@ -146,13 +151,14 @@ contract SenseiStake is ERC721, Ownable {
             revert NoMoreValidatorsLoaded();
         }
         bytes memory initData = abi.encodeWithSignature(
-            "initialize(uint32,uint256,uint64,bytes,bytes,bytes32)",
+            "initialize(uint32,uint256,uint64,bytes,bytes,bytes32,address)",
             commissionRate,
             tokenId,
             validator.exitDate,
             validator.validatorPubKey,
             validator.depositSignature,
-            validator.depositDataRoot
+            validator.depositDataRoot,
+            depositContractAddress
         );
         address proxy = Clones.cloneDeterministic(
             servicesContractImpl,
@@ -255,8 +261,11 @@ contract SenseiStake is ERC721, Ownable {
                                 '{"name":"ETH Validator #',
                                 Strings.toString(tokenId_),
                                 '","description":"Sensei Stake is a non-custodial staking platform for Ethereum 2.0, that uses a top-performance node infrastructure provided by Sensei Node. Each NFT of this collection certifies the ownership receipt for one active ETH2 Validator and its accrued proceeds from protocol issuance and transaction processing fees. These nodes are distributed across the Latin American region, on local or regional hosting service providers, outside centralized global cloud vendors. Together we are fostering decentralization and strengthening the Ethereum ecosystem. One node at a time. Decentralization matters.",',
-                                '"external_url":"https://dashboard.senseinode.com/senseistake",',
-                                '"minted_at":',
+                                '"external_url":"https://dashboard.senseinode.com/redirsenseistake?v=',
+                                _bytesToHexString(
+                                    validators[tokenId_].validatorPubKey
+                                ),
+                                '","minted_at":',
                                 Strings.toString(block.timestamp),
                                 ',"image":"',
                                 "ipfs://bafybeifgh6572j2e6ioxrrtyxamzciadd7anmnpyxq4b33wafqhpnncg7m",

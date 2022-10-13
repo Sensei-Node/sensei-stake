@@ -10,26 +10,24 @@ module.exports = async ({
     upgrades, 
     run
 }) => {
-    let depositDeployment;
-    try {
-        depositDeployment = await deployments.get('DepositContract')
-    } catch {}
     const serviceDeployment = await deployments.get('SenseistakeServicesContract')
     const erc721Deployment = await deployments.get('SenseiStake')
     let ethDepositContractAddress;
-    if (!depositDeployment) {
+    try {
+        ethDepositContractAddress = await deployments.get("DepositContract");
+    } catch(err) {
         ethDepositContractAddress = deploymentVariables.depositContractAddress[network.config.chainId] ? 
         { address: deploymentVariables.depositContractAddress[network.config.chainId] } : { address: '0x00000000219ab540356cBB839Cbe05303d7705Fa' }
     }
     if (['testnet', 'mainnet'].includes(network.config.type) && process.env.ETHERSCAN_KEY) {
         console.log('WAITING 10 seconds')
         await sleep(10000);
-        if (depositDeployment) {
-            // verify deposit contract
+        try {
+            const depositDeployment = await deployments.get('DepositContract')
             await verify(depositDeployment.address, [])
-        }
+        } catch {}
         // verify service contract
-        await verify(serviceDeployment.address, [ethDepositContractAddress.address])
+        await verify(serviceDeployment.address, [])
         // verify erc721 contract
         await verify(erc721Deployment.address, ["SenseiStake Ethereum Validator", "SSEV", 100_000, ethDepositContractAddress.address])
     }
