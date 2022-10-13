@@ -152,14 +152,6 @@ contract SenseistakeServicesContract is Initializable {
         _;
     }
 
-    // /// @notice Initializes the contract
-    // /// @dev Sets the eth deposit contract address
-    // /// @param ethDepositContractAddress_ The eth deposit contract address for creating validator
-    // constructor(address ethDepositContractAddress_) {
-    //     tokenContractAddress = msg.sender;
-    //     depositContractAddress = ethDepositContractAddress_;
-    // }
-
     /// @notice This is the receive function called when a user performs a transfer to this contract address
     receive() external payable {}
 
@@ -171,6 +163,7 @@ contract SenseistakeServicesContract is Initializable {
     /// @param validatorPubKey_ The validator public key
     /// @param depositSignature_ The deposit_data.json signature
     /// @param depositDataRoot_ The deposit_data.json data root
+    /// @param ethDepositContractAddress_ The ethereum deposit contract address for validator creation
     function initialize(
         uint32 commissionRate_,
         uint256 tokenId_,
