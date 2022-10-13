@@ -1,36 +1,19 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.0;
+pragma solidity 0.8.17;
 
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {IDepositContract} from "./interfaces/IDepositContract.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {SenseiStake} from "./SenseiStake.sol";
+import {ServiceTransactions} from "./ServiceTransactions.sol";
 
 /// @title A Service contract for handling SenseiStake Validators
 /// @author Senseinode
 /// @notice A service contract is where the deposits of a client are managed and all validator related tasks are performed. The ERC721 contract is the entrypoint for a client deposit, from there it is separeted into 32ETH chunks and then sent to different service contracts.
 /// @dev This contract is the implementation for the proxy factory clones that are made on ERC721 contract function (createContract) (an open zeppelin solution to create the same contract multiple times with gas optimization). The openzeppelin lib: https://docs.openzeppelin.com/contracts/4.x/api/proxy#Clone
-contract SenseistakeServicesContract is Initializable {
+contract SenseistakeServicesContract is Initializable, ServiceTransactions {
     using Address for address payable;
-
-    /// @notice Struct used for single atomic transaction 
-    struct Operation {
-        address to;
-        uint256 value;
-        bytes data;
-    }
-
-    /// @notice Struct used for transactions (single or batch) that could be needed, only created by protocol owner and executed by token owner/allowed
-    struct Transaction {
-        Operation operation;
-        uint8 executed;
-        uint8 confirmed;
-        uint8 valid;
-        uint16 prev;
-        uint16 next;
-        string description;
-    }
 
     /// @notice Used in conjuction with `COMMISSION_RATE_SCALE` for determining service fees
     /// @dev Is set up on the constructor and can be modified with provided setter aswell
@@ -48,9 +31,6 @@ contract SenseistakeServicesContract is Initializable {
     /// @notice The amount of eth the operator can claim
     /// @return state the operator claimable amount (in eth)
     uint256 public operatorClaimable;
-
-    /// @notice List of transactions that might be proposed
-    Transaction[] public transactions;
 
     /// @notice Determines whether the validator is active or not
     /// @return validatorActive is true if user holds NFT and validator is active, false if validator inactive and endOperatorServices called
@@ -75,18 +55,7 @@ contract SenseistakeServicesContract is Initializable {
     uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
 
     event Claim(address indexed receiver, uint256 amount);
-    event ExecuteTransaction(uint256 indexed index);
     event ServiceEnd();
-    event SubmitTransaction(
-        uint256 indexed index,
-        string indexed description
-    );
-    event CancelTransaction(
-        uint256 indexed index
-    );
-    event ConfirmTransaction(
-        uint256 indexed index
-    );
     event ValidatorDeposited(bytes pubkey);
     event Withdrawal(address indexed to, uint256 value);
 
@@ -98,13 +67,6 @@ contract SenseistakeServicesContract is Initializable {
     error NotAllowedInCurrentState();
     error NotEarlierThanOriginalDate();
     error NotOperator();
-    error PreviousValidTransactionNotExecuted(uint16 index);
-    error TransactionAlreadyExecuted();
-    error TransactionAlreadyConfirmed();
-    error TransactionIndexInvalid();
-    error TransactionCallFailed();
-    error TransactionNotValid();
-    error TransactionNotConfirmed();
     error ValidatorIsActive();
     error ValidatorNotActive();
 
@@ -112,42 +74,6 @@ contract SenseistakeServicesContract is Initializable {
     modifier onlyOperator() {
         if (msg.sender != Ownable(tokenContractAddress).owner()) {
             revert NotOperator();
-        }
-        _;
-    }
-
-    /// @notice For determining if specified index for transactions list is valid
-    /// @param index_: Transaction index to verify
-    modifier txExists(uint256 index_) {
-        if (index_ >= transactions.length) {
-            revert TransactionIndexInvalid();
-        }
-        _;
-    }
-
-    /// @notice For determining if specified transaction index was not executed
-    /// @param index_: Transaction index to verify
-    modifier txNotExecuted(uint256 index_) {
-        if (transactions[index_].executed == 1) {
-            revert TransactionAlreadyExecuted();
-        }
-        _;
-    }
-
-    /// @notice For determining if specified transaction index was not confirmed by owner/allowed user
-    /// @param index_: Transaction index to verify
-    modifier txNotConfirmed(uint256 index_) {
-        if (transactions[index_].confirmed == 1) {
-            revert TransactionAlreadyConfirmed();
-        }
-        _;
-    }
-
-    /// @notice For determining if specified transaction index is valid (not canceled by protocol owner)
-    /// @param index_: Transaction index to verify
-    modifier txValid(uint256 index_) {
-        if (transactions[index_].valid == 0) {
-            revert TransactionNotValid();
         }
         _;
     }
@@ -200,30 +126,7 @@ contract SenseistakeServicesContract is Initializable {
         txNotExecuted(index_)
         onlyOperator
     {
-        if (transactions[index_].prev == transactions[index_].next) {
-            // if it is the only element in the list
-            delete transactions[index_];
-            transactions.pop();
-        } else {
-            // if it is not the only element in the list
-            if (transactions[index_].prev == type(uint16).max) {
-                // if it is the first
-                Transaction storage transactionNext = transactions[transactions[index_].next];
-                transactionNext.prev = type(uint16).max;
-            } else if (transactions[index_].next == type(uint16).max) {
-                // if it is the last
-                Transaction storage transactionPrev = transactions[transactions[index_].prev];
-                transactionPrev.next = type(uint16).max;
-            } else {
-                // if it is in the middle
-                Transaction storage transactionPrev = transactions[transactions[index_].prev];
-                Transaction storage transactionNext = transactions[transactions[index_].next];
-                transactionPrev.next = transactions[index_].next;
-                transactionNext.prev = transactions[index_].prev;
-            }
-            delete transactions[index_];
-        }
-        emit CancelTransaction(index_);
+        _cancelTransaction(index_);
     }
 
     /// @notice Token owner or allowed confirmation to execute transaction by protocol owner
@@ -243,9 +146,7 @@ contract SenseistakeServicesContract is Initializable {
         ) {
             revert CallerNotAllowed();
         }
-        Transaction storage transaction = transactions[index_];
-        transaction.confirmed = 1;
-        emit ConfirmTransaction(index_);
+        _confirmTransaction(index_);
     }
 
     /// @notice Allows user to start the withdrawal process
@@ -295,27 +196,7 @@ contract SenseistakeServicesContract is Initializable {
         txValid(index_)
         txNotExecuted(index_)
     {
-        Transaction storage transaction = transactions[index_];
-        
-        if (transaction.confirmed == 0) {
-            revert TransactionNotConfirmed();
-        }
-        if (transaction.prev != type(uint16).max) {
-            if (transactions[transaction.prev].executed == 0) {
-                revert PreviousValidTransactionNotExecuted(transaction.prev);
-            }
-        }
-        
-        transaction.executed = 1;
-
-        (bool success, ) = transaction.operation.to.call{value: transaction.operation.value}(
-            transaction.operation.data
-        );
-        if (!success) {
-            revert TransactionCallFailed();
-        }
-
-        emit ExecuteTransaction(index_);
+        _executeTransaction(index_);
     }
 
     /// @notice Transfers to operator the claimable amount of eth
@@ -337,27 +218,7 @@ contract SenseistakeServicesContract is Initializable {
         Operation calldata operation_,
         string calldata description_
     ) external onlyOperator {
-        uint16 txLen = uint16(transactions.length);
-        uint16 prev = type(uint16).max;
-        uint16 next = type(uint16).max;
-
-        if (txLen > 0) {
-            prev = txLen - 1;
-            Transaction storage transactionPrev = transactions[txLen - 1];
-            transactionPrev.next = txLen;
-        }
-
-        transactions.push(Transaction({
-            operation: operation_,
-            executed: 0,
-            confirmed: 0,
-            valid: 1,
-            prev: prev,
-            next: next,
-            description: description_
-        }));
-
-        emit SubmitTransaction(transactions.length, description_);
+        _submitTransaction(operation_, description_);
     }
 
     /// @notice Withdraw the deposit to a beneficiary
@@ -374,12 +235,6 @@ contract SenseistakeServicesContract is Initializable {
         uint256 amount = address(this).balance - operatorClaimable;
         emit Withdrawal(beneficiary_, amount);
         payable(beneficiary_).sendValue(amount);
-    }
-
-    /// @notice Get current transaction count
-    /// @return count of transactions
-    function getTransactionCount() public view returns (uint256) {
-        return transactions.length;
     }
 
     /// @notice Get withdrawable amount of a user
