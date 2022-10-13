@@ -57,9 +57,9 @@ module.exports = async ({deployments, upgrades, run}) => {
         // console.log('DECRYPTED KEYSTORE', keystoreDecryptedPrivKey)
         const contractAddress = saltBytesToContractAddress(utils.hexZeroPad(utils.hexlify(index), 32), NNETWK);
         const depositData = createOperatorDepositData(operatorPrivKey, contractAddress, network.config.type);
-        let dDate = new Date(new Date().toISOString().slice(0, 10));
-        dDate.setMonth(dDate.getMonth() + 6);
-        const exitDate = BigNumber.from(dDate.getTime() / 1000);
+        // let dDate = new Date(new Date().toISOString().slice(0, 10));
+        // dDate.setMonth(dDate.getMonth() + 6);
+        // const exitDate = BigNumber.from(dDate.getTime() / 1000);
 
         // Local check for signature validity
         const validSignature = verifySignatureDepositMessageRoot(depositData)
@@ -79,7 +79,6 @@ module.exports = async ({deployments, upgrades, run}) => {
                 depositSignature: utils.hexlify(depositData.depositSignature),
                 depositDataRoot: utils.hexlify(depositData.depositDataRoot),
                 network: network.config.type,
-                exitDate: utils.hexlify(exitDate),
                 serviceContractAddress: utils.hexlify(contractAddress)
             };
         } else {
@@ -87,8 +86,7 @@ module.exports = async ({deployments, upgrades, run}) => {
                 utils.hexZeroPad(utils.hexlify(index), 32),
                 operatorPubKeyBytes,
                 depositData.depositSignature,
-                depositData.depositDataRoot,
-                exitDate
+                depositData.depositDataRoot
             )
             if (['testnet', 'mainnet'].includes(network.config.type)) {
                 await fcs.wait(deploymentVariables.waitConfirmations)
@@ -103,7 +101,6 @@ module.exports = async ({deployments, upgrades, run}) => {
                 depositSignature: bufferHex(validator_bc.depositSignature.slice(2)),
                 depositDataRoot: bufferHex(validator_bc.depositDataRoot.slice(2)),
                 network: network.config.type,
-                exitDate: exitDate,
                 index: utils.hexZeroPad(utils.hexlify(index), 32)
             }
     

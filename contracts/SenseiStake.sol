@@ -25,8 +25,10 @@ contract SenseiStake is ERC721, Ownable {
         bytes validatorPubKey;
         bytes depositSignature;
         bytes32 depositDataRoot;
-        uint64 exitDate;
     }
+
+    /// @notice For determining if a validator pubkey was already added or not
+    mapping(bytes => bool) public addedValidators;
 
     /// @notice Used in conjuction with `COMMISSION_RATE_SCALE` for determining service fees
     /// @dev Is set up on the constructor and can be modified with provided setter aswell
@@ -54,14 +56,13 @@ contract SenseiStake is ERC721, Ownable {
     /// @notice Fixed amount of the deposit
     uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
 
-    /// @notice For determining if a validator pubkey was already added or not
-    mapping(bytes => bool) public _addedValidators;
+    /// @notice Period of time for setting the exit date
+    uint256 private constant _exitDatePeriod = 180 days;
 
     event ContractCreated(uint256 tokenIdServiceContract);
     event ValidatorAdded(
         uint256 indexed tokenId,
-        bytes indexed validatorPubKey,
-        uint64 exitDate
+        bytes indexed validatorPubKey
     );
 
     error ValidatorAlreadyAdded();
@@ -91,9 +92,7 @@ contract SenseiStake is ERC721, Ownable {
         }
         commissionRate = commissionRate_;
         depositContractAddress = ethDepositContractAddress_;
-        servicesContractImpl = address(
-            new SenseistakeServicesContract()
-        );
+        servicesContractImpl = address(new SenseistakeServicesContract());
     }
 
     /// @notice Adds validator info to validators mapping
@@ -102,18 +101,16 @@ contract SenseiStake is ERC721, Ownable {
     /// @param validatorPubKey_ the validator public key
     /// @param depositSignature_ the deposit_data.json signature
     /// @param depositDataRoot_ the deposit_data.json data root
-    /// @param exitDate_ the exit date
     function addValidator(
         uint256 tokenId_,
         bytes calldata validatorPubKey_,
         bytes calldata depositSignature_,
-        bytes32 depositDataRoot_,
-        uint64 exitDate_
+        bytes32 depositDataRoot_
     ) external onlyOwner {
         if (tokenId_ <= tokenIdCounter.current()) {
             revert TokenIdAlreadyMinted();
         }
-        if (_addedValidators[validatorPubKey_]) {
+        if (addedValidators[validatorPubKey_]) {
             revert ValidatorAlreadyAdded();
         }
         if (validatorPubKey_.length != 48) {
@@ -122,18 +119,14 @@ contract SenseiStake is ERC721, Ownable {
         if (depositSignature_.length != 96) {
             revert InvalidDepositSignature();
         }
-        if (block.timestamp + 1 days > exitDate_) {
-            revert NotEarlierThanOriginalDate();
-        }
         Validator memory validator = Validator(
             validatorPubKey_,
             depositSignature_,
-            depositDataRoot_,
-            exitDate_
+            depositDataRoot_
         );
-        _addedValidators[validatorPubKey_] = true;
+        addedValidators[validatorPubKey_] = true;
         validators[tokenId_] = validator;
-        emit ValidatorAdded(tokenId_, validatorPubKey_, exitDate_);
+        emit ValidatorAdded(tokenId_, validatorPubKey_);
     }
 
     /// @notice Creates service contract based on implementation
@@ -154,7 +147,7 @@ contract SenseiStake is ERC721, Ownable {
             "initialize(uint32,uint256,uint64,bytes,bytes,bytes32,address)",
             commissionRate,
             tokenId,
-            validator.exitDate,
+            block.timestamp + _exitDatePeriod,
             validator.validatorPubKey,
             validator.depositSignature,
             validator.depositDataRoot,
@@ -251,6 +244,13 @@ contract SenseiStake is ERC721, Ownable {
         override(ERC721)
         returns (string memory)
     {
+        address proxy = Clones.predictDeterministicAddress(
+            servicesContractImpl,
+            bytes32(tokenId_)
+        );
+        SenseistakeServicesContract serviceContract = SenseistakeServicesContract(
+                payable(proxy)
+            );
         return
             string(
                 abi.encodePacked(
@@ -275,7 +275,7 @@ contract SenseiStake is ERC721, Ownable {
                                 ),
                                 '"},{',
                                 '"trait_type":"Exit Date","display_type":"date","value":"',
-                                Strings.toString(validators[tokenId_].exitDate),
+                                Strings.toString(serviceContract.exitDate()),
                                 '"},{',
                                 '"trait_type": "Commission Rate","display_type":"string","value":"',
                                 Strings.toString(

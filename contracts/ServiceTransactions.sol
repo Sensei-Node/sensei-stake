@@ -4,7 +4,7 @@ pragma solidity 0.8.17;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 abstract contract ServiceTransactions {
-    /// @notice Struct used for single atomic transaction 
+    /// @notice Struct used for single atomic transaction
     struct Operation {
         address to;
         uint256 value;
@@ -26,16 +26,9 @@ abstract contract ServiceTransactions {
     Transaction[] public transactions;
 
     event ExecuteTransaction(uint256 indexed index);
-    event SubmitTransaction(
-        uint256 indexed index,
-        string indexed description
-    );
-    event CancelTransaction(
-        uint256 indexed index
-    );
-    event ConfirmTransaction(
-        uint256 indexed index
-    );
+    event SubmitTransaction(uint256 indexed index, string indexed description);
+    event CancelTransaction(uint256 indexed index);
+    event ConfirmTransaction(uint256 indexed index);
 
     error PreviousValidTransactionNotExecuted(uint16 index);
     error TransactionAlreadyExecuted();
@@ -90,9 +83,7 @@ abstract contract ServiceTransactions {
     /// @notice For canceling a submited transaction if needed
     /// @dev Only protocol owner can do so
     /// @param index_: transaction index
-    function _cancelTransaction(uint256 index_)
-        internal
-    {
+    function _cancelTransaction(uint256 index_) internal {
         if (transactions[index_].prev == transactions[index_].next) {
             // if it is the only element in the list
             delete transactions[index_];
@@ -101,16 +92,24 @@ abstract contract ServiceTransactions {
             // if it is not the only element in the list
             if (transactions[index_].prev == type(uint16).max) {
                 // if it is the first
-                Transaction storage transactionNext = transactions[transactions[index_].next];
+                Transaction storage transactionNext = transactions[
+                    transactions[index_].next
+                ];
                 transactionNext.prev = type(uint16).max;
             } else if (transactions[index_].next == type(uint16).max) {
                 // if it is the last
-                Transaction storage transactionPrev = transactions[transactions[index_].prev];
+                Transaction storage transactionPrev = transactions[
+                    transactions[index_].prev
+                ];
                 transactionPrev.next = type(uint16).max;
             } else {
                 // if it is in the middle
-                Transaction storage transactionPrev = transactions[transactions[index_].prev];
-                Transaction storage transactionNext = transactions[transactions[index_].next];
+                Transaction storage transactionPrev = transactions[
+                    transactions[index_].prev
+                ];
+                Transaction storage transactionNext = transactions[
+                    transactions[index_].next
+                ];
                 transactionPrev.next = transactions[index_].next;
                 transactionNext.prev = transactions[index_].prev;
             }
@@ -121,9 +120,7 @@ abstract contract ServiceTransactions {
 
     /// @notice Token owner or allowed confirmation to execute transaction by protocol owner
     /// @param index_: transaction index to confirm
-    function _confirmTransaction(uint256 index_)
-        internal
-    {
+    function _confirmTransaction(uint256 index_) internal {
         Transaction storage transaction = transactions[index_];
         transaction.confirmed = 1;
         emit ConfirmTransaction(index_);
@@ -132,11 +129,9 @@ abstract contract ServiceTransactions {
     /// @notice Executes transaction index_ that is valid, confirmed and not executed
     /// @dev Requires previous transaction valid to be executed
     /// @param index_: transaction at index to be executed
-    function _executeTransaction(uint256 index_)
-        internal
-    {
+    function _executeTransaction(uint256 index_) internal {
         Transaction storage transaction = transactions[index_];
-        
+
         if (transaction.confirmed == 0) {
             revert TransactionNotConfirmed();
         }
@@ -145,12 +140,12 @@ abstract contract ServiceTransactions {
                 revert PreviousValidTransactionNotExecuted(transaction.prev);
             }
         }
-        
+
         transaction.executed = 1;
 
-        (bool success, ) = transaction.operation.to.call{value: transaction.operation.value}(
-            transaction.operation.data
-        );
+        (bool success, ) = transaction.operation.to.call{
+            value: transaction.operation.value
+        }(transaction.operation.data);
         if (!success) {
             revert TransactionCallFailed();
         }
@@ -175,15 +170,17 @@ abstract contract ServiceTransactions {
             transactionPrev.next = txLen;
         }
 
-        transactions.push(Transaction({
-            operation: operation_,
-            executed: 0,
-            confirmed: 0,
-            valid: 1,
-            prev: prev,
-            next: next,
-            description: description_
-        }));
+        transactions.push(
+            Transaction({
+                operation: operation_,
+                executed: 0,
+                confirmed: 0,
+                valid: 1,
+                prev: prev,
+                next: next,
+                description: description_
+            })
+        );
 
         emit SubmitTransaction(transactions.length, description_);
     }
