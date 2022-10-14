@@ -28,7 +28,7 @@ module.exports = {
     settings: {
       optimizer: {
         enabled: true,
-        runs: 100000,
+        runs: 500,
       },
       outputSelection: {
         '*': {
@@ -57,13 +57,13 @@ module.exports = {
       type: 'ganache',
       name: 'ganache'
     },
-    // mainnet: {
-    //   url: process.env.MAINNET_RPC,
-    //   accounts: [process.env.ACCOUNT_PK_MAINNET],
-    //   chainId: 1,
-    //   type: 'mainnet',
-    //   name: 'mainnet'
-    // },
+    mainnet: {
+      url: process.env.MAINNET_RPC,
+      accounts: [process.env.ACCOUNT_PK_MAINNET],
+      chainId: 1,
+      type: 'mainnet',
+      name: 'mainnet'
+    },
   },
 
   gasReporter: {

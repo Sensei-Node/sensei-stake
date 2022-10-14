@@ -136,10 +136,12 @@ module.exports = async ({deployments, upgrades, run}) => {
     
     if (['testnet', 'mainnet'].includes(network.config.type)) {
         fs.writeFileSync(`${_dir}/validator_public_keys.json`, JSON.stringify(validatorPublicKeys));
-        if (!fs.existsSync(_dir_validators)){
-            fs.mkdirSync(_dir_validators);
+        if (validatorsData && Object.getPrototypeOf(validatorsData) === Object.prototype && Object.keys(validatorsData).length !== 0) {
+            if (!fs.existsSync(_dir_validators)){
+                fs.mkdirSync(_dir_validators);
+            }
+            fs.writeFileSync(`${_dir_validators}/validators_data.json`, JSON.stringify(validatorsData));
         }
-        fs.writeFileSync(`${_dir_validators}/validators_data.json`, JSON.stringify(validatorsData));
     }
 }
 
