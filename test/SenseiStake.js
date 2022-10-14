@@ -47,17 +47,13 @@ describe('SenseiStake', () => {
         depositSignature: 96,
         depositDataRoot: 32,
         depositMessageRoot: 32,
-        exitDate: 8
     }
-    const exitDate = ethers.BigNumber.from(new Date(2025, 0, 1).getTime() / 1000);
     it('1.1 Should fail if wrong length: validatorPubKey', async function () {
         const addValidator = tokenContract.addValidator(
             correctLenBytes['tokenId'],
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['validatorPubKey']-2),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositSignature']),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositDataRoot']),
-            // ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositMessageRoot']),
-            exitDate
         )
         await expect(addValidator).to.be.revertedWith("InvalidPublicKey");
     })
@@ -67,8 +63,6 @@ describe('SenseiStake', () => {
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['validatorPubKey']),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositSignature']-2),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositDataRoot']),
-            // ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositMessageRoot']),
-            exitDate
         )
         await expect(addValidator).to.be.revertedWith("InvalidDepositSignature");
     })
@@ -78,21 +72,8 @@ describe('SenseiStake', () => {
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['validatorPubKey']),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositSignature']),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositDataRoot']-2),
-            // ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositMessageRoot']),
-            exitDate
         )
         await expect(addValidator).to.be.reverted;
-    })
-    it('1.4 Should fail if exit date earlier than current block', async function () {
-        const addValidator = tokenContract.addValidator(
-            correctLenBytes['tokenId'],
-            ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['validatorPubKey']),
-            ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositSignature']),
-            ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositDataRoot']),
-            // ethers.utils.hexZeroPad(ethers.utils.hexlify(5), correctLenBytes['depositMessageRoot']),
-            ethers.BigNumber.from(new Date(2021, 0, 1).getTime() / 1000)
-        )
-        await expect(addValidator).to.be.revertedWith("NotEarlierThanOriginalDate");
     })
     it('1.5 Should fail if tokenId provided already used (and minted)', async function () {
         await tokenContract.connect(aliceWhale).createContract({
@@ -103,8 +84,6 @@ describe('SenseiStake', () => {
             ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['validatorPubKey']),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositSignature']),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositDataRoot']),
-            // ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositMessageRoot']),
-            exitDate
         )
         await expect(addValidator).to.be.revertedWith("TokenIdAlreadyMinted");
     })
@@ -114,16 +93,12 @@ describe('SenseiStake', () => {
             ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['validatorPubKey']),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositSignature']),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositDataRoot']),
-            // ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositMessageRoot']),
-            exitDate
         )
         const addValidator2 = tokenContract.addValidator(
             correctLenBytes['tokenId'],
             ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['validatorPubKey']),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositSignature']),
             ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositDataRoot']),
-            // ethers.utils.hexZeroPad(ethers.utils.hexlify(1), correctLenBytes['depositMessageRoot']),
-            exitDate
         )
         await expect(addValidator2).to.be.revertedWith("ValidatorAlreadyAdded");
     });
@@ -228,14 +203,6 @@ describe('SenseiStake', () => {
   });
 
   describe('8. test validatorAvailable', async function () {
-    const correctLenBytes = {
-        validatorPubKey: 48,
-        depositSignature: 96,
-        depositDataRoot: 32,
-        exitDate: 8
-    }
-    const exitDate = ethers.BigNumber.from(new Date(2025, 0, 1).getTime() / 1000);
-    const token_id = 1;
     it('8.1 Should be available vaidator', async function () {
         await tokenContract.connect(aliceWhale).createContract({
             value: ethers.utils.parseEther("32")

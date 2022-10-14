@@ -74,6 +74,7 @@ describe('Complete', () => {
       
       // 4. view new token  
       const tokenURI_ = await tokenContract.tokenURI(1);
+      // console.log(tokenURI_);
       expect(tokenURI_).to.not.be.a('undefined');
 
       const sc_addr = await tokenContract.getServiceContractAddress(1);
