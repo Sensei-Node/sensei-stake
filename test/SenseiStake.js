@@ -107,14 +107,14 @@ describe('SenseiStake', () => {
   describe('2. createContract should fail if incorrect data provided', async function () {
     it('2.1 Should fail if more than 32 ETH being sent', async function () {
         const createContract = tokenContract.connect(aliceWhale).createContract({
-            value: ethers.utils.parseEther("31")
+            value: ethers.utils.parseEther("33")
         });
         await expect(createContract).to.be.revertedWith("ValueSentDifferentThanFullDeposit");
 
     });
     it('2.2 Should fail if less than 32 ETH being sent', async function () {
         const createContract = tokenContract.connect(aliceWhale).createContract({
-            value: ethers.utils.parseEther("33")
+            value: ethers.utils.parseEther("31")
         });
         await expect(createContract).to.be.revertedWith("ValueSentDifferentThanFullDeposit");
     });
