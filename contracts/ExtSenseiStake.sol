@@ -8,7 +8,7 @@ import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Recei
 contract ExtSenseiStake is IERC721Receiver {
     using Address for address;
 
-    SenseiStake public SenseiStakeContract;
+    SenseiStake public immutable SenseiStakeContract;
 
     error InvalidAddress();
     error InvalidDepositAmount(uint256 value);
