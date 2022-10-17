@@ -9,7 +9,7 @@ const waitConfirmations = {
 }
 
 const deploymentVariables = {
-    servicesToDeploy: ['testnet', 'mainnet'].includes(network.config.type) ? 10 : 6,
+    servicesToDeploy: ['testnet', 'mainnet'].includes(network.config.type) ? 10 : 3,
     depositContractAddress: {
         1: '0x00000000219ab540356cBB839Cbe05303d7705Fa',
         5: '0xff50ed3d0ec03aC01D4C79aAd74928BFF48a7b2b'
