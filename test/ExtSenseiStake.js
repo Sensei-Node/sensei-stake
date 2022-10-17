@@ -50,9 +50,9 @@ describe('ExtSenseiStake', () => {
   describe('1. Minting multiple nfts', async function () {
     it('1.1 Should work if valid ethers amount sent', async function () {
         const multiple = await extTokenContract.connect(aliceWhale).createMultipleContracts({
-            value: ethers.utils.parseEther("96")
+            value: ethers.utils.parseEther("64")
         });
-        expect(await tokenContract.balanceOf(aliceWhale.address)).to.equal(3)
+        expect(await tokenContract.balanceOf(aliceWhale.address)).to.equal(2)
     });
     it('1.2 Should revert if not multiple 32 ethers amount sent', async function () {
         const multiple = extTokenContract.connect(aliceWhale).createMultipleContracts({

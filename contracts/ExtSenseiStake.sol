@@ -23,7 +23,7 @@ contract ExtSenseiStake is IERC721Receiver {
 
     function createMultipleContracts() external payable {
         // check that ethers amount provided is multiple of 32
-        if (msg.value % 32 ether != 0) {
+        if (msg.value == 0 || msg.value % 32 ether != 0) {
             revert InvalidDepositAmount(msg.value);
         }
         uint256 amount = msg.value / 32 ether;
@@ -39,22 +39,12 @@ contract ExtSenseiStake is IERC721Receiver {
         for (uint256 i = 0; i < amount; ) {
             // mint first
             SenseiStakeContract.createContract{value: 32 ether}();
-            // this is checked in case there was another mint in between this function call
-            // called from the original SenseiStake contract
-            bool success = false;
-            while (!success) {
-                if (address(this) == SenseiStakeContract.ownerOf(tokenId + 1)) {
-                    SenseiStakeContract.safeTransferFrom(
-                        address(this),
-                        msg.sender,
-                        tokenId + 1
-                    );
-                    success = true;
-                }
-                unchecked {
-                    ++tokenId;
-                }
-            }
+            // transfer to user
+            SenseiStakeContract.safeTransferFrom(
+                address(this),
+                msg.sender,
+                tokenId + 1 + i
+            );
             unchecked {
                 ++i;
             }
