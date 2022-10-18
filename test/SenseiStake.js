@@ -134,13 +134,34 @@ describe('SenseiStake', () => {
   });
 
   describe('3. endOperatorServices should fail if incorrect data provided', async function () {
-    it('2.1 Should fail caller is not token owner or not contract deployer', async function () {
+    it('3.1 Should fail caller is not token owner or not contract deployer', async function () {
         await tokenContract.connect(aliceWhale).createContract({
             value: ethers.utils.parseEther("32")
         });
         const endOperatorServices = tokenContract.connect(otherPerson).endOperatorServices(1);
         await expect(endOperatorServices).to.be.revertedWith("NotOwner");
 
+    });
+    it('3.2 Should not be able to retrieve full validator deposit if called withdraw', async function () {
+        await tokenContract.connect(aliceWhale).createContract({
+            value: ethers.utils.parseEther("32")
+        });
+        const sscc_addr = await tokenContract.getServiceContractAddress(1);
+        
+        // console.log('after mint', await tokenContract.balanceOf(aliceWhale.address));
+        await aliceWhale.sendTransaction({to: sscc_addr, value: ethers.utils.parseEther('17')});
+        await ethers.provider.send("evm_mine", [parseInt(new Date(2025, 0, 2).getTime() / 1000)]);
+        
+        // end operator services will result on zero commission
+        await tokenContract.endOperatorServices(1);
+        await tokenContract.connect(aliceWhale).withdraw(1);
+        const balance = parseInt((await ethers.provider.getBalance(sscc_addr)).toString());
+        await expect(balance).to.be.equals(0);
+
+        // console.log('after exploit', await tokenContract.balanceOf(aliceWhale.address));
+
+        // withdraw made but will result in token burn and thus cannot recover full validator deposit
+        await expect(await tokenContract.balanceOf(aliceWhale.address)).to.be.equals(0);
     });
   });
 

@@ -266,7 +266,7 @@ contract SenseiStake is ERC721, Ownable {
                                     validators[tokenId_].validatorPubKey
                                 ),
                                 '","minted_at":',
-                                Strings.toString(block.timestamp),
+                                Strings.toString(serviceContract.exitDate() - _exitDatePeriod),
                                 ',"image":"',
                                 "ipfs://bafybeifgh6572j2e6ioxrrtyxamzciadd7anmnpyxq4b33wafqhpnncg7m",
                                 '","attributes": [{"trait_type": "Validator Address","value":"',
