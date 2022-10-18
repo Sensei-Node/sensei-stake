@@ -53,10 +53,10 @@ contract ExtSenseiStake is IERC721Receiver, ReentrancyGuard {
     }
 
     function onERC721Received(
-        address from,
-        address to,
-        uint256 tokenId,
-        bytes memory data
+        address,
+        address,
+        uint256,
+        bytes memory
     ) external pure override returns (bytes4) {
         return IERC721Receiver.onERC721Received.selector;
     }
