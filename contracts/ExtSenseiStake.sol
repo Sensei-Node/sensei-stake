@@ -4,8 +4,9 @@ pragma solidity 0.8.17;
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {SenseiStake} from "./SenseiStake.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 
-contract ExtSenseiStake is IERC721Receiver {
+contract ExtSenseiStake is IERC721Receiver, ReentrancyGuard {
     using Address for address;
 
     SenseiStake public immutable SenseiStakeContract;
@@ -21,7 +22,7 @@ contract ExtSenseiStake is IERC721Receiver {
         SenseiStakeContract = SenseiStake(contract_);
     }
 
-    function createMultipleContracts() external payable {
+    function createMultipleContracts() external payable nonReentrant {
         // check that ethers amount provided is multiple of 32
         if (msg.value == 0 || msg.value % 32 ether != 0) {
             revert InvalidDepositAmount(msg.value);
