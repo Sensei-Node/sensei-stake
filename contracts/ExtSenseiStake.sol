@@ -36,6 +36,7 @@ contract ExtSenseiStake is IERC721Receiver, ReentrancyGuard {
         if (validatorPubKey.length == 0) {
             revert NotEnoughValidatorsAvailable(amount);
         }
+        tokenId++; // tokenId that will be minted
         // mint token and transfer to user
         for (uint256 i = 0; i < amount; ) {
             // mint first
@@ -44,7 +45,7 @@ contract ExtSenseiStake is IERC721Receiver, ReentrancyGuard {
             SenseiStakeContract.safeTransferFrom(
                 address(this),
                 msg.sender,
-                tokenId + 1 + i
+                tokenId + i
             );
             unchecked {
                 ++i;
