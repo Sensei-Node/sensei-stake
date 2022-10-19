@@ -250,7 +250,7 @@ describe('Transactions', () => {
         await sc.cancelTransaction(0);
 
         const count = await sc.getTransactionCount();
-        console.log('tx count', count);
+        // console.log('tx count', count);
 
         // execute 1
         const executeTransaction = await sc.executeTransaction(1);
@@ -300,7 +300,7 @@ describe('Transactions', () => {
         await sc.connect(aliceWhale).confirmTransaction(2);
 
         const count = await sc.getTransactionCount();
-        console.log('tx count', count);
+        // console.log('tx count', count);
 
         // execute 1
         const executeTransaction = sc.executeTransaction(2);
