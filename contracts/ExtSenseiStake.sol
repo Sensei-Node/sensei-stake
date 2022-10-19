@@ -9,28 +9,35 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.
 contract ExtSenseiStake is IERC721Receiver, ReentrancyGuard {
     using Address for address;
 
-    SenseiStake public immutable SenseiStakeContract;
+    /// @notice SenseiStake contract definition for creating validator
+    /// @return senseiStakeContract SenseiStake contract address
+    SenseiStake public immutable senseiStakeContract;
 
     error InvalidAddress();
     error InvalidDepositAmount(uint256 value);
     error NotEnoughValidatorsAvailable(uint256 value);
 
+    /// @notice Initializes the contract
+    /// @dev Sets senseiStakeContract using address provided
+    /// @param contract_ SenseiStake contract address
     constructor(address contract_) {
         if (contract_ == address(0)) {
             revert InvalidAddress();
         }
-        SenseiStakeContract = SenseiStake(contract_);
+        senseiStakeContract = SenseiStake(contract_);
     }
 
+    /// @notice Creates multiple validators based on eth amount sent
+    /// @dev Since original contract enables single mint, this is a wrapper that mints and transfers to caller
     function createMultipleContracts() external payable nonReentrant {
         // check that ethers amount provided is multiple of 32
         if (msg.value == 0 || msg.value % 32 ether != 0) {
             revert InvalidDepositAmount(msg.value);
         }
         uint256 amount = msg.value / 32 ether;
-        uint256 tokenId = SenseiStakeContract.tokenIdCounter();
+        uint256 tokenId = senseiStakeContract.tokenIdCounter();
         // pre-check that we have enough validators loaded
-        (bytes memory validatorPubKey, , ) = SenseiStakeContract.validators(
+        (bytes memory validatorPubKey, , ) = senseiStakeContract.validators(
             tokenId + amount
         );
         if (validatorPubKey.length == 0) {
@@ -40,9 +47,9 @@ contract ExtSenseiStake is IERC721Receiver, ReentrancyGuard {
         // mint token and transfer to user
         for (uint256 i = 0; i < amount; ) {
             // mint first
-            SenseiStakeContract.createContract{value: 32 ether}();
+            senseiStakeContract.createContract{value: 32 ether}();
             // transfer to user
-            SenseiStakeContract.safeTransferFrom(
+            senseiStakeContract.safeTransferFrom(
                 address(this),
                 msg.sender,
                 tokenId + i
@@ -53,6 +60,8 @@ contract ExtSenseiStake is IERC721Receiver, ReentrancyGuard {
         }
     }
 
+    /// @dev Required for enabling erc721 reception by the contract
+    /// @return bytes4 Selector onERC721Received function
     function onERC721Received(
         address,
         address,
