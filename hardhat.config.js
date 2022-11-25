@@ -51,19 +51,26 @@ module.exports = {
       type: 'testnet',
       name: 'goerli'
     },
+    shandong: {
+      url: process.env.SHANDONG_RPC,
+      accounts: [process.env.ACCOUNT_PK_SHANDONG, process.env.ACCOUNT_PK_SHANDONG_ALICE, process.env.ACCOUNT_PK_SHANDONG_BOB],
+      chainId: 1337903,
+      type: 'testnet',
+      name: 'shandong'
+    },
     ganache: {
       url: process.env.GANACHE_RPC,
       accounts: [process.env.ACCOUNT_PK_GANACHE, process.env.ACCOUNT_PK_GANACHE_ALICE, process.env.ACCOUNT_PK_GANACHE_BOB],
       type: 'ganache',
       name: 'ganache'
     },
-    mainnet: {
-      url: process.env.MAINNET_RPC,
-      accounts: [process.env.ACCOUNT_PK_MAINNET],
-      chainId: 1,
-      type: 'mainnet',
-      name: 'mainnet'
-    },
+    // mainnet: {
+    //   url: process.env.MAINNET_RPC,
+    //   accounts: [process.env.ACCOUNT_PK_MAINNET],
+    //   chainId: 1,
+    //   type: 'mainnet',
+    //   name: 'mainnet'
+    // },
   },
 
   gasReporter: {

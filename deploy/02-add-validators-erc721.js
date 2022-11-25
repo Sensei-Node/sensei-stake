@@ -30,11 +30,13 @@ module.exports = async ({deployments, upgrades, run}) => {
     const TokenContract = await ethers.getContractFactory(
         'SenseiStake'
     );
+    
     const tokenDeployment = await deployments.get("SenseiStake");
     const tokenContract = await TokenContract.attach(tokenDeployment.address);
     const NNETWK = {
         TOKEN_ADDRESS: tokenDeployment.address,
-        CONTRACT_IMPL_ADDRESS: await tokenContract.servicesContractImpl()
+        //CONTRACT_IMPL_ADDRESS: await tokenContract.servicesContractImpl()
+        CONTRACT_IMPL_ADDRESS: '0xe4f65430196DB5360E7061703CAeEFDd9EE726D4'
     }
 
     const _date = parseInt((new Date().getTime()) / 1000);
