@@ -15,6 +15,7 @@ const deploymentVariables = {
         5: '0xff50ed3d0ec03aC01D4C79aAd74928BFF48a7b2b'
     },
     keystorePassword: process.env.VALIDATOR_PASSPHRASE,
+    keystorePasswordSSVTest: process.env.VALIDATOR_PASSPHRASE_SSV_TEST,
     waitConfirmations: waitConfirmations[network.config.type],
 }
 
