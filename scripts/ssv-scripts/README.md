@@ -9,7 +9,7 @@ We use Sentinel for monitoring an event in the SenseiStake smart contract. The `
 ## Discord: Webhook and Bot
 
 - Webhook: there is a webhook on a dedicated read-only discord channel. The message contains the tokenId of the newly minted NFT (which means there was a new validator funded)
-- Bot: there is also a discord bot listening for these messages. After detecting a new one, it gets its validator public key using the `tokenId` in the `SenseiStake` smart contract. The bot then dispatches the validator registration process.
+- Bot: there is also a discord bot listening for these messages. After detecting a new one, it gets its validator public key via the `tokenId` in the `SenseiStake` smart contract. The bot then dispatches the validator registration process.
 
 ## SSV Network: Smart Contracts and Libraries
 
@@ -35,7 +35,7 @@ You need to have a few things set up first:
 
 1. This is all run using SenseiStake hardhat project. So the environment variables and files need to run this project are the first requirement
 2. The keystore of the validator public key you want to register into the network needs to be placed somewhere inside a directory called keystores (on the root directory of the project). The file name should be properly formatted (IE. `keystore-m_12381_3600_*.json`)
-3. Dependencies for SSV network includes: `operators.json` file (the one included into the project could be used if desired) and the token and network smart contract ABIs.
+3. Dependencies for SSV network includes: `operators.json` file (the one included into the project could be used if desired) plus the token and network smart contract ABIs.
 4. Finally for the discord bot to work, the bot secret needs to be included into an ENV variable called `DISCORD_BOT`
 
 In order to execute the bot you need to run: `npx hardhat run --network goerli ./scripts/ssv-scripts/discord-bot.js`.
