@@ -27,6 +27,8 @@ We use our smart contracts for funding and managing the ethereum validators. The
 2. After the `ContractCreated(uint256)` event gets triggered, the Sentinel calls the defined discord webhook.
 3. When the new message arrives on the discord channel associated to the webhook, the bot detects it and starts the SSV validator registration.
 
+![workflow](./diagramSSVRegisterValidator.png)
+
 # How to run
 
 You need to have a few things set up first:
