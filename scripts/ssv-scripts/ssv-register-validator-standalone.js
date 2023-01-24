@@ -25,18 +25,16 @@
 const { deploymentVariables } = require("../../helpers/variables");
 
 // Import Dependencies
-// const Web3 = require('web3');
 const { SSVKeys } = require('ssv-keys');
-const ABI = require('./contractABI.v2.json');
-const TokenABI = require('./ssvTokenABI.json');
+const ABI = require('./SSVNetworkContractABI.json');
+const TokenABI = require('./SSVTokenABI.json');
 const ContractAddress = '0xb9e155e65B5c4D66df28Da8E9a0957f06F11Bc04';
 const SSVTokenContractAddress = '0x3a9f01091C446bdE031E39ea8354647AFef091E7';
 
-// Get required data from the keystore file
 const keystore = require('./keystore.json');
 const keystorePassword = deploymentVariables.keystorePasswordSSVTest;
 
-const operators = require("./operators.v2.json");
+const operators = require("./operators.json");
 const operatorKeys = operators.operators;
 const operatorIds = operators.operators_ids;
 
@@ -49,7 +47,7 @@ async function main() {
   const threshold = await ssvKeys.createThreshold(privateKey, operatorIds);
   const shares = await ssvKeys.encryptShares(operatorKeys, threshold.shares);
 
-  const ssv_amount_in_wei = '17314996509000000000';
+  const ssv_amount_in_wei = '10000000000000000000';
 
   // Step 3: Build final web3 transaction payload
   const payload = await ssvKeys.buildPayload(

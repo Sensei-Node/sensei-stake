@@ -9,6 +9,7 @@ require('solidity-coverage');
 require('@openzeppelin/hardhat-upgrades');
 require('hardhat-deploy');
 require('dotenv').config({ path: require('find-config')('.env') })
+require('./scripts/ssv-scripts/ssv-register-task');
 
 // Need to compile first
 task('storage', 'Print storage layout', async (taskArgs, hre) => {

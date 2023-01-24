@@ -49,6 +49,7 @@
     "axios": "^0.27.2",
     "nft.storage": "^7.0.0",
     "pako": "^2.0.4",
-    "ssv-keys": "^0.0.7"
+    "ssv-keys": "^0.0.7",
+    "discord.js": "^14.7.1"
   }
 }

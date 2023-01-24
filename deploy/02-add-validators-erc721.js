@@ -19,6 +19,7 @@ module.exports = async ({deployments, upgrades, run}) => {
     const [deployer] = await ethers.getSigners();
 
     // start from
+    // si en el contrato miramos el tokenIdCounter, es exactamente ese numero el que hay que poner aca
     const start_ = 0;
 
     // amount of validators
