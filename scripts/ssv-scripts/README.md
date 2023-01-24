@@ -9,7 +9,7 @@ We use Sentinel for monitoring an event in the SenseiStake smart contract. The `
 ## Discord: Webhook and Bot
 
 - Webhook: there is a webhook on a dedicated read-only discord channel. The message contains the tokenId of the newly minted NFT (which means there was a new validator funded)
-- Bot: there is also a discord bot listening for these messages. After detecting a new one, it gets its validator public key using the `tokenId` using the `SenseiStake` smart contract. The bot then dispatches the validator registration process.
+- Bot: there is also a discord bot listening for these messages. After detecting a new one, it gets its validator public key using the `tokenId` in the `SenseiStake` smart contract. The bot then dispatches the validator registration process.
 
 ## SSV Network: Smart Contracts and Libraries
 
