@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity >=0.8.17;
 
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
@@ -32,10 +32,6 @@ contract SenseistakeServicesContractV2 is Initializable, ServiceTransactions {
     /// @return state the operator claimable amount (in eth)
     uint256 public operatorClaimable;
 
-    /// @notice Determines whether the validator is active or not
-    /// @return validatorActive is true if user holds NFT and validator is active, false if validator inactive and endOperatorServices called
-    // bool public validatorActive;
-
     /// @notice The address for being able to deposit to the ethereum deposit contract
     /// @return depositContractAddress deposit contract address
     address public depositContractAddress;
@@ -59,20 +55,12 @@ contract SenseistakeServicesContractV2 is Initializable, ServiceTransactions {
     uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
 
     event Claim(address indexed receiver, uint256 amount);
-    // event ServiceEnd();
     event ValidatorDeposited(bytes pubkey);
     event Withdrawal(address indexed to, uint256 value);
 
     error CallerNotAllowed();
-    // error CannotEndZeroBalance();
     error EmptyClaimableForOperator();
-    // error IncrementTooHigh();
-    // error NotAllowedAtCurrentTime();
-    // error NotAllowedInCurrentState();
-    // error NotEarlierThanOriginalDate();
     error NotOperator();
-    // error ValidatorIsActive();
-    // error ValidatorNotActive();
 
     /// @notice Only the operator access.
     modifier onlyOperator() {
@@ -153,43 +141,6 @@ contract SenseistakeServicesContractV2 is Initializable, ServiceTransactions {
         _confirmTransaction(index_);
     }
 
-    /// @notice Allows user to start the withdrawal process
-    /// @dev After a withdrawal is made in the validator, the receiving address is set to this contract address, so there will be funds available in here. This function needs to be called for being able to withdraw current balance
-    // function endOperatorServices() external {
-    //     uint256 balance = address(this).balance;
-    //     if (balance < 16 ether) {
-    //         revert CannotEndZeroBalance();
-    //     }
-    //     if (!validatorActive) {
-    //         revert NotAllowedInCurrentState();
-    //     }
-    //     if (block.timestamp < exitDate) {
-    //         revert NotAllowedAtCurrentTime();
-    //     }
-    //     if (
-    //         (msg.sender != tokenContractAddress) &&
-    //         (
-    //             !SenseiStake(tokenContractAddress).isApprovedOrOwner(
-    //                 msg.sender,
-    //                 tokenId
-    //             )
-    //         ) &&
-    //         (msg.sender != Ownable(tokenContractAddress).owner())
-    //     ) {
-    //         revert CallerNotAllowed();
-    //     }
-    //     validatorActive = false;
-    //     if ((balance + withdrawnAmount) > FULL_DEPOSIT_SIZE) {
-    //         unchecked {
-    //             uint256 profit = balance - FULL_DEPOSIT_SIZE;
-    //             uint256 finalCommission = (profit * commissionRate) /
-    //                 COMMISSION_RATE_SCALE;
-    //             operatorClaimable += finalCommission;
-    //         }
-    //     }
-    //     emit ServiceEnd();
-    // }
-
     /// @notice Executes transaction index_ that is valid, confirmed and not executed
     /// @dev Requires previous transaction valid to be executed
     /// @param index_: transaction at index to be executed
@@ -233,9 +184,6 @@ contract SenseistakeServicesContractV2 is Initializable, ServiceTransactions {
         if (msg.sender != tokenContractAddress) {
             revert CallerNotAllowed();
         }
-        // if (validatorActive) {
-        //     revert ValidatorIsActive();
-        // }
         uint256 balance = address(this).balance;
         if ((balance + withdrawnAmount) > FULL_DEPOSIT_SIZE) {
             unchecked {
@@ -253,9 +201,6 @@ contract SenseistakeServicesContractV2 is Initializable, ServiceTransactions {
     /// @notice Get withdrawable amount of a user
     /// @return amount the depositor is allowed withdraw
     function getWithdrawableAmount() external view returns (uint256) {
-        // if (validatorActive) {
-        //     return 0;
-        // }
         return address(this).balance - operatorClaimable;
     }
 }

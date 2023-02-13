@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity >=0.8.17;
 
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
@@ -9,6 +9,7 @@ import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {SenseistakeServicesContractV2} from "./SenseistakeServicesContractV2.sol";
+import {SenseistakeServicesContract} from "./SenseistakeServicesContract.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {SenseiStake as SenseiStakeV1} from "./SenseiStake.sol";
 
@@ -69,19 +70,21 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
     uint256 private constant EXIT_DATE_PERIOD = 180 days;
 
     event ContractCreated(uint256 tokenIdServiceContract);
+    event NFTReceived(uint256 indexed tokenId);
     event ValidatorAdded(
         uint256 indexed tokenId,
         bytes indexed validatorPubKey
     );
 
-    error ValidatorAlreadyAdded();
+    error CallerNotSenseiStakeV1();
     error CommisionRateTooHigh(uint32 rate);
     error InvalidDepositSignature();
     error InvalidPublicKey();
     error NoMoreValidatorsLoaded();
-    // error NotEarlierThanOriginalDate();
     error NotOwner();
+    error NotEnoughBalanceForMigration();
     error TokenIdAlreadyMinted();
+    error ValidatorAlreadyAdded();
     error ValueSentDifferentThanFullDeposit();
 
     /// @notice Initializes the contract
@@ -186,7 +189,7 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
             revert ValueSentDifferentThanFullDeposit();
         }
         uint256 validators_amount = msg.value / FULL_DEPOSIT_SIZE;
-        for (uint256 i = 0; i < validators_amount; ) {    
+        for (uint256 i = 0; i < validators_amount; ) {
             // increment tokenid counter
             tokenIdCounter.increment();
             uint256 tokenId = tokenIdCounter.current();
@@ -223,25 +226,6 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
         }
     }
 
-    /// @notice Allows user or contract owner to start the withdrawal process
-    /// @dev Calls end operator services in service contract
-    /// @param tokenId_ the token id to end
-    // function endOperatorServices(uint256 tokenId_) external {
-    //     if (
-    //         !_isApprovedOrOwner(msg.sender, tokenId_) && msg.sender != owner()
-    //     ) {
-    //         revert NotOwner();
-    //     }
-    //     address proxy = Clones.predictDeterministicAddress(
-    //         servicesContractImpl,
-    //         bytes32(tokenId_)
-    //     );
-    //     SenseistakeServicesContract serviceContract = SenseistakeServicesContract(
-    //             payable(proxy)
-    //         );
-    //     serviceContract.endOperatorServices();
-    // }
-
     /// @notice Redefinition of internal function `_isApprovedOrOwner`
     /// @dev Returns whether `spender` is allowed to manage `tokenId`.
     /// @param spender_: the address to check if it has approval or ownership of tokenId
@@ -259,32 +243,27 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
     }
 
     /// @notice Whenever an {IERC721} `tokenId` token is transferred to this contract via {IERC721-safeTransferFrom}
-    /// @param operator_: person that calls safeTransferFrom()
     /// @param from_: owner of the tokenId_
     /// @param tokenId_: token id of the NFT transfered
-    /// @param data_: it is empty string if called from safeTransferFrom(from, to, tokenId)
-    /// @return bytes4 must return its Solidity selector to confirm the token transfer.
+    /// @return selector must return its Solidity selector to confirm the token transfer.
     function onERC721Received(
-        address operator_,
+        address,
         address from_,
         uint256 tokenId_,
-        bytes calldata data_
+        bytes calldata
     ) external override returns (bytes4) {
-        // ! check that tokenId sent was from this collection, and from_ is the owner/approved user
-        if (senseiStakeV1.isApprovedOrOwner(from_, tokenId_)) {
-            migratedValidatorsOwner[tokenId_] = from_;
-            // TODO: perhaps include here an event 'validatorReceived
-            return IERC721Receiver.onERC721Received.selector;
+        if (msg.sender != address(senseiStakeV1)) {
+            revert CallerNotSenseiStakeV1();
         }
-        // TODO: check if I need to return something or not
+        migratedValidatorsOwner[tokenId_] = from_;
+        emit NFTReceived(tokenId_);
+        return IERC721Receiver.onERC721Received.selector;
     }
 
     /// @notice Accepting NFT reception for migrating contract v1 to v2
     /// @dev Used for migrating senseistake contract from v1 to v2
     /// @param oldTokenId_: token id of the NFT transfered from v1
-    function versionMigration(
-        uint256 oldTokenId_
-    ) external returns (uint256) { 
+    function versionMigration(uint256 oldTokenId_) external returns (uint256) {
         /*
         El objetivo seria que el cliente de el ownership de su NFT a este contrato, para poder
         finalizar el validador y luego claimear los ETH, finalmente mintear uno nuevo y 
@@ -300,24 +279,25 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
 
         NOTA: senseistakev1 == SenseStake(operator_)
         */
-
         address proxy = Clones.predictDeterministicAddress(
             senseiStakeV1.servicesContractImpl(),
             bytes32(oldTokenId_)
         );
-        SenseistakeServicesContractV2 serviceContract = SenseistakeServicesContractV2(
-            payable(proxy)
-        );
-        if (address(serviceContract).balance >= FULL_DEPOSIT_SIZE) {
-            senseiStakeV1.endOperatorServices(oldTokenId_);
-            senseiStakeV1.withdraw(oldTokenId_);
-            uint256 newTokenId = this.createContract();
-            this.safeTransferFrom(address(this), migratedValidatorsOwner[oldTokenId_], newTokenId);
-            return newTokenId;
+        if (address(proxy).balance < FULL_DEPOSIT_SIZE) {
+            // TODO: emit que no permite porque tiene menos de FULL_DEPOSIT_SIZE
+            revert NotEnoughBalanceForMigration();
         }
-        // TODO: determine if we need to emit some event
+        senseiStakeV1.endOperatorServices(oldTokenId_);
+        senseiStakeV1.withdraw(oldTokenId_);
+        uint256 newTokenId = this.createContract();
+        this.safeTransferFrom(
+            address(this),
+            migratedValidatorsOwner[oldTokenId_],
+            newTokenId
+        );
+        // TODO: emit un success
+        return newTokenId;
     }
-
 
     /// @notice Performs withdraw of balance in service contract
     /// @dev The `tokenId_` is used for deterining the the service contract from which the owner can perform a withdraw (if possible)
