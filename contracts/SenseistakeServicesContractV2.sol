@@ -20,9 +20,9 @@ contract SenseistakeServicesContractV2 is Initializable, ServiceTransactions {
     /// @return commissionRate the commission rate
     uint32 public commissionRate;
 
-    /// @notice Used for determining from when the user deposit can be withdrawn.
-    /// @return exitDate the exit date
-    uint64 public exitDate;
+    /// @notice Used for determining when a validator has ended (balance withdrawn from service contract too)
+    /// @return exited if the user has withdrawn all funds from the validator
+    bool public exited;
 
     /// @notice The tokenId used to create this contract using the proxy clone
     /// @return tokenId of the NFT related to the service contract
@@ -77,7 +77,6 @@ contract SenseistakeServicesContractV2 is Initializable, ServiceTransactions {
     /// @dev Sets the commission rate, the operator address, operator data commitment, the tokenId and creates the validator
     /// @param commissionRate_  The service commission rate
     /// @param tokenId_ The token id that is used
-    /// @param exitDate_ The exit date
     /// @param validatorPubKey_ The validator public key
     /// @param depositSignature_ The deposit_data.json signature
     /// @param depositDataRoot_ The deposit_data.json data root
@@ -85,7 +84,6 @@ contract SenseistakeServicesContractV2 is Initializable, ServiceTransactions {
     function initialize(
         uint32 commissionRate_,
         uint256 tokenId_,
-        uint64 exitDate_,
         bytes calldata validatorPubKey_,
         bytes calldata depositSignature_,
         bytes32 depositDataRoot_,
@@ -93,7 +91,6 @@ contract SenseistakeServicesContractV2 is Initializable, ServiceTransactions {
     ) external payable initializer {
         commissionRate = commissionRate_;
         tokenId = tokenId_;
-        exitDate = exitDate_;
         tokenContractAddress = msg.sender;
         depositContractAddress = ethDepositContractAddress_;
         IDepositContract(depositContractAddress).deposit{
@@ -104,7 +101,6 @@ contract SenseistakeServicesContractV2 is Initializable, ServiceTransactions {
             depositSignature_,
             depositDataRoot_
         );
-        // validatorActive = true;
         emit ValidatorDeposited(validatorPubKey_);
     }
 
@@ -177,7 +173,6 @@ contract SenseistakeServicesContractV2 is Initializable, ServiceTransactions {
     }
 
     /// @notice Withdraw the deposit to a beneficiary
-    /// @dev Is not possible to withdraw in validatorActive == true. Can only be called from the ERC721 contract
     /// @param beneficiary_ Who will receive the deposit
     function withdrawTo(address beneficiary_) external {
         // callable only from senseistake erc721 contract
@@ -191,8 +186,10 @@ contract SenseistakeServicesContractV2 is Initializable, ServiceTransactions {
                 operatorClaimable = (profit * commissionRate) /
                     COMMISSION_RATE_SCALE;
             }
+            // TODO: reveer esta condicion, sino hay que poner llamada externa
+            exited = true;
         }
-        uint256 amount = address(this).balance - operatorClaimable;
+        uint256 amount = balance - operatorClaimable;
         withdrawnAmount += amount;
         emit Withdrawal(beneficiary_, amount);
         payable(beneficiary_).sendValue(amount);

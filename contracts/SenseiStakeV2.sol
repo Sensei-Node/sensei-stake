@@ -66,14 +66,18 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
     /// @notice Fixed amount of the deposit
     uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
 
-    /// @notice Period of time for setting the exit date
-    uint256 private constant EXIT_DATE_PERIOD = 180 days;
-
     event ContractCreated(uint256 tokenIdServiceContract);
     event NFTReceived(uint256 indexed tokenId);
     event ValidatorAdded(
         uint256 indexed tokenId,
         bytes indexed validatorPubKey
+    );
+    event ValidatorVersionMigration(
+        uint256 indexed oldTokenId,
+        uint256 indexed newTokenId
+    );
+    event OldValidatorRewardsClaimed(
+        uint256 amount
     );
 
     error CallerNotSenseiStakeV1();
@@ -81,8 +85,8 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
     error InvalidDepositSignature();
     error InvalidPublicKey();
     error NoMoreValidatorsLoaded();
+    error NotAllowedAtCurrentTime();
     error NotOwner();
-    error NotEnoughBalanceForMigration();
     error TokenIdAlreadyMinted();
     error ValidatorAlreadyAdded();
     error ValueSentDifferentThanFullDeposit();
@@ -138,9 +142,9 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
             depositSignature_,
             depositDataRoot_
         );
+        emit ValidatorAdded(tokenId_, validatorPubKey_);
         addedValidators[validatorPubKey_] = true;
         validators[tokenId_] = validator;
-        emit ValidatorAdded(tokenId_, validatorPubKey_);
     }
 
     /// @notice Creates service contract based on implementation
@@ -158,10 +162,9 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
             revert NoMoreValidatorsLoaded();
         }
         bytes memory initData = abi.encodeWithSignature(
-            "initialize(uint32,uint256,uint64,bytes,bytes,bytes32,address)",
+            "initialize(uint32,uint256,bytes,bytes,bytes32,address)",
             commissionRate,
             tokenId,
-            block.timestamp + EXIT_DATE_PERIOD,
             validator.validatorPubKey,
             validator.depositSignature,
             validator.depositDataRoot,
@@ -199,10 +202,9 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
                 revert NoMoreValidatorsLoaded();
             }
             bytes memory initData = abi.encodeWithSignature(
-                "initialize(uint32,uint256,uint64,bytes,bytes,bytes32,address)",
+                "initialize(uint32,uint256,bytes,bytes,bytes32,address)",
                 commissionRate,
                 tokenId,
-                block.timestamp + EXIT_DATE_PERIOD,
                 validator.validatorPubKey,
                 validator.depositSignature,
                 validator.depositDataRoot,
@@ -255,8 +257,8 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
         if (msg.sender != address(senseiStakeV1)) {
             revert CallerNotSenseiStakeV1();
         }
-        migratedValidatorsOwner[tokenId_] = from_;
         emit NFTReceived(tokenId_);
+        migratedValidatorsOwner[tokenId_] = from_;
         return IERC721Receiver.onERC721Received.selector;
     }
 
@@ -274,28 +276,58 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
         1. Al recibir el nft con la funcion `senseistakev1.safeTransferFrom(from_, address(this), tokenId_, "")` se llama aqui
         2. Vamos a hacer el `senseistakev1.endOperatorServices(tokenId_)`
         3. Vamos a retirar los ETH del service contract viejo `senseistakev1.withdraw(tokenId_)` y van a quedar aqui temporalmente
-        4. Vamos a mintear un nuevo NFT con la version 2 `createContract()` (retornara newTokenId)
-        5. Vamos a transferir ese NFT al from_ `safeTransferFrom(address(this), from_, newTokenId)
+        4. Vamos a enviar a quien haya enviado el NFT los rewards que le quedaron pendientes
+        5. Vamos a mintear un nuevo NFT con la version 2 `createContract()` (retornara newTokenId)
+        6. Vamos a transferir ese NFT al from_ `safeTransferFrom(address(this), from_, newTokenId)
 
         NOTA: senseistakev1 == SenseStake(operator_)
         */
+        // TODO: determine if this is should be only callable by `msg.sender == migratedValidatorsOwner[oldTokenId_]`
+        // TODO: or anyone can call this in behalf of the `migratedValidatorsOwner[oldTokenId_]`
+
+        // check if service contract has equals or more than available for minting new NFT
+        // withdraw first excedent to ntf owner and then mint if available amount
         address proxy = Clones.predictDeterministicAddress(
             senseiStakeV1.servicesContractImpl(),
             bytes32(oldTokenId_)
         );
-        if (address(proxy).balance < FULL_DEPOSIT_SIZE) {
-            // TODO: emit que no permite porque tiene menos de FULL_DEPOSIT_SIZE
-            revert NotEnoughBalanceForMigration();
+        SenseistakeServicesContract serviceContract = SenseistakeServicesContract(
+                payable(proxy)
+            );
+
+        // check that exit date has elapsed (because we cannot do endOperatorServices otherwise)
+        if (block.timestamp < serviceContract.exitDate()) {
+            revert NotAllowedAtCurrentTime();
         }
+
+        uint256 withdrawable = serviceContract.getWithdrawableAmount();
+        // only withdraw available balance to nft owner because mint is not possible
+        if (withdrawable < FULL_DEPOSIT_SIZE) {
+            emit OldValidatorRewardsClaimed(withdrawable);
+            payable(migratedValidatorsOwner[oldTokenId_]).sendValue(withdrawable);
+            // zero is not a valid tokenId index
+            // we use it because owner could't mint a new one (not enough balance)
+            return 0;
+        }
+        uint256 reward = withdrawable - FULL_DEPOSIT_SIZE;
+        emit OldValidatorRewardsClaimed(reward);
+        if (reward > 0) {
+            // if withdrawable is greater than FULL_DEPOSIT_SIZE we give nft owner the excess
+            payable(migratedValidatorsOwner[oldTokenId_]).sendValue(reward);
+        }
+
+        // retrieve eth from old service contract (should be left only with FULL_DEPOSIT_SIZE)
         senseiStakeV1.endOperatorServices(oldTokenId_);
         senseiStakeV1.withdraw(oldTokenId_);
+
+        // we can mint new validator and transfer it to the owner
         uint256 newTokenId = this.createContract();
+        emit ValidatorVersionMigration(oldTokenId_, newTokenId);
         this.safeTransferFrom(
             address(this),
             migratedValidatorsOwner[oldTokenId_],
             newTokenId
         );
-        // TODO: emit un success
         return newTokenId;
     }
 
@@ -313,7 +345,6 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
         SenseistakeServicesContractV2 serviceContract = SenseistakeServicesContractV2(
                 payable(proxy)
             );
-        // _burn(tokenId_);
         serviceContract.withdrawTo(msg.sender);
     }
 
@@ -372,8 +403,8 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
                                     validators[tokenId_].validatorPubKey
                                 ),
                                 '"},{',
-                                '"trait_type":"Exit Date","display_type":"date","value":"',
-                                Strings.toString(serviceContract.exitDate()),
+                                '"trait_type":"Exited","display_type":"string","value":"',
+                                bool(serviceContract.exited()),
                                 '"},{',
                                 '"trait_type": "Commission Rate","display_type":"string","value":"',
                                 Strings.toString(
