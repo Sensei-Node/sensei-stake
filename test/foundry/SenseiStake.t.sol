@@ -1,4 +1,4 @@
-pragma solidity 0.8.4;
+pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
@@ -29,8 +29,7 @@ contract SenseiStakeTest is Test {
             1,
             new bytes(48),
             new bytes(96),
-            bytes32(0),
-            uint64(block.timestamp + 2 days)
+            bytes32(0)
         );
         vm.startPrank(alice);
         senseistake.createContract{value: 32 ether}();
@@ -42,8 +41,7 @@ contract SenseiStakeTest is Test {
             1,
             new bytes(48),
             new bytes(96),
-            bytes32(0),
-            uint64(block.timestamp + 2 days)
+            bytes32(0)
         );
         vm.startPrank(alice);
         senseistake.createContract{value: 32 ether}();
