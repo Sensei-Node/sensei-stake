@@ -13,6 +13,8 @@ import {SenseistakeServicesContract} from "./SenseistakeServicesContract.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {SenseiStake as SenseiStakeV1} from "./SenseiStake.sol";
 
+import "forge-std/console.sol";
+
 /// @title Main contract for handling SenseiStake Services
 /// @author Senseinode
 /// @notice Serves as entrypoint for SenseiStake
@@ -287,14 +289,10 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
 
         // check if service contract has equals or more than available for minting new NFT
         // withdraw first excedent to ntf owner and then mint if available amount
-        address proxy = Clones.predictDeterministicAddress(
-            senseiStakeV1.servicesContractImpl(),
-            bytes32(oldTokenId_)
-        );
         SenseistakeServicesContract serviceContract = SenseistakeServicesContract(
-                payable(proxy)
+                payable(senseiStakeV1.getServiceContractAddress(oldTokenId_))
             );
-
+        
         // check that exit date has elapsed (because we cannot do endOperatorServices otherwise)
         if (block.timestamp < serviceContract.exitDate()) {
             revert NotAllowedAtCurrentTime();

@@ -68,19 +68,13 @@ contract SenseiStakeTest is Test {
     function testMigrate() public {
         uint256 tokenId = 0;
         vm.startPrank(alice);
+        console.log(block.timestamp);
         senseistake.createContract{value: 32 ether}();
         vm.warp(360 days);
         tokenId += 1;
         senseistake.safeTransferFrom(address(alice), address(senseistakeV2), tokenId );
         deal(senseistake.getServiceContractAddress(tokenId), 100 ether);
-        console.log(senseistake.getServiceContractAddress(tokenId).balance);
         uint256 salida = senseistakeV2.versionMigration(tokenId);
-        //console.log(getRevertReason(salida));
         vm.stopPrank();
-        
     }
-
-
-
-    
 }
