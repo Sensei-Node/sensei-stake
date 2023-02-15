@@ -13,8 +13,6 @@ import {SenseistakeServicesContract} from "./SenseistakeServicesContract.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {SenseiStake as SenseiStakeV1} from "./SenseiStake.sol";
 
-import "forge-std/console.sol";
-
 /// @title Main contract for handling SenseiStake Services
 /// @author Senseinode
 /// @notice Serves as entrypoint for SenseiStake
