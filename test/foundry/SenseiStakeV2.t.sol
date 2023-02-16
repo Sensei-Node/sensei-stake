@@ -4,6 +4,8 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import {MockDepositContract} from "./MockDepositContract.sol";
 import {SenseiStakeV2} from "../../contracts/SenseiStakeV2.sol";
+import {SenseistakeServicesContractV2 as SenseistakeServicesContract} from
+    "../../contracts/SenseistakeServicesContractV2.sol";
 import {SenseiStake} from "../../contracts/SenseiStake.sol";
 
 contract SenseiStakeV2Test is Test {
@@ -12,13 +14,9 @@ contract SenseiStakeV2Test is Test {
     SenseiStake private senseistake;
     MockDepositContract private depositContract;
 
-    event ValidatorVersionMigration(
-        uint256 indexed oldTokenId,
-        uint256 indexed newTokenId
-    );
-    event OldValidatorRewardsClaimed(
-        uint256 amount
-    );
+    event ValidatorVersionMigration(uint256 indexed oldTokenId, uint256 indexed newTokenId);
+    event OldValidatorRewardsClaimed(uint256 amount);
+    event Withdrawal(address indexed to, uint256 value);
 
     error NotAllowedAtCurrentTime();
     error CannotEndZeroBalance();
@@ -40,18 +38,8 @@ contract SenseiStakeV2Test is Test {
             address(depositContract),
             address(senseistake)
         );
-        senseistake.addValidator(
-            1,
-            new bytes(48),
-            new bytes(96),
-            bytes32(0)
-        );
-        senseistakeV2.addValidator(
-            1,
-            new bytes(48),
-            new bytes(96),
-            bytes32(0)
-        );
+        senseistake.addValidator(1, new bytes(48), new bytes(96), bytes32(0));
+        senseistakeV2.addValidator(1, new bytes(48), new bytes(96), bytes32(0));
     }
 
     // should fail because exit date not elapsed
@@ -93,6 +81,48 @@ contract SenseiStakeV2Test is Test {
         vm.expectEmit(true, true, false, false);
         emit ValidatorVersionMigration(tokenId, tokenId);
         senseistakeV2.versionMigration(tokenId);
+        vm.stopPrank();
+    }
+
+    // test completo minteo, retiros parciales, retiro total
+    function testMintWithdrawComplete() public {
+        vm.startPrank(alice);
+        uint256 tokenId = senseistakeV2.createContract{value: 32 ether}();
+
+        vm.warp(1 days); // let pass 1 day just for fun
+
+        // simulamos validator rewards income
+        deal(senseistakeV2.getServiceContractAddress(tokenId), 0.132 ether);
+
+        // partial withdraw
+        vm.expectEmit(true, true, false, false);
+        emit Withdrawal(address(alice), 0.132 ether);
+        senseistakeV2.withdraw(tokenId);
+
+        // simulamos validator rewards income
+        deal(senseistakeV2.getServiceContractAddress(tokenId), 0.32132 ether);
+
+        // total withdraw after some more time (not that it even does something)
+        vm.warp(29 days);
+
+        // simulamos que terminamos el validador y nos devielve 32 + un poquito de rewards
+        deal(senseistakeV2.getServiceContractAddress(tokenId), 32.0132 ether);
+
+        // complete withdraw
+        address sc_addr = senseistakeV2.getServiceContractAddress(tokenId);
+        SenseistakeServicesContract servicecontract = SenseistakeServicesContract(payable(sc_addr));
+        uint256 claimable = servicecontract.getWithdrawableAmount();
+
+        // total withdraw
+        vm.expectEmit(true, true, false, false);
+        emit Withdrawal(address(alice), claimable);
+        senseistakeV2.withdraw(tokenId);
+        vm.stopPrank();
+
+        vm.startPrank(alice);
+        // check that service contract exited == true
+        bool exited = servicecontract.exited();
+        assertTrue(exited);
         vm.stopPrank();
     }
 }
