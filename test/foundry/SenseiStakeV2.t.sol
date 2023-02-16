@@ -6,11 +6,21 @@ import {MockDepositContract} from "./MockDepositContract.sol";
 import {SenseiStakeV2} from "../../contracts/SenseiStakeV2.sol";
 import {SenseiStake} from "../../contracts/SenseiStake.sol";
 
-contract SenseiStakeTest is Test {
+contract SenseiStakeV2Test is Test {
     address private alice;
     SenseiStakeV2 private senseistakeV2;
     SenseiStake private senseistake;
     MockDepositContract private depositContract;
+
+    event ValidatorVersionMigration(
+        uint256 indexed oldTokenId,
+        uint256 indexed newTokenId
+    );
+    event OldValidatorRewardsClaimed(
+        uint256 amount
+    );
+
+    error NotAllowedAtCurrentTime();
 
     function setUp() public {
         alice = makeAddr("alice");
@@ -38,7 +48,6 @@ contract SenseiStakeTest is Test {
             new bytes(96),
             bytes32(0)
         );
-
         senseistakeV2.addValidator(
             1,
             new bytes(48),
@@ -48,33 +57,46 @@ contract SenseiStakeTest is Test {
         
     }
 
-    function testMint() public {
-        assertEq(senseistake.tokenIdCounter(), 0);
-        vm.startPrank(alice);
-        senseistake.createContract{value: 32 ether}();
-        vm.stopPrank();
-        assertEq(senseistake.tokenIdCounter(), 1);
-    }
-
-    function testFailMigrate() public {
+    // should fail because exit date not elapsed
+    function testCannotMigrate() public {
         uint256 tokenId = 0;
         vm.startPrank(alice);
         senseistake.createContract{value: 32 ether}();
-        senseistake.safeTransferFrom(address(alice), address(senseistakeV2), tokenId + 1 );
-        senseistakeV2.versionMigration(tokenId + 1);
+        tokenId += 1;
+        senseistake.safeTransferFrom(address(alice), address(senseistakeV2), tokenId);
+        vm.expectRevert(NotAllowedAtCurrentTime.selector);
+        senseistakeV2.versionMigration(tokenId);
         vm.stopPrank();
     }
 
-    function testMigrate() public {
+    // should do nothing because not money in the service contract
+    function testMigrateDoNothing() public {
         uint256 tokenId = 0;
         vm.startPrank(alice);
-        console.log(block.timestamp);
+        senseistake.createContract{value: 32 ether}();
+        tokenId += 1;
+        senseistake.safeTransferFrom(address(alice), address(senseistakeV2), tokenId);
+        vm.warp(360 days);
+        vm.expectEmit(true, false, false, false);
+        emit OldValidatorRewardsClaimed(0);
+        senseistakeV2.versionMigration(tokenId);
+        vm.stopPrank();
+    }
+
+    // should migrate validator from v1 to v2
+    function testMigrateComplete() public {
+        uint256 tokenId = 0;
+        vm.startPrank(alice);
         senseistake.createContract{value: 32 ether}();
         vm.warp(360 days);
         tokenId += 1;
-        senseistake.safeTransferFrom(address(alice), address(senseistakeV2), tokenId );
+        senseistake.safeTransferFrom(address(alice), address(senseistakeV2), tokenId);
         deal(senseistake.getServiceContractAddress(tokenId), 100 ether);
-        uint256 salida = senseistakeV2.versionMigration(tokenId);
+        vm.expectEmit(true, false, false, false);
+        emit OldValidatorRewardsClaimed((100 ether - 32 ether) * 0.1); // minus 10% of fee
+        vm.expectEmit(true, true, false, false);
+        emit ValidatorVersionMigration(tokenId, tokenId);
+        senseistakeV2.versionMigration(tokenId);
         vm.stopPrank();
     }
 }

@@ -13,6 +13,8 @@ import {SenseistakeServicesContract} from "./SenseistakeServicesContract.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {SenseiStake as SenseiStakeV1} from "./SenseiStake.sol";
 
+import "forge-std/console.sol";
+
 /// @title Main contract for handling SenseiStake Services
 /// @author Senseinode
 /// @notice Serves as entrypoint for SenseiStake
@@ -76,11 +78,9 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
         uint256 indexed oldTokenId,
         uint256 indexed newTokenId
     );
-    event OldValidatorRewardsClaimed(
-        uint256 amount
-    );
+    event OldValidatorRewardsClaimed(uint256 amount);
 
-    error CallerNotSenseiStakeV1();
+    error CallerNotSenseiStake();
     error CommisionRateTooHigh(uint32 rate);
     error InvalidDepositSignature();
     error InvalidPublicKey();
@@ -112,6 +112,9 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
         servicesContractImpl = address(new SenseistakeServicesContractV2());
         senseiStakeV1 = SenseiStakeV1(senseistakeV1Address_);
     }
+
+    /// @notice This is the receive function called when a user performs a transfer to this contract address
+    receive() external payable {}
 
     /// @notice Adds validator info to validators mapping
     /// @dev Stores the tokenId and operatorDataCommitment used for generating new service contract
@@ -255,7 +258,7 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
         bytes calldata
     ) external override returns (bytes4) {
         if (msg.sender != address(senseiStakeV1)) {
-            revert CallerNotSenseiStakeV1();
+            revert CallerNotSenseiStake();
         }
         emit NFTReceived(tokenId_);
         migratedValidatorsOwner[tokenId_] = from_;
@@ -290,17 +293,27 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
         SenseistakeServicesContract serviceContract = SenseistakeServicesContract(
                 payable(senseiStakeV1.getServiceContractAddress(oldTokenId_))
             );
-        
+
         // check that exit date has elapsed (because we cannot do endOperatorServices otherwise)
         if (block.timestamp < serviceContract.exitDate()) {
             revert NotAllowedAtCurrentTime();
         }
 
+        // we need to determine service fees and mark service contract as exited
+        senseiStakeV1.endOperatorServices(oldTokenId_);
+
+        // get withdrawable amount so that we determine what to do
         uint256 withdrawable = serviceContract.getWithdrawableAmount();
+
+        // retrieve eth from old service contract
+        senseiStakeV1.withdraw(oldTokenId_);
+
         // only withdraw available balance to nft owner because mint is not possible
         if (withdrawable < FULL_DEPOSIT_SIZE) {
             emit OldValidatorRewardsClaimed(withdrawable);
-            payable(migratedValidatorsOwner[oldTokenId_]).sendValue(withdrawable);
+            payable(migratedValidatorsOwner[oldTokenId_]).sendValue(
+                withdrawable
+            );
             // zero is not a valid tokenId index
             // we use it because owner could't mint a new one (not enough balance)
             return 0;
@@ -312,12 +325,8 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
             payable(migratedValidatorsOwner[oldTokenId_]).sendValue(reward);
         }
 
-        // retrieve eth from old service contract (should be left only with FULL_DEPOSIT_SIZE)
-        senseiStakeV1.endOperatorServices(oldTokenId_);
-        senseiStakeV1.withdraw(oldTokenId_);
-
         // we can mint new validator and transfer it to the owner
-        uint256 newTokenId = this.createContract();
+        uint256 newTokenId = this.createContract{value: FULL_DEPOSIT_SIZE}();
         emit ValidatorVersionMigration(oldTokenId_, newTokenId);
         this.safeTransferFrom(
             address(this),
