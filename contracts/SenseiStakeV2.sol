@@ -257,7 +257,10 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
         uint256 tokenId_,
         bytes calldata
     ) external override returns (bytes4) {
-        if (msg.sender != address(senseiStakeV1)) {
+        if (
+            (msg.sender != address(senseiStakeV1)) &&
+            (msg.sender != address(this))
+        ) {
             revert CallerNotSenseiStake();
         }
         emit NFTReceived(tokenId_);
@@ -304,6 +307,7 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
 
         // get withdrawable amount so that we determine what to do
         uint256 withdrawable = serviceContract.getWithdrawableAmount();
+        address nftOwner = migratedValidatorsOwner[oldTokenId_];
 
         // retrieve eth from old service contract
         senseiStakeV1.withdraw(oldTokenId_);
@@ -311,9 +315,7 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
         // only withdraw available balance to nft owner because mint is not possible
         if (withdrawable < FULL_DEPOSIT_SIZE) {
             emit OldValidatorRewardsClaimed(withdrawable);
-            payable(migratedValidatorsOwner[oldTokenId_]).sendValue(
-                withdrawable
-            );
+            payable(nftOwner).sendValue(withdrawable);
             // zero is not a valid tokenId index
             // we use it because owner could't mint a new one (not enough balance)
             return 0;
@@ -322,17 +324,15 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
         emit OldValidatorRewardsClaimed(reward);
         if (reward > 0) {
             // if withdrawable is greater than FULL_DEPOSIT_SIZE we give nft owner the excess
-            payable(migratedValidatorsOwner[oldTokenId_]).sendValue(reward);
+            payable(nftOwner).sendValue(reward);
         }
 
         // we can mint new validator and transfer it to the owner
         uint256 newTokenId = this.createContract{value: FULL_DEPOSIT_SIZE}();
         emit ValidatorVersionMigration(oldTokenId_, newTokenId);
-        this.safeTransferFrom(
-            address(this),
-            migratedValidatorsOwner[oldTokenId_],
-            newTokenId
-        );
+        this.safeTransferFrom(address(this), nftOwner, newTokenId);
+        // put back to zero the ownership migration mapping
+        delete migratedValidatorsOwner[oldTokenId_];
         return newTokenId;
     }
 

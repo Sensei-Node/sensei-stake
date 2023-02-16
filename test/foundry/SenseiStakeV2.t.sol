@@ -21,12 +21,11 @@ contract SenseiStakeV2Test is Test {
     );
 
     error NotAllowedAtCurrentTime();
+    error CannotEndZeroBalance();
 
     function setUp() public {
         alice = makeAddr("alice");
-        emit log_address(alice);
         deal(alice, 100 ether);
-
         depositContract = new MockDepositContract();
         senseistake = new SenseiStake(
             "SenseiStake Ethereum Validator",
@@ -34,7 +33,6 @@ contract SenseiStakeV2Test is Test {
             100_000,
             address(depositContract)
         );
-
         senseistakeV2 = new SenseiStakeV2(
             "SenseiStake Ethereum Validator",
             "SSEV",
@@ -54,11 +52,10 @@ contract SenseiStakeV2Test is Test {
             new bytes(96),
             bytes32(0)
         );
-        
     }
 
     // should fail because exit date not elapsed
-    function testCannotMigrate() public {
+    function testCannotMigrateOnCurrentExitDate() public {
         uint256 tokenId = 0;
         vm.startPrank(alice);
         senseistake.createContract{value: 32 ether}();
@@ -70,15 +67,14 @@ contract SenseiStakeV2Test is Test {
     }
 
     // should do nothing because not money in the service contract
-    function testMigrateDoNothing() public {
+    function testCannotMigrateOnZeroBalance() public {
         uint256 tokenId = 0;
         vm.startPrank(alice);
         senseistake.createContract{value: 32 ether}();
         tokenId += 1;
         senseistake.safeTransferFrom(address(alice), address(senseistakeV2), tokenId);
         vm.warp(360 days);
-        vm.expectEmit(true, false, false, false);
-        emit OldValidatorRewardsClaimed(0);
+        vm.expectRevert(CannotEndZeroBalance.selector);
         senseistakeV2.versionMigration(tokenId);
         vm.stopPrank();
     }

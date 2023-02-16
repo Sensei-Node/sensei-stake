@@ -12,7 +12,6 @@ contract SenseiStakeTest is Test {
 
     function setUp() public {
         alice = makeAddr("alice");
-        emit log_address(alice);
         deal(alice, 100 ether);
 
         depositContract = new MockDepositContract();
