@@ -83,4 +83,24 @@ contract SenseiStakeV2Test is Test {
         senseistakeV2.versionMigration(tokenId);
         vm.stopPrank();
     }
+
+
+    // should 3rd person migrate validator from v1 to v2
+    function testCallMigrateUnknownUser() public {
+        uint256 tokenId = 0;
+        vm.startPrank(alice);
+        senseistake.createContract{value: 32 ether}();
+        vm.warp(360 days);
+        tokenId += 1;
+        senseistake.safeTransferFrom(address(alice), address(senseistakeV2), tokenId);
+        deal(senseistake.getServiceContractAddress(tokenId), 100 ether);
+        vm.expectEmit(true, false, false, false);
+        emit OldValidatorRewardsClaimed((100 ether - 32 ether) * 0.1); // minus 10% of fee
+        vm.stopPrank();
+        address bob = makeAddr("bob");
+        deal(bob, 1 ether);
+        vm.startPrank(bob);
+        senseistakeV2.versionMigration(tokenId);
+        vm.stopPrank();
+    }
 }
