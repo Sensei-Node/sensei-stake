@@ -72,8 +72,21 @@ contract SenseiStakeV2Test is Test {
 
         vm.startPrank(alice);
         // check that service contract exited == true
-        bool exited = servicecontract.exited();
-        assertTrue(exited);
+        uint256 exitedAt = servicecontract.exitedAt();
+        assertGt(exitedAt, 0);
+        vm.stopPrank();
+    }
+
+    function testMintedAndExitedAt() public {
+        vm.startPrank(alice);
+        uint256 tokenId = senseistakeV2.mintValidator{value: 32 ether}();
+        address scaddr = senseistakeV2.getServiceContractAddress(tokenId);
+        SenseistakeServicesContract sscc = SenseistakeServicesContract(payable(scaddr));
+        deal(senseistakeV2.getServiceContractAddress(tokenId), 33 ether);
+        assertEq(sscc.createdAt(), block.timestamp); // minted at this block.timestamp
+        vm.warp(1 days);
+        senseistakeV2.withdraw(tokenId);
+        assertEq(sscc.exitedAt(), block.timestamp); // exited at this block.timestamp
         vm.stopPrank();
     }
 }

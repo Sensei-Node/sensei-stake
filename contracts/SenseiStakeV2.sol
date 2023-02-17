@@ -77,6 +77,7 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
     error CallerNotSenseiStake();
     error CommisionRateTooHigh(uint32 rate);
     error InvalidDepositSignature();
+    error InvalidMigrationRecepient();
     error InvalidPublicKey();
     error NoMoreValidatorsLoaded();
     error NotAllowedAtCurrentTime();
@@ -91,6 +92,7 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
     /// @param symbol_ The token symbol
     /// @param commissionRate_ The service commission rate
     /// @param ethDepositContractAddress_ The ethereum deposit contract address for validator creation
+    /// @param senseistakeV1Address_ Address of the v1 senseistake contract
     constructor(
         string memory name_,
         string memory symbol_,
@@ -282,22 +284,6 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
     /// @dev Used for migrating senseistake contract from v1 to v2
     /// @param oldTokenId_: token id of the NFT transfered from v1
     function versionMigration(uint256 oldTokenId_) external returns (uint256) {
-        /*
-        El objetivo seria que el cliente de el ownership de su NFT a este contrato, para poder
-        finalizar el validador y luego claimear los ETH, finalmente mintear uno nuevo y 
-        transferirselo al usuario nuevamente
-        
-        Debemos verificar primero que el contrato de servicio tenga mas de 32 ETH (para poder mintear de nuevo)
-
-        1. Al recibir el nft con la funcion `senseistakev1.safeTransferFrom(from_, address(this), tokenId_, "")` se llama aqui
-        2. Vamos a hacer el `senseistakev1.endOperatorServices(tokenId_)`
-        3. Vamos a retirar los ETH del service contract viejo `senseistakev1.withdraw(tokenId_)` y van a quedar aqui temporalmente
-        4. Vamos a enviar a quien haya enviado el NFT los rewards que le quedaron pendientes
-        5. Vamos a mintear un nuevo NFT con la version 2 `mintValidator()` (retornara newTokenId)
-        6. Vamos a transferir ese NFT al from_ `safeTransferFrom(address(this), from_, newTokenId)
-
-        NOTA: senseistakev1 == SenseStake(operator_)
-        */
         // TODO: determine if this is should be only callable by `msg.sender == migratedValidatorsOwner[oldTokenId_]`
         // TODO: or anyone can call this in behalf of the `migratedValidatorsOwner[oldTokenId_]`
 
@@ -318,6 +304,10 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
         uint256 withdrawable = serviceContract.getWithdrawableAmount();
         address nftOwner = migratedValidatorsOwner[oldTokenId_];
 
+        if (nftOwner == address(0)) {
+            revert InvalidMigrationRecepient();
+        }
+
         // retrieve eth from old service contract
         senseiStakeV1.withdraw(oldTokenId_);
 
@@ -336,7 +326,7 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
             payable(nftOwner).sendValue(reward);
         }
 
-        // we can mint new validator and transfer it to the owner
+        // we can mint new validator to the owner
         uint256 newTokenId = this.mintValidatorTo{value: FULL_DEPOSIT_SIZE}(nftOwner);
         emit ValidatorVersionMigration(oldTokenId_, newTokenId);
         // put back to zero the ownership migration mapping
@@ -382,15 +372,17 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
                             '"external_url":"https://dashboard.senseinode.com/redirsenseistake?v=',
                             _bytesToHexString(validators[tokenId_].validatorPubKey),
                             '","minted_at":',
-                            Strings.toString(block.timestamp),
+                            Strings.toString(serviceContract.createdAt()),
                             ',"image":"',
                             "ipfs://bafybeifgh6572j2e6ioxrrtyxamzciadd7anmnpyxq4b33wafqhpnncg7m",
                             '","attributes": [{"trait_type": "Validator Address","value":"',
                             _bytesToHexString(validators[tokenId_].validatorPubKey),
                             '"},{',
-                            '"trait_type":"Exited","display_type":"string","value":"',
-                            bool(serviceContract.exited()),
-                            '"},{',
+                            serviceContract.exitedAt() != 0
+                                ? '"trait_type":"Exited At","display_type":"string","value":"'
+                                : "",
+                            serviceContract.exitedAt() != 0 ? Strings.toString(serviceContract.exitedAt()) : "",
+                            serviceContract.exitedAt() != 0 ? '"},{' : "",
                             '"trait_type": "Commission Rate","display_type":"string","value":"',
                             Strings.toString((COMMISSION_RATE_SCALE / commissionRate)),
                             '%"}]}'

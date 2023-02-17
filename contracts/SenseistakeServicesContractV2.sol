@@ -20,25 +20,29 @@ contract SenseistakeServicesContractV2 is Initializable, ServiceTransactions {
     /// @return commissionRate the commission rate
     uint32 public commissionRate;
 
-    /// @notice Used for determining when a validator has ended (balance withdrawn from service contract too)
-    /// @return exited if the user has withdrawn all funds from the validator
-    bool public exited;
+    /// @notice The address for being able to deposit to the ethereum deposit contract
+    /// @return depositContractAddress deposit contract address
+    address public depositContractAddress;
 
-    /// @notice The tokenId used to create this contract using the proxy clone
-    /// @return tokenId of the NFT related to the service contract
-    uint256 public tokenId;
+    /// @notice Used for determining when a validator has ended (balance withdrawn from service contract too)
+    /// @return exited block timestamp at which the user has withdrawn all from validator
+    uint256 public exitedAt;
+
+    /// @notice Used for determining when the service contract was created
+    /// @return createdAt block timestamp at which the contract was created
+    uint256 public createdAt;
 
     /// @notice The amount of eth the operator can claim
     /// @return state the operator claimable amount (in eth)
     uint256 public operatorClaimable;
 
-    /// @notice The address for being able to deposit to the ethereum deposit contract
-    /// @return depositContractAddress deposit contract address
-    address public depositContractAddress;
-
     /// @notice The address of Senseistakes ERC721 contract address
     /// @return tokenContractAddress the token contract address (erc721)
     address public tokenContractAddress;
+
+    /// @notice The tokenId used to create this contract using the proxy clone
+    /// @return tokenId of the NFT related to the service contract
+    uint256 public tokenId;
 
     /// @notice The amount of eth in wei that owner has withdrawn
     /// @return withdrawnAmount amount withdrawn by owner given that ETH validator withdrawals are available after shanghai
@@ -48,8 +52,7 @@ contract SenseistakeServicesContractV2 is Initializable, ServiceTransactions {
     uint32 private constant COMMISSION_RATE_SCALE = 1_000_000;
 
     /// @notice Prefix of eth1 address for withdrawal credentials
-    uint96 private constant ETH1_ADDRESS_WITHDRAWAL_PREFIX =
-        uint96(0x010000000000000000000000);
+    uint96 private constant ETH1_ADDRESS_WITHDRAWAL_PREFIX = uint96(0x010000000000000000000000);
 
     /// @notice Fixed amount of the deposit
     uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
@@ -93,14 +96,13 @@ contract SenseistakeServicesContractV2 is Initializable, ServiceTransactions {
         tokenId = tokenId_;
         tokenContractAddress = msg.sender;
         depositContractAddress = ethDepositContractAddress_;
-        IDepositContract(depositContractAddress).deposit{
-            value: FULL_DEPOSIT_SIZE
-        }(
+        IDepositContract(depositContractAddress).deposit{value: FULL_DEPOSIT_SIZE}(
             validatorPubKey_,
             abi.encodePacked(ETH1_ADDRESS_WITHDRAWAL_PREFIX, address(this)),
             depositSignature_,
             depositDataRoot_
         );
+        createdAt = block.timestamp;
         emit ValidatorDeposited(validatorPubKey_);
     }
 
@@ -126,12 +128,7 @@ contract SenseistakeServicesContractV2 is Initializable, ServiceTransactions {
         txNotConfirmed(index_)
         txNotExecuted(index_)
     {
-        if (
-            !SenseiStake(tokenContractAddress).isApprovedOrOwner(
-                msg.sender,
-                tokenId
-            )
-        ) {
+        if (!SenseiStake(tokenContractAddress).isApprovedOrOwner(msg.sender, tokenId)) {
             revert CallerNotAllowed();
         }
         _confirmTransaction(index_);
@@ -165,10 +162,7 @@ contract SenseistakeServicesContractV2 is Initializable, ServiceTransactions {
     /// @notice Only protocol owner can submit a new transaction
     /// @param operation_: mapping of operations to be executed (could be just one or batch)
     /// @param description_: transaction description for easy read
-    function submitTransaction(
-        Operation calldata operation_,
-        string calldata description_
-    ) external onlyOperator {
+    function submitTransaction(Operation calldata operation_, string calldata description_) external onlyOperator {
         _submitTransaction(operation_, description_);
     }
 
@@ -183,11 +177,10 @@ contract SenseistakeServicesContractV2 is Initializable, ServiceTransactions {
         if ((balance + withdrawnAmount) > FULL_DEPOSIT_SIZE) {
             unchecked {
                 uint256 profit = balance + withdrawnAmount - FULL_DEPOSIT_SIZE;
-                operatorClaimable = (profit * commissionRate) /
-                    COMMISSION_RATE_SCALE;
+                operatorClaimable = (profit * commissionRate) / COMMISSION_RATE_SCALE;
             }
-            // TODO: reveer esta condicion, sino hay que poner llamada externa
-            exited = true;
+            // TODO: validar esta condicion, si no hay que poner llamada externa
+            exitedAt = block.timestamp;
         }
         uint256 amount = balance - operatorClaimable;
         withdrawnAmount += amount;
