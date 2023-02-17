@@ -87,7 +87,7 @@ contract SenseiStakeV2Test is Test {
     // test completo minteo, retiros parciales, retiro total
     function testMintWithdrawComplete() public {
         vm.startPrank(alice);
-        uint256 tokenId = senseistakeV2.createContract{value: 32 ether}();
+        uint256 tokenId = senseistakeV2.mintValidator{value: 32 ether}();
 
         vm.warp(1 days); // let pass 1 day just for fun
 

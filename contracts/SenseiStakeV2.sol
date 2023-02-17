@@ -68,16 +68,10 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
     /// @notice Fixed amount of the deposit
     uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
 
-    event ContractCreated(uint256 tokenIdServiceContract);
+    event ValidatorMinted(uint256 tokenIdServiceContract);
     event NFTReceived(uint256 indexed tokenId);
-    event ValidatorAdded(
-        uint256 indexed tokenId,
-        bytes indexed validatorPubKey
-    );
-    event ValidatorVersionMigration(
-        uint256 indexed oldTokenId,
-        uint256 indexed newTokenId
-    );
+    event ValidatorAdded(uint256 indexed tokenId, bytes indexed validatorPubKey);
+    event ValidatorVersionMigration(uint256 indexed oldTokenId, uint256 indexed newTokenId);
     event OldValidatorRewardsClaimed(uint256 amount);
 
     error CallerNotSenseiStake();
@@ -140,11 +134,7 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
         if (depositSignature_.length != 96) {
             revert InvalidDepositSignature();
         }
-        Validator memory validator = Validator(
-            validatorPubKey_,
-            depositSignature_,
-            depositDataRoot_
-        );
+        Validator memory validator = Validator(validatorPubKey_, depositSignature_, depositDataRoot_);
         emit ValidatorAdded(tokenId_, validatorPubKey_);
         addedValidators[validatorPubKey_] = true;
         validators[tokenId_] = validator;
@@ -152,7 +142,7 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
 
     /// @notice Creates service contract based on implementation
     /// @dev Performs a clone of the implementation contract, a service contract handles logic for managing user deposit, withdraw and validator
-    function createContract() external payable returns (uint256) {
+    function mintValidator() external payable returns (uint256) {
         if (msg.value != FULL_DEPOSIT_SIZE) {
             revert ValueSentDifferentThanFullDeposit();
         }
@@ -173,14 +163,11 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
             validator.depositDataRoot,
             depositContractAddress
         );
-        address proxy = Clones.cloneDeterministic(
-            servicesContractImpl,
-            bytes32(tokenId)
-        );
-        (bool success, ) = proxy.call{value: msg.value}(initData);
+        address proxy = Clones.cloneDeterministic(servicesContractImpl, bytes32(tokenId));
+        (bool success,) = proxy.call{value: msg.value}(initData);
         require(success, "Proxy init failed");
 
-        emit ContractCreated(tokenId);
+        emit ValidatorMinted(tokenId);
 
         // mint the NFT
         _safeMint(msg.sender, tokenId);
@@ -188,14 +175,50 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
         return tokenId;
     }
 
+    /// @notice Creates service contract based on implementation and gives NFT ownership to another user
+    /// @dev Performs a clone of the implementation contract, a service contract handles logic for managing user deposit, withdraw and validator
+    /// @param owner_ the address that will receive the minted NFT
+    function mintValidatorTo(address owner_) external payable returns (uint256) {
+        if (msg.value != FULL_DEPOSIT_SIZE) {
+            revert ValueSentDifferentThanFullDeposit();
+        }
+        // increment tokenid counter
+        tokenIdCounter.increment();
+        uint256 tokenId = tokenIdCounter.current();
+        Validator memory validator = validators[tokenId];
+        // check that validator exists
+        if (validator.validatorPubKey.length == 0) {
+            revert NoMoreValidatorsLoaded();
+        }
+        bytes memory initData = abi.encodeWithSignature(
+            "initialize(uint32,uint256,bytes,bytes,bytes32,address)",
+            commissionRate,
+            tokenId,
+            validator.validatorPubKey,
+            validator.depositSignature,
+            validator.depositDataRoot,
+            depositContractAddress
+        );
+        address proxy = Clones.cloneDeterministic(servicesContractImpl, bytes32(tokenId));
+        (bool success,) = proxy.call{value: msg.value}(initData);
+        require(success, "Proxy init failed");
+
+        emit ValidatorMinted(tokenId);
+
+        // mint the NFT
+        _safeMint(owner_, tokenId);
+
+        return tokenId;
+    }
+
     /// @notice Creates service contract based on implementation
     /// @dev Performs a clone of the implementation contract, a service contract handles logic for managing user deposit, withdraw and validator
-    function createMultipleContracts() external payable {
+    function mintMultipleValidators() external payable {
         if (msg.value == 0 || msg.value % FULL_DEPOSIT_SIZE != 0) {
             revert ValueSentDifferentThanFullDeposit();
         }
         uint256 validators_amount = msg.value / FULL_DEPOSIT_SIZE;
-        for (uint256 i = 0; i < validators_amount; ) {
+        for (uint256 i = 0; i < validators_amount;) {
             // increment tokenid counter
             tokenIdCounter.increment();
             uint256 tokenId = tokenIdCounter.current();
@@ -213,14 +236,11 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
                 validator.depositDataRoot,
                 depositContractAddress
             );
-            address proxy = Clones.cloneDeterministic(
-                servicesContractImpl,
-                bytes32(tokenId)
-            );
-            (bool success, ) = proxy.call{value: msg.value}(initData);
+            address proxy = Clones.cloneDeterministic(servicesContractImpl, bytes32(tokenId));
+            (bool success,) = proxy.call{value: msg.value}(initData);
             require(success, "Proxy init failed");
 
-            emit ContractCreated(tokenId);
+            emit ValidatorMinted(tokenId);
 
             // mint the NFT
             _safeMint(msg.sender, tokenId);
@@ -236,31 +256,21 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
     /// @param spender_: the address to check if it has approval or ownership of tokenId
     /// @param tokenId_: the asset to check
     /// @return bool whether it is approved or owner of the token
-    function isApprovedOrOwner(address spender_, uint256 tokenId_)
-        external
-        view
-        returns (bool)
-    {
+    function isApprovedOrOwner(address spender_, uint256 tokenId_) external view returns (bool) {
         address owner = ERC721.ownerOf(tokenId_);
-        return (spender_ == owner ||
-            isApprovedForAll(owner, spender_) ||
-            getApproved(tokenId_) == spender_);
+        return (spender_ == owner || isApprovedForAll(owner, spender_) || getApproved(tokenId_) == spender_);
     }
 
     /// @notice Whenever an {IERC721} `tokenId` token is transferred to this contract via {IERC721-safeTransferFrom}
     /// @param from_: owner of the tokenId_
     /// @param tokenId_: token id of the NFT transfered
     /// @return selector must return its Solidity selector to confirm the token transfer.
-    function onERC721Received(
-        address,
-        address from_,
-        uint256 tokenId_,
-        bytes calldata
-    ) external override returns (bytes4) {
-        if (
-            (msg.sender != address(senseiStakeV1)) &&
-            (msg.sender != address(this))
-        ) {
+    function onERC721Received(address, address from_, uint256 tokenId_, bytes calldata)
+        external
+        override
+        returns (bytes4)
+    {
+        if (msg.sender != address(senseiStakeV1)) {
             revert CallerNotSenseiStake();
         }
         emit NFTReceived(tokenId_);
@@ -283,7 +293,7 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
         2. Vamos a hacer el `senseistakev1.endOperatorServices(tokenId_)`
         3. Vamos a retirar los ETH del service contract viejo `senseistakev1.withdraw(tokenId_)` y van a quedar aqui temporalmente
         4. Vamos a enviar a quien haya enviado el NFT los rewards que le quedaron pendientes
-        5. Vamos a mintear un nuevo NFT con la version 2 `createContract()` (retornara newTokenId)
+        5. Vamos a mintear un nuevo NFT con la version 2 `mintValidator()` (retornara newTokenId)
         6. Vamos a transferir ese NFT al from_ `safeTransferFrom(address(this), from_, newTokenId)
 
         NOTA: senseistakev1 == SenseStake(operator_)
@@ -293,9 +303,8 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
 
         // check if service contract has equals or more than available for minting new NFT
         // withdraw first excedent to ntf owner and then mint if available amount
-        SenseistakeServicesContract serviceContract = SenseistakeServicesContract(
-                payable(senseiStakeV1.getServiceContractAddress(oldTokenId_))
-            );
+        SenseistakeServicesContract serviceContract =
+            SenseistakeServicesContract(payable(senseiStakeV1.getServiceContractAddress(oldTokenId_)));
 
         // check that exit date has elapsed (because we cannot do endOperatorServices otherwise)
         if (block.timestamp < serviceContract.exitDate()) {
@@ -328,9 +337,8 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
         }
 
         // we can mint new validator and transfer it to the owner
-        uint256 newTokenId = this.createContract{value: FULL_DEPOSIT_SIZE}();
+        uint256 newTokenId = this.mintValidatorTo{value: FULL_DEPOSIT_SIZE}(nftOwner);
         emit ValidatorVersionMigration(oldTokenId_, newTokenId);
-        this.safeTransferFrom(address(this), nftOwner, newTokenId);
         // put back to zero the ownership migration mapping
         delete migratedValidatorsOwner[oldTokenId_];
         return newTokenId;
@@ -343,13 +351,8 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
         if (!_isApprovedOrOwner(msg.sender, tokenId_)) {
             revert NotOwner();
         }
-        address proxy = Clones.predictDeterministicAddress(
-            servicesContractImpl,
-            bytes32(tokenId_)
-        );
-        SenseistakeServicesContractV2 serviceContract = SenseistakeServicesContractV2(
-                payable(proxy)
-            );
+        address proxy = Clones.predictDeterministicAddress(servicesContractImpl, bytes32(tokenId_));
+        SenseistakeServicesContractV2 serviceContract = SenseistakeServicesContractV2(payable(proxy));
         serviceContract.withdrawTo(msg.sender);
     }
 
@@ -357,77 +360,51 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
     /// @dev For getting the service contract address of a given token id
     /// @param tokenId_ Is the token id
     /// @return Address of a service contract
-    function getServiceContractAddress(uint256 tokenId_)
-        external
-        view
-        returns (address)
-    {
-        return
-            Clones.predictDeterministicAddress(
-                servicesContractImpl,
-                bytes32(tokenId_)
-            );
+    function getServiceContractAddress(uint256 tokenId_) external view returns (address) {
+        return Clones.predictDeterministicAddress(servicesContractImpl, bytes32(tokenId_));
     }
 
     /// @notice Gets token uri where the metadata of NFT is stored
     /// @param tokenId_ Is the token id
     /// @return Token uri of the tokenId provided
-    function tokenURI(uint256 tokenId_)
-        public
-        view
-        override(ERC721)
-        returns (string memory)
-    {
-        address proxy = Clones.predictDeterministicAddress(
-            servicesContractImpl,
-            bytes32(tokenId_)
-        );
-        SenseistakeServicesContractV2 serviceContract = SenseistakeServicesContractV2(
-                payable(proxy)
-            );
-        return
-            string(
-                abi.encodePacked(
-                    "data:application/json;base64,",
-                    Base64.encode(
-                        bytes(
-                            abi.encodePacked(
-                                '{"name":"ETH Validator #',
-                                Strings.toString(tokenId_),
-                                '","description":"Sensei Stake is a non-custodial staking platform for Ethereum 2.0, that uses a top-performance node infrastructure provided by Sensei Node. Each NFT of this collection certifies the ownership receipt for one active ETH2 Validator and its accrued proceeds from protocol issuance and transaction processing fees. These nodes are distributed across the Latin American region, on local or regional hosting service providers, outside centralized global cloud vendors. Together we are fostering decentralization and strengthening the Ethereum ecosystem. One node at a time. Decentralization matters.",',
-                                '"external_url":"https://dashboard.senseinode.com/redirsenseistake?v=',
-                                _bytesToHexString(
-                                    validators[tokenId_].validatorPubKey
-                                ),
-                                '","minted_at":',
-                                Strings.toString(block.timestamp),
-                                ',"image":"',
-                                "ipfs://bafybeifgh6572j2e6ioxrrtyxamzciadd7anmnpyxq4b33wafqhpnncg7m",
-                                '","attributes": [{"trait_type": "Validator Address","value":"',
-                                _bytesToHexString(
-                                    validators[tokenId_].validatorPubKey
-                                ),
-                                '"},{',
-                                '"trait_type":"Exited","display_type":"string","value":"',
-                                bool(serviceContract.exited()),
-                                '"},{',
-                                '"trait_type": "Commission Rate","display_type":"string","value":"',
-                                Strings.toString(
-                                    (COMMISSION_RATE_SCALE / commissionRate)
-                                ),
-                                '%"}]}'
-                            )
+    function tokenURI(uint256 tokenId_) public view override(ERC721) returns (string memory) {
+        address proxy = Clones.predictDeterministicAddress(servicesContractImpl, bytes32(tokenId_));
+        SenseistakeServicesContractV2 serviceContract = SenseistakeServicesContractV2(payable(proxy));
+        return string(
+            abi.encodePacked(
+                "data:application/json;base64,",
+                Base64.encode(
+                    bytes(
+                        abi.encodePacked(
+                            '{"name":"ETH Validator #',
+                            Strings.toString(tokenId_),
+                            '","description":"Sensei Stake is a non-custodial staking platform for Ethereum 2.0, that uses a top-performance node infrastructure provided by Sensei Node. Each NFT of this collection certifies the ownership receipt for one active ETH2 Validator and its accrued proceeds from protocol issuance and transaction processing fees. These nodes are distributed across the Latin American region, on local or regional hosting service providers, outside centralized global cloud vendors. Together we are fostering decentralization and strengthening the Ethereum ecosystem. One node at a time. Decentralization matters.",',
+                            '"external_url":"https://dashboard.senseinode.com/redirsenseistake?v=',
+                            _bytesToHexString(validators[tokenId_].validatorPubKey),
+                            '","minted_at":',
+                            Strings.toString(block.timestamp),
+                            ',"image":"',
+                            "ipfs://bafybeifgh6572j2e6ioxrrtyxamzciadd7anmnpyxq4b33wafqhpnncg7m",
+                            '","attributes": [{"trait_type": "Validator Address","value":"',
+                            _bytesToHexString(validators[tokenId_].validatorPubKey),
+                            '"},{',
+                            '"trait_type":"Exited","display_type":"string","value":"',
+                            bool(serviceContract.exited()),
+                            '"},{',
+                            '"trait_type": "Commission Rate","display_type":"string","value":"',
+                            Strings.toString((COMMISSION_RATE_SCALE / commissionRate)),
+                            '%"}]}'
                         )
                     )
                 )
-            );
+            )
+        );
     }
 
     /// @notice For checking that there is a validator available for creation
     /// @return bool true if next validator is available or else false
     function validatorAvailable() external view returns (bool) {
-        return
-            validators[tokenIdCounter.current() + 1].validatorPubKey.length > 0;
+        return validators[tokenIdCounter.current() + 1].validatorPubKey.length > 0;
     }
 
     /// @notice For removing ownership of an NFT from a wallet address
@@ -439,15 +416,11 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
     /// @notice Helper function for converting bytes to hex string
     /// @param buffer_ bytes data to convert
     /// @return string converted buffer
-    function _bytesToHexString(bytes memory buffer_)
-        internal
-        pure
-        returns (string memory)
-    {
+    function _bytesToHexString(bytes memory buffer_) internal pure returns (string memory) {
         // Fixed buffer size for hexadecimal convertion
         bytes memory converted = new bytes(buffer_.length * 2);
         bytes memory _base = "0123456789abcdef";
-        for (uint256 i = 0; i < buffer_.length; ) {
+        for (uint256 i = 0; i < buffer_.length;) {
             converted[i * 2] = _base[uint8(buffer_[i]) / _base.length];
             converted[i * 2 + 1] = _base[uint8(buffer_[i]) % _base.length];
             unchecked {
