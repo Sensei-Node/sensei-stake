@@ -14,7 +14,6 @@ contract SenseiStakeV2Test is Test {
     SenseiStake private senseistake;
     MockDepositContract private depositContract;
 
-    event ValidatorVersionMigration(uint256 indexed oldTokenId, uint256 indexed newTokenId);
     event OldValidatorRewardsClaimed(uint256 amount);
     event Withdrawal(address indexed to, uint256 value);
 

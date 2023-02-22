@@ -53,10 +53,6 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
     /// @notice Stores data used for creating the validator
     mapping(uint256 => Validator) public validators;
 
-    /// @notice For knowing ownership of v1 NFT
-    /// @dev Since migration is a 2 part deal, we need to store ownership of transferred NFT
-    mapping(uint256 => address) public migratedValidatorsOwner;
-
     /// @notice Template service contract implementation address
     /// @dev It is used for generating clones, using hardhats proxy clone
     /// @return servicesContractImpl where the service contract template is implemented
@@ -81,6 +77,7 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
     error InvalidPublicKey();
     error NoMoreValidatorsLoaded();
     error NotAllowedAtCurrentTime();
+    error NotEnoughBalance();
     error NotOwner();
     error TokenIdAlreadyMinted();
     error ValidatorAlreadyAdded();
@@ -263,7 +260,8 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
         return (spender_ == owner || isApprovedForAll(owner, spender_) || getApproved(tokenId_) == spender_);
     }
 
-    /// @notice Whenever an {IERC721} `tokenId` token is transferred to this contract via {IERC721-safeTransferFrom}
+    /// @notice Accepting NFT reception for migrating contract v1 to v2
+    /// @dev Used for migrating senseistake contract from v1 to v2
     /// @param from_: owner of the tokenId_
     /// @param tokenId_: token id of the NFT transfered
     /// @return selector must return its Solidity selector to confirm the token transfer.
@@ -276,21 +274,9 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
             revert CallerNotSenseiStake();
         }
         emit NFTReceived(tokenId_);
-        migratedValidatorsOwner[tokenId_] = from_;
-        return IERC721Receiver.onERC721Received.selector;
-    }
 
-    /// @notice Accepting NFT reception for migrating contract v1 to v2
-    /// @dev Used for migrating senseistake contract from v1 to v2
-    /// @param oldTokenId_: token id of the NFT transfered from v1
-    function versionMigration(uint256 oldTokenId_) external returns (uint256) {
-        // TODO: determine if this is should be only callable by `msg.sender == migratedValidatorsOwner[oldTokenId_]`
-        // TODO: or anyone can call this in behalf of the `migratedValidatorsOwner[oldTokenId_]`
-
-        // check if service contract has equals or more than available for minting new NFT
-        // withdraw first excedent to ntf owner and then mint if available amount
         SenseistakeServicesContract serviceContract =
-            SenseistakeServicesContract(payable(senseiStakeV1.getServiceContractAddress(oldTokenId_)));
+            SenseistakeServicesContract(payable(senseiStakeV1.getServiceContractAddress(tokenId_)));
 
         // check that exit date has elapsed (because we cannot do endOperatorServices otherwise)
         if (block.timestamp < serviceContract.exitDate()) {
@@ -298,40 +284,34 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
         }
 
         // we need to determine service fees and mark service contract as exited
-        senseiStakeV1.endOperatorServices(oldTokenId_);
+        senseiStakeV1.endOperatorServices(tokenId_);
 
         // get withdrawable amount so that we determine what to do
         uint256 withdrawable = serviceContract.getWithdrawableAmount();
-        address nftOwner = migratedValidatorsOwner[oldTokenId_];
 
-        if (nftOwner == address(0)) {
+        if (from_ == address(0)) {
             revert InvalidMigrationRecepient();
         }
 
         // retrieve eth from old service contract
-        senseiStakeV1.withdraw(oldTokenId_);
+        senseiStakeV1.withdraw(tokenId_);
 
         // only withdraw available balance to nft owner because mint is not possible
         if (withdrawable < FULL_DEPOSIT_SIZE) {
-            emit OldValidatorRewardsClaimed(withdrawable);
-            payable(nftOwner).sendValue(withdrawable);
-            // zero is not a valid tokenId index
-            // we use it because owner could't mint a new one (not enough balance)
-            return 0;
+            revert NotEnoughBalance();
         }
         uint256 reward = withdrawable - FULL_DEPOSIT_SIZE;
         emit OldValidatorRewardsClaimed(reward);
         if (reward > 0) {
             // if withdrawable is greater than FULL_DEPOSIT_SIZE we give nft owner the excess
-            payable(nftOwner).sendValue(reward);
+            payable(from_).sendValue(reward);
         }
 
         // we can mint new validator to the owner
-        uint256 newTokenId = this.mintValidatorTo{value: FULL_DEPOSIT_SIZE}(nftOwner);
-        emit ValidatorVersionMigration(oldTokenId_, newTokenId);
-        // put back to zero the ownership migration mapping
-        delete migratedValidatorsOwner[oldTokenId_];
-        return newTokenId;
+        uint256 newTokenId = this.mintValidatorTo{value: FULL_DEPOSIT_SIZE}(from_);
+        emit ValidatorVersionMigration(tokenId_, newTokenId);
+
+        return IERC721Receiver.onERC721Received.selector;
     }
 
     /// @notice Performs withdraw of balance in service contract
