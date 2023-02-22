@@ -11,8 +11,8 @@ module.exports = async ({
 
     const args = [];
 
-    const senseistakeService = await deploy("SenseistakeServicesContractV2", {
-        contract: "SenseistakeServicesContractV2",
+    const senseistakeMetadata = await deploy("SenseistakeMetadata", {
+        contract: "SenseistakeMetadata",
         from: deployer.address,
         args,
         log: true,
@@ -20,4 +20,4 @@ module.exports = async ({
     })
 }
 
-module.exports.tags = ["all", "service_implementation", "without_dc"]
+module.exports.tags = ["all", "metadata", "without_dc"]

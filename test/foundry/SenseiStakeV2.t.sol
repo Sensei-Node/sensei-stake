@@ -7,11 +7,13 @@ import {SenseiStakeV2} from "../../contracts/SenseiStakeV2.sol";
 import {SenseistakeServicesContractV2 as SenseistakeServicesContract} from
     "../../contracts/SenseistakeServicesContractV2.sol";
 import {SenseiStake} from "../../contracts/SenseiStake.sol";
+import {SenseistakeMetadata} from "../../contracts/SenseistakeMetadata.sol";
 
 contract SenseiStakeV2Test is Test {
     address private alice;
     SenseiStakeV2 private senseistakeV2;
     SenseiStake private senseistake;
+    SenseistakeMetadata private metadata;
     MockDepositContract private depositContract;
 
     event OldValidatorRewardsClaimed(uint256 amount);
@@ -29,7 +31,8 @@ contract SenseiStakeV2Test is Test {
             "SSEV",
             100_000,
             address(depositContract),
-            address(senseistake)
+            address(senseistake),
+            address(metadata)
         );
         senseistakeV2.addValidator(1, new bytes(48), new bytes(96), bytes32(0));
     }

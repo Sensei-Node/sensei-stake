@@ -12,8 +12,7 @@ import {SenseistakeServicesContractV2} from "./SenseistakeServicesContractV2.sol
 import {SenseistakeServicesContract} from "./SenseistakeServicesContract.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {SenseiStake as SenseiStakeV1} from "./SenseiStake.sol";
-
-import "forge-std/console.sol";
+import {SenseistakeMetadata} from "./SenseistakeMetadata.sol";
 
 /// @title Main contract for handling SenseiStake Services
 /// @author Senseinode
@@ -44,19 +43,23 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
     /// @return depositContractAddress deposit contract address
     address public immutable depositContractAddress;
 
+    /// @notice Contract for getting the metadata as base64
+    /// @dev stored separately due to contract size restrictions
+    SenseistakeMetadata public immutable metadata;
+
+    /// @notice Template service contract implementation address
+    /// @dev It is used for generating clones, using hardhats proxy clone
+    /// @return servicesContractImpl where the service contract template is implemented
+    address public immutable servicesContractImpl;
+
     /// @notice Token counter for handling NFT
-    SenseiStakeV1 public senseiStakeV1;
+    SenseiStakeV1 public immutable senseiStakeV1;
 
     /// @notice Token counter for handling NFT
     Counters.Counter public tokenIdCounter;
 
     /// @notice Stores data used for creating the validator
     mapping(uint256 => Validator) public validators;
-
-    /// @notice Template service contract implementation address
-    /// @dev It is used for generating clones, using hardhats proxy clone
-    /// @return servicesContractImpl where the service contract template is implemented
-    address public immutable servicesContractImpl;
 
     /// @notice Scale for getting the commission rate (service fee)
     uint32 private constant COMMISSION_RATE_SCALE = 1_000_000;
@@ -95,7 +98,8 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
         string memory symbol_,
         uint32 commissionRate_,
         address ethDepositContractAddress_,
-        address senseistakeV1Address_
+        address senseistakeV1Address_,
+        address senseistakeMetadataAddress_
     ) ERC721(name_, symbol_) {
         if (commissionRate_ > (COMMISSION_RATE_SCALE / 2)) {
             revert CommisionRateTooHigh(commissionRate_);
@@ -104,6 +108,7 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
         depositContractAddress = ethDepositContractAddress_;
         servicesContractImpl = address(new SenseistakeServicesContractV2());
         senseiStakeV1 = SenseiStakeV1(senseistakeV1Address_);
+        metadata = SenseistakeMetadata(senseistakeMetadataAddress_);
     }
 
     /// @notice This is the receive function called when a user performs a transfer to this contract address
@@ -340,36 +345,12 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
     function tokenURI(uint256 tokenId_) public view override(ERC721) returns (string memory) {
         address proxy = Clones.predictDeterministicAddress(servicesContractImpl, bytes32(tokenId_));
         SenseistakeServicesContractV2 serviceContract = SenseistakeServicesContractV2(payable(proxy));
-        return string(
-            abi.encodePacked(
-                "data:application/json;base64,",
-                Base64.encode(
-                    bytes(
-                        abi.encodePacked(
-                            '{"name":"ETH Validator #',
-                            Strings.toString(tokenId_),
-                            '","description":"Sensei Stake is a non-custodial staking platform for Ethereum 2.0, that uses a top-performance node infrastructure provided by Sensei Node. Each NFT of this collection certifies the ownership receipt for one active ETH2 Validator and its accrued proceeds from protocol issuance and transaction processing fees. These nodes are distributed across the Latin American region, on local or regional hosting service providers, outside centralized global cloud vendors. Together we are fostering decentralization and strengthening the Ethereum ecosystem. One node at a time. Decentralization matters.",',
-                            '"external_url":"https://dashboard.senseinode.com/redirsenseistake?v=',
-                            _bytesToHexString(validators[tokenId_].validatorPubKey),
-                            '","minted_at":',
-                            Strings.toString(serviceContract.createdAt()),
-                            ',"image":"',
-                            "ipfs://bafybeifgh6572j2e6ioxrrtyxamzciadd7anmnpyxq4b33wafqhpnncg7m",
-                            '","attributes": [{"trait_type": "Validator Address","value":"',
-                            _bytesToHexString(validators[tokenId_].validatorPubKey),
-                            '"},{',
-                            serviceContract.exitedAt() != 0
-                                ? '"trait_type":"Exited At","display_type":"string","value":"'
-                                : "",
-                            serviceContract.exitedAt() != 0 ? Strings.toString(serviceContract.exitedAt()) : "",
-                            serviceContract.exitedAt() != 0 ? '"},{' : "",
-                            '"trait_type": "Commission Rate","display_type":"string","value":"',
-                            Strings.toString((COMMISSION_RATE_SCALE / commissionRate)),
-                            '%"}]}'
-                        )
-                    )
-                )
-            )
+        return metadata.getMetadata(
+            Strings.toString(tokenId_),
+            Strings.toString(serviceContract.createdAt()),
+            Strings.toString((COMMISSION_RATE_SCALE / commissionRate)),
+            validators[tokenId_].validatorPubKey,
+            serviceContract.exitedAt()
         );
     }
 
@@ -383,22 +364,5 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
     /// @param tokenId_ Is the token id
     function _burn(uint256 tokenId_) internal override(ERC721) {
         super._burn(tokenId_);
-    }
-
-    /// @notice Helper function for converting bytes to hex string
-    /// @param buffer_ bytes data to convert
-    /// @return string converted buffer
-    function _bytesToHexString(bytes memory buffer_) internal pure returns (string memory) {
-        // Fixed buffer size for hexadecimal convertion
-        bytes memory converted = new bytes(buffer_.length * 2);
-        bytes memory _base = "0123456789abcdef";
-        for (uint256 i = 0; i < buffer_.length;) {
-            converted[i * 2] = _base[uint8(buffer_[i]) / _base.length];
-            converted[i * 2 + 1] = _base[uint8(buffer_[i]) % _base.length];
-            unchecked {
-                ++i;
-            }
-        }
-        return string(abi.encodePacked("0x", converted));
     }
 }

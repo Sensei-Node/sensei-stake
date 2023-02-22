@@ -5,7 +5,7 @@ const fs = require('fs');
 const { network } = require("hardhat");
 const { Keystore } = require('@chainsafe/bls-keystore');
 
-module.exports = async ({deployments, upgrades, run}) => {
+module.exports = async ({ deployments, upgrades, run }) => {
     const lib = await import('../lib/senseistake-services-contract.mjs');
     ({
         bls,
@@ -29,9 +29,9 @@ module.exports = async ({deployments, upgrades, run}) => {
 
     // token contract
     const TokenContract = await ethers.getContractFactory(
-        'SenseiStake'
+        'SenseiStakeV2'
     );
-    const tokenDeployment = await deployments.get("SenseiStake");
+    const tokenDeployment = await deployments.get("SenseiStakeV2");
     const tokenContract = await TokenContract.attach(tokenDeployment.address);
     const NNETWK = {
         TOKEN_ADDRESS: tokenDeployment.address,
@@ -42,7 +42,7 @@ module.exports = async ({deployments, upgrades, run}) => {
     const _dir = __dirname + `/../keystores/${_date}`
     const _dir_validators = __dirname + `/../validators_data/${_date}`
 
-    for (let index = 1+start_; index <= serviceContractDeploys+start_; index++) {
+    for (let index = 1 + start_; index <= serviceContractDeploys + start_; index++) {
         // deposit data and keystores
         console.log('Adding Validator', index);
         const operatorPrivKey = bls.SecretKey.fromKeygen();
@@ -92,7 +92,7 @@ module.exports = async ({deployments, upgrades, run}) => {
             if (['testnet', 'mainnet'].includes(network.config.type)) {
                 await fcs.wait(deploymentVariables.waitConfirmations)
             }
-    
+
             // Blockchain validator check for signature validity
             // First we get uploaded validator data
             const validator_bc = await tokenContract.validators(index);
@@ -104,7 +104,7 @@ module.exports = async ({deployments, upgrades, run}) => {
                 network: network.config.type,
                 index: utils.hexZeroPad(utils.hexlify(index), 32)
             }
-    
+
             // Checking signature of uploaded depositDataRoot with uploaded validatorPubKey (the signature was created on createOperatorDepositData.depositDataSignature)
             const validSignatureDepositData = verifySignatureGeneric(validator_corrected.validatorPubKey, validator_corrected.depositDataRoot, depositData.depositDataSignature)
             if (!validSignatureDepositData) {
@@ -112,9 +112,9 @@ module.exports = async ({deployments, upgrades, run}) => {
                 break;
             }
         }
-        
+
         validatorPublicKeys.push(utils.hexlify(operatorPubKeyBytes));
-    
+
         // console.log("\n-- Validator (operator) deposit data --")
         // console.log("Validator public address: ", utils.hexlify(service_contract.depositData.validatorPubKey));
         // console.log("Validator deposit signature: ", utils.hexlify(service_contract.depositData.depositSignature));
@@ -127,18 +127,18 @@ module.exports = async ({deployments, upgrades, run}) => {
 
         // store keystore in keystores directory
         if (['testnet', 'mainnet'].includes(network.config.type)) {
-            if (!fs.existsSync(_dir)){
+            if (!fs.existsSync(_dir)) {
                 fs.mkdirSync(_dir);
             }
-            const keystoreName = `keystore-m_12381_3600_${index-1}_0_0-${_date}.json`
+            const keystoreName = `keystore-m_12381_3600_${index - 1}_0_0-${_date}.json`
             fs.writeFileSync(`${_dir}/${keystoreName}`, JSON.stringify(keystore));
         }
-    }  
-    
+    }
+
     if (['testnet', 'mainnet'].includes(network.config.type)) {
         fs.writeFileSync(`${_dir}/validator_public_keys.json`, JSON.stringify(validatorPublicKeys));
         if (validatorsData && Object.getPrototypeOf(validatorsData) === Object.prototype && Object.keys(validatorsData).length !== 0) {
-            if (!fs.existsSync(_dir_validators)){
+            if (!fs.existsSync(_dir_validators)) {
                 fs.mkdirSync(_dir_validators);
             }
             fs.writeFileSync(`${_dir_validators}/validators_data.json`, JSON.stringify(validatorsData));

@@ -7,11 +7,13 @@ import {SenseiStakeV2} from "../../contracts/SenseiStakeV2.sol";
 import {SenseistakeServicesContractV2 as SenseistakeServicesContract} from
     "../../contracts/SenseistakeServicesContractV2.sol";
 import {SenseiStake} from "../../contracts/SenseiStake.sol";
+import {SenseistakeMetadata} from "../../contracts/SenseistakeMetadata.sol";
 
 contract MintValidatorTest is Test {
     address private alice;
     SenseiStakeV2 private senseistakeV2;
     SenseiStake private senseistake;
+    SenseistakeMetadata private metadata;
     MockDepositContract private depositContract;
 
     event ValidatorVersionMigration(uint256 indexed oldTokenId, uint256 indexed newTokenId);
@@ -35,7 +37,8 @@ contract MintValidatorTest is Test {
             "SSEV",
             100_000,
             address(depositContract),
-            address(senseistake)
+            address(senseistake),
+            address(metadata)
         );
     }
 
@@ -46,5 +49,4 @@ contract MintValidatorTest is Test {
         senseistakeV2.mintValidator{value: 32 ether}();
         vm.stopPrank();
     }
-
 }

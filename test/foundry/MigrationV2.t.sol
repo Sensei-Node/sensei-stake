@@ -7,11 +7,13 @@ import {SenseiStakeV2} from "../../contracts/SenseiStakeV2.sol";
 import {SenseistakeServicesContractV2 as SenseistakeServicesContract} from
     "../../contracts/SenseistakeServicesContractV2.sol";
 import {SenseiStake} from "../../contracts/SenseiStake.sol";
+import {SenseistakeMetadata} from "../../contracts/SenseistakeMetadata.sol";
 
 contract SenseiStakeV2Test is Test {
     address private alice;
     address private bob;
     SenseiStakeV2 private senseistakeV2;
+    SenseistakeMetadata private metadata;
     SenseiStake private senseistake;
     MockDepositContract private depositContract;
 
@@ -42,7 +44,8 @@ contract SenseiStakeV2Test is Test {
             "SSEV",
             100_000,
             address(depositContract),
-            address(senseistake)
+            address(senseistake),
+            address(metadata)
         );
         senseistake.addValidator(1, new bytes(48), new bytes(96), bytes32(0));
         senseistakeV2.addValidator(1, new bytes(48), new bytes(96), bytes32(0));
@@ -159,8 +162,7 @@ contract SenseiStakeV2Test is Test {
         tokenId += 1;
         deal(senseistake.getServiceContractAddress(tokenId), 100 ether);
         vm.expectRevert(bytes("ERC721: invalid token ID"));
-        senseistake.safeTransferFrom(address(alice), address(senseistakeV2), tokenId+5);
+        senseistake.safeTransferFrom(address(alice), address(senseistakeV2), tokenId + 5);
         vm.stopPrank();
     }
-    
 }

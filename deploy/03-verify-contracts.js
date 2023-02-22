@@ -7,17 +7,23 @@ const sleep = (milliseconds) => {
 
 module.exports = async ({
     deployments,
-    upgrades, 
+    upgrades,
     run
 }) => {
-    const serviceDeployment = await deployments.get('SenseistakeServicesContract')
-    const erc721Deployment = await deployments.get('SenseiStake')
-    let ethDepositContractAddress;
+    const serviceDeployment = await deployments.get('SenseistakeServicesContractV2')
+    const erc721Deployment = await deployments.get('SenseiStakeV2')
+    let ethDepositContractAddress, senseiStakeV1Address, senseistakeMetadataAddress;
     try {
         ethDepositContractAddress = await deployments.get("DepositContract");
-    } catch(err) {
-        ethDepositContractAddress = deploymentVariables.depositContractAddress[network.config.chainId] ? 
-        { address: deploymentVariables.depositContractAddress[network.config.chainId] } : { address: '0x00000000219ab540356cBB839Cbe05303d7705Fa' }
+        senseiStakeV1Address = await deployments.get("SenseiStake");
+        senseistakeMetadataAddress = await deployments.get("SenseistakeMetadata");
+    } catch (err) {
+        ethDepositContractAddress = deploymentVariables.depositContractAddress[network.config.chainId] ?
+            { address: deploymentVariables.depositContractAddress[network.config.chainId] } : { address: '0x00000000219ab540356cBB839Cbe05303d7705Fa' }
+        senseiStakeV1Address = deploymentVariables.senseiStakeV1Address[network.config.chainId] ?
+            { address: deploymentVariables.senseiStakeV1Address[network.config.chainId] } : { address: '0x2421A0aF8baDfAe12E1c1700E369747D3DB47B09' }
+        senseistakeMetadataAddress = deploymentVariables.senseistakeMetadataAddress[network.config.chainId] ?
+            { address: deploymentVariables.senseistakeMetadataAddress[network.config.chainId] } : { address: '' }
     }
     if (['testnet', 'mainnet'].includes(network.config.type) && process.env.ETHERSCAN_KEY) {
         console.log('WAITING 10 seconds')
@@ -25,11 +31,22 @@ module.exports = async ({
         try {
             const depositDeployment = await deployments.get('DepositContract')
             await verify(depositDeployment.address, [])
-        } catch {}
+        } catch { }
+        // verify metadata
+        try {
+            await verify(senseistakeMetadataAddress.address, [])
+        } catch { }
         // verify service contract
         await verify(serviceDeployment.address, [])
         // verify erc721 contract
-        await verify(erc721Deployment.address, ["SenseiStake Ethereum Validator", "SSEV", 100_000, ethDepositContractAddress.address])
+        await verify(erc721Deployment.address, [
+            "SenseiStake Ethereum Validator",
+            "SSEV",
+            100_000,
+            ethDepositContractAddress.address,
+            senseiStakeV1Address.address,
+            senseistakeMetadataAddress.address
+        ])
     }
 }
 
