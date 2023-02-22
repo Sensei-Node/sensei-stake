@@ -134,7 +134,7 @@ contract SenseiStakeV2Test is Test {
         vm.stopPrank();
     }
 
-    // should 3rd person migrate validator from v1 to v2
+    // shouldn't 3rd person migrate validator from v1 to v2
     function testCannotCallMigrateUnknownUser() public {
         uint256 tokenId = 0;
         vm.startPrank(alice);
@@ -145,8 +145,22 @@ contract SenseiStakeV2Test is Test {
         vm.stopPrank();
 
         vm.startPrank(bob);
-        vm.expectRevert(bytes("ERC721: caller is not token owner nor approved"));
+        vm.expectRevert(bytes("ERC721: caller is not token owner or approved"));
         senseistake.safeTransferFrom(address(alice), address(senseistakeV2), tokenId);
         vm.stopPrank();
     }
+
+    // shouldn't migrate a unknown tokenid of validator from v1 to v2
+    function testCannotVersionMigrationWithTokenIndexUnknown() public {
+        uint256 tokenId = 0;
+        vm.startPrank(alice);
+        senseistake.createContract{value: 32 ether}();
+        vm.warp(360 days);
+        tokenId += 1;
+        deal(senseistake.getServiceContractAddress(tokenId), 100 ether);
+        vm.expectRevert(bytes("ERC721: invalid token ID"));
+        senseistake.safeTransferFrom(address(alice), address(senseistakeV2), tokenId+5);
+        vm.stopPrank();
+    }
+    
 }
