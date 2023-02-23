@@ -11,6 +11,7 @@ import {SenseistakeMetadata} from "../../contracts/SenseistakeMetadata.sol";
 
 contract SenseiStakeV2Test is Test {
     address private alice;
+    address private bob;
     SenseiStakeV2 private senseistakeV2;
     SenseiStake private senseistake;
     SenseistakeMetadata private metadata;
@@ -20,8 +21,9 @@ contract SenseiStakeV2Test is Test {
     event ValidatorMinted(uint256 tokenIdServiceContract);
     event Withdrawal(address indexed to, uint256 value);
     
-    
+    error CallerNotSenseiStake();
     error CannotEndZeroBalance();
+    error InvalidMigrationRecepient();
     error NoMoreValidatorsLoaded();
     error NotAllowedAtCurrentTime();
     error ValueSentDifferentThanFullDeposit();
@@ -30,7 +32,9 @@ contract SenseiStakeV2Test is Test {
     function setUp() public {
         alice = makeAddr("alice");
         deal(alice, 100 ether);
+        bob = makeAddr("bob");
         depositContract = new MockDepositContract();
+        metadata = new SenseistakeMetadata();
         senseistakeV2 = new SenseiStakeV2(
             "SenseiStake Ethereum Validator",
             "SSEV",
@@ -134,5 +138,70 @@ contract SenseiStakeV2Test is Test {
         senseistakeV2.mintMultipleValidators{value: validators_count * 32 ether}();
         vm.stopPrank();
     }
+
+
+    function testTokenUri() public {
+        vm.startPrank(alice);
+        vm.expectEmit(true, false, false, false);
+        emit ValidatorMinted(1);
+        senseistakeV2.mintValidator{value: 32 ether}();
+        vm.stopPrank();
+        senseistakeV2.tokenURI(1);
+    }
+
+
+    function testCannotMint() public {
+        vm.startPrank(alice);
+        vm.expectRevert(ValueSentDifferentThanFullDeposit.selector);
+        senseistakeV2.mintValidator{value: 1 ether}();
+        vm.stopPrank();
+    }
+
+    function testCannotMintToNoEnaughEth() public {
+        vm.startPrank(alice);
+        vm.expectRevert(ValueSentDifferentThanFullDeposit.selector);
+        senseistakeV2.mintValidatorTo{value: 1 ether}(bob);
+        vm.stopPrank();
+    }
+
+
+    function testMintValidatorTo() public {
+        vm.startPrank(alice);
+        vm.expectEmit(true, false, false, false);
+        emit ValidatorMinted(1);
+        senseistakeV2.mintValidatorTo{value: 32 ether}(address(bob));
+        vm.stopPrank();
+    }
+
+
+    function testCannotMintValidatorTo() public {
+        vm.startPrank(alice);
+        vm.expectEmit(true, false, false, false);
+        emit ValidatorMinted(1);
+        senseistakeV2.mintValidatorTo{value: 32 ether}(address(bob));
+        vm.expectRevert(NoMoreValidatorsLoaded.selector);
+        senseistakeV2.mintValidatorTo{value: 32 ether}(address(bob));
+        vm.stopPrank();
+    }
+
+    //onERC721Received
+    function testCannotonERC721Received_CallerNotSenseiStake() public {
+        vm.startPrank(alice);
+        vm.expectRevert(CallerNotSenseiStake.selector);
+        senseistakeV2.onERC721Received(address(alice),address(alice),1,"");
+        vm.stopPrank();
+    }
+
+    // //onERC721Received
+    // function testCannotonERC721Received_InvalidMigrationRecepient() public {
+    //     vm.startPrank(address(senseistake));
+    //     vm.expectEmit(true, false, false, false);
+    //     emit ValidatorMinted(1);
+    //     senseistakeV2.mintValidator{value: 32 ether}();
+    //     vm.warp(360 days);
+    //     vm.expectRevert(CallerNotSenseiStake.selector);
+    //     senseistakeV2.onERC721Received(address(alice),address(0),1,"");
+    //     vm.stopPrank();
+    // }
 
 }

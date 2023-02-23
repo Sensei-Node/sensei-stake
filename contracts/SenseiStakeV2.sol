@@ -14,6 +14,8 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {SenseiStake as SenseiStakeV1} from "./SenseiStake.sol";
 import {SenseistakeMetadata} from "./SenseistakeMetadata.sol";
 
+import "forge-std/console.sol";
+
 /// @title Main contract for handling SenseiStake Services
 /// @author Senseinode
 /// @notice Serves as entrypoint for SenseiStake
@@ -345,6 +347,8 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
     function tokenURI(uint256 tokenId_) public view override(ERC721) returns (string memory) {
         address proxy = Clones.predictDeterministicAddress(servicesContractImpl, bytes32(tokenId_));
         SenseistakeServicesContractV2 serviceContract = SenseistakeServicesContractV2(payable(proxy));
+        console.log(address(serviceContract));
+        console.log(address(metadata));
         return metadata.getMetadata(
             Strings.toString(tokenId_),
             Strings.toString(serviceContract.createdAt()),
@@ -362,7 +366,7 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
 
     /// @notice For removing ownership of an NFT from a wallet address
     /// @param tokenId_ Is the token id
-    function _burn(uint256 tokenId_) internal override(ERC721) {
-        super._burn(tokenId_);
-    }
+    // function _burn(uint256 tokenId_) internal override(ERC721) {
+    //     super._burn(tokenId_);
+    // }
 }
