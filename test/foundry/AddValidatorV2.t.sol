@@ -7,14 +7,16 @@ import {SenseiStakeV2} from "../../contracts/SenseiStakeV2.sol";
 import {SenseistakeServicesContractV2 as SenseistakeServicesContract} from
     "../../contracts/SenseistakeServicesContractV2.sol";
 import {SenseiStake} from "../../contracts/SenseiStake.sol";
+import {SenseistakeMetadata} from "../../contracts/SenseistakeMetadata.sol";
 
 contract SenseiStakeV2Test is Test {
     address private alice;
     SenseiStakeV2 private senseistakeV2;
     SenseiStake private senseistake;
+    SenseistakeMetadata private metadata;
     MockDepositContract private depositContract;
 
-    event ValidatorVersionMigration(uint256 indexed oldTokenId, uint256 indexed newTokenId);
+    event ValidatorAdded(uint256 indexed tokenId, bytes indexed validatorPubKey);
 
     error TokenIdAlreadyMinted();
     error InvalidPublicKey();
@@ -36,7 +38,8 @@ contract SenseiStakeV2Test is Test {
             "SSEV",
             100_000,
             address(depositContract),
-            address(senseistake)
+            address(senseistake),
+            address(metadata)
         );
     }
 
@@ -69,11 +72,19 @@ contract SenseiStakeV2Test is Test {
         senseistakeV2.addValidator(1, new bytes(49), new bytes(96), bytes32(0));
     }
 
-
-    // shouldn't add invalid pub key
+    // shouldn't add invalid signature
     function testCannotInvalidDepositSignature() public {
         vm.expectRevert(InvalidDepositSignature.selector);
         senseistakeV2.addValidator(1, new bytes(48), new bytes(97), bytes32(0));
+    }
+
+        // shouldn't add invalid pub key
+    function testAddValidatorOK() public {
+        bytes memory pubkey = abi.encodePacked(new bytes(48));
+        uint256 tokenId = 1;
+        vm.expectEmit(true, true, false, false);
+        emit ValidatorAdded(tokenId, pubkey);
+        senseistakeV2.addValidator(tokenId, pubkey , new bytes(96), bytes32(0));
     }
 
     

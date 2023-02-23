@@ -241,7 +241,7 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
                 depositContractAddress
             );
             address proxy = Clones.cloneDeterministic(servicesContractImpl, bytes32(tokenId));
-            (bool success,) = proxy.call{value: msg.value}(initData);
+            (bool success,) = proxy.call{value: FULL_DEPOSIT_SIZE}(initData);
             require(success, "Proxy init failed");
 
             emit ValidatorMinted(tokenId);
