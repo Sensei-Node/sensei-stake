@@ -11,21 +11,31 @@ import {SenseistakeMetadata} from "../../contracts/SenseistakeMetadata.sol";
 
 contract SenseiStakeV2Test is Test {
     address private alice;
+    address private bob;
     SenseiStakeV2 private senseistakeV2;
     SenseiStake private senseistake;
     SenseistakeMetadata private metadata;
     MockDepositContract private depositContract;
 
     event OldValidatorRewardsClaimed(uint256 amount);
+    event ValidatorMinted(uint256 tokenIdServiceContract);
     event Withdrawal(address indexed to, uint256 value);
-
-    error NotAllowedAtCurrentTime();
+    
+    error CallerNotSenseiStake();
     error CannotEndZeroBalance();
+    error InvalidMigrationRecepient();
+    error NoMoreValidatorsLoaded();
+    error NotAllowedAtCurrentTime();
+    error NotOwner();
+    error ValueSentDifferentThanFullDeposit();
+    
 
     function setUp() public {
         alice = makeAddr("alice");
         deal(alice, 100 ether);
+        bob = makeAddr("bob");
         depositContract = new MockDepositContract();
+        metadata = new SenseistakeMetadata();
         senseistakeV2 = new SenseiStakeV2(
             "SenseiStake Ethereum Validator",
             "SSEV",
@@ -91,4 +101,128 @@ contract SenseiStakeV2Test is Test {
         assertEq(sscc.exitedAt(), block.timestamp); // exited at this block.timestamp
         vm.stopPrank();
     }
+
+    //should not mint a validator with no eth
+    function testCannotMintMultipleValidatorsValueSentDifferentThanFullDeposit() public {
+        vm.startPrank(alice);
+        vm.expectRevert(ValueSentDifferentThanFullDeposit.selector);
+        senseistakeV2.mintMultipleValidators{value: 1 ether}();
+        vm.stopPrank();
+    }
+
+    function testMintMultipleValidatorsNoMoreValidatorLoaded() public {
+        vm.startPrank(alice);
+        vm.expectRevert(NoMoreValidatorsLoaded.selector);
+        senseistakeV2.mintMultipleValidators{value: 64 ether}();
+        vm.stopPrank();
+    }
+
+    function testMintMultipleValidatorsJustOne() public {
+        vm.startPrank(alice);
+        vm.expectEmit(true, false, false, false);
+        emit ValidatorMinted(1);
+        senseistakeV2.mintMultipleValidators{value: 32 ether}();
+        vm.stopPrank();
+    }
+
+    function testMintMultipleValidators1000Validators() public {
+        uint validators_count=1000;
+        deal(alice, validators_count * 32 ether);
+        for (uint256 i = 1; i <= validators_count; i++) {
+            senseistakeV2.addValidator(i, abi.encodePacked(new bytes(16), i) , new bytes(96), bytes32(0));
+        }
+        vm.startPrank(alice);
+        for (uint256 i = 1; i <= validators_count ; i++) {
+            vm.expectEmit(true, false, false, false);
+            emit ValidatorMinted(i);
+        }
+        senseistakeV2.mintMultipleValidators{value: validators_count * 32 ether}();
+        vm.stopPrank();
+    }
+
+
+    function testTokenUri() public {
+        vm.startPrank(alice);
+        vm.expectEmit(true, false, false, false);
+        emit ValidatorMinted(1);
+        senseistakeV2.mintValidator{value: 32 ether}();
+        vm.stopPrank();
+        senseistakeV2.tokenURI(1);
+    }
+
+
+    function testCannotMint() public {
+        vm.startPrank(alice);
+        vm.expectRevert(ValueSentDifferentThanFullDeposit.selector);
+        senseistakeV2.mintValidator{value: 1 ether}();
+        vm.stopPrank();
+    }
+
+    function testCannotMintToNoEnaughEth() public {
+        vm.startPrank(alice);
+        vm.expectRevert(ValueSentDifferentThanFullDeposit.selector);
+        senseistakeV2.mintValidatorTo{value: 1 ether}(bob);
+        vm.stopPrank();
+    }
+
+
+    function testMintValidatorTo() public {
+        vm.startPrank(alice);
+        vm.expectEmit(true, false, false, false);
+        emit ValidatorMinted(1);
+        senseistakeV2.mintValidatorTo{value: 32 ether}(address(bob));
+        vm.stopPrank();
+    }
+
+
+    function testCannotMintValidatorTo() public {
+        vm.startPrank(alice);
+        vm.expectEmit(true, false, false, false);
+        emit ValidatorMinted(1);
+        senseistakeV2.mintValidatorTo{value: 32 ether}(address(bob));
+        vm.expectRevert(NoMoreValidatorsLoaded.selector);
+        senseistakeV2.mintValidatorTo{value: 32 ether}(address(bob));
+        vm.stopPrank();
+    }
+
+    //onERC721Received
+    function testCannotonERC721Received_CallerNotSenseiStake() public {
+        vm.startPrank(alice);
+        vm.expectRevert(CallerNotSenseiStake.selector);
+        senseistakeV2.onERC721Received(address(alice),address(alice),1,"");
+        vm.stopPrank();
+    }
+
+    // //onERC721Received
+    // function testCannotonERC721Received_InvalidMigrationRecepient() public {
+    //     vm.startPrank(address(senseistake));
+    //     vm.expectEmit(true, false, false, false);
+    //     emit ValidatorMinted(1);
+    //     senseistakeV2.mintValidator{value: 32 ether}();
+    //     vm.warp(360 days);
+    //     vm.expectRevert(CallerNotSenseiStake.selector);
+    //     senseistakeV2.onERC721Received(address(alice),address(0),1,"");
+    //     vm.stopPrank();
+    // }
+
+    function testCannotWitdraw_NotOwner() public {
+        vm.startPrank(alice);
+        vm.expectEmit(true, false, false, false);
+        emit ValidatorMinted(1);
+        senseistakeV2.mintValidator{value: 32 ether}();
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert(NotOwner.selector);
+        senseistakeV2.withdraw(1);
+        vm.stopPrank();
+        
+    
+    }
+
+
+    function testValidatorAvailable() public {
+        bool validatorAvailable = senseistakeV2.validatorAvailable();
+        assertTrue(validatorAvailable);
+    }
+
 }
