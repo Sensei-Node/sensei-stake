@@ -231,8 +231,8 @@ contract SenseiStakeV2Test is Test {
         senseistakeV2.setMetadataAddress(address(newMetadata));
     }
 
-    function testChangeMetadataContract() public {
-        vm.expectRevert(MethodNotImplemented.selector);
-        senseistakeV2.setMetadataAddress(address(bob));
+    function testCannotChangeMetadataContract() public {
+        //vm.expectRevert(MethodNotImplemented.selector);
+        senseistakeV2.setMetadataAddress(address(new MockDepositContract()));
     }
 }

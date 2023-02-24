@@ -147,10 +147,11 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
     /// @notice Method for changing metadata contract
     /// @param newAddress_ address of the new metadata contract
     function setMetadataAddress(address newAddress_) external onlyOwner {
-        metadata = SenseistakeMetadata(newAddress_);
+        SenseistakeMetadata newMetadata = SenseistakeMetadata(newAddress_);
         if (!metadata.isValid(metadata.getMetadata.selector)) {
             revert MethodNotImplemented();
         }
+        metadata = newMetadata;
         emit MetadataAddressChanged(newAddress_);
     }
 
