@@ -26,6 +26,7 @@ contract SenseiStakeV2Test is Test {
     error InvalidMigrationRecepient();
     error NoMoreValidatorsLoaded();
     error NotAllowedAtCurrentTime();
+    error NotOwner();
     error ValueSentDifferentThanFullDeposit();
     
 
@@ -203,5 +204,25 @@ contract SenseiStakeV2Test is Test {
     //     senseistakeV2.onERC721Received(address(alice),address(0),1,"");
     //     vm.stopPrank();
     // }
+
+    function testCannotWitdraw_NotOwner() public {
+        vm.startPrank(alice);
+        vm.expectEmit(true, false, false, false);
+        emit ValidatorMinted(1);
+        senseistakeV2.mintValidator{value: 32 ether}();
+        vm.stopPrank();
+        vm.startPrank(bob);
+        vm.expectRevert(NotOwner.selector);
+        senseistakeV2.withdraw(1);
+        vm.stopPrank();
+        
+    
+    }
+
+
+    function testValidatorAvailable() public {
+        bool validatorAvailable = senseistakeV2.validatorAvailable();
+        assertTrue(validatorAvailable);
+    }
 
 }
