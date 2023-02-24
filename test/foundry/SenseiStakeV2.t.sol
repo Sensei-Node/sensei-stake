@@ -20,6 +20,7 @@ contract SenseiStakeV2Test is Test {
     event OldValidatorRewardsClaimed(uint256 amount);
     event ValidatorMinted(uint256 tokenIdServiceContract);
     event Withdrawal(address indexed to, uint256 value);
+    event MetadataAddressChanged(address newAddress);
     
     error CallerNotSenseiStake();
     error CannotEndZeroBalance();
@@ -28,6 +29,7 @@ contract SenseiStakeV2Test is Test {
     error NotAllowedAtCurrentTime();
     error NotOwner();
     error ValueSentDifferentThanFullDeposit();
+    error MethodNotImplemented();
     
 
     function setUp() public {
@@ -215,14 +217,22 @@ contract SenseiStakeV2Test is Test {
         vm.expectRevert(NotOwner.selector);
         senseistakeV2.withdraw(1);
         vm.stopPrank();
-        
-    
     }
-
 
     function testValidatorAvailable() public {
         bool validatorAvailable = senseistakeV2.validatorAvailable();
         assertTrue(validatorAvailable);
     }
 
+    function testMetadataContractChanged() public {
+        SenseistakeMetadata newMetadata = new SenseistakeMetadata();
+        vm.expectEmit(true, false, false, false);
+        emit MetadataAddressChanged(address(newMetadata));
+        senseistakeV2.setMetadataAddress(address(newMetadata));
+    }
+
+    function testChangeMetadataContract() public {
+        vm.expectRevert(MethodNotImplemented.selector);
+        senseistakeV2.setMetadataAddress(address(bob));
+    }
 }

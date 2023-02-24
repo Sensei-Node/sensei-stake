@@ -14,8 +14,6 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {SenseiStake as SenseiStakeV1} from "./SenseiStake.sol";
 import {SenseistakeMetadata} from "./SenseistakeMetadata.sol";
 
-import "forge-std/console.sol";
-
 /// @title Main contract for handling SenseiStake Services
 /// @author Senseinode
 /// @notice Serves as entrypoint for SenseiStake
@@ -45,7 +43,7 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
 
     /// @notice Contract for getting the metadata as base64
     /// @dev stored separately due to contract size restrictions
-    SenseistakeMetadata public immutable metadata;
+    SenseistakeMetadata public metadata;
 
     /// @notice Template service contract implementation address
     /// @dev It is used for generating clones, using hardhats proxy clone
@@ -357,8 +355,6 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
     function tokenURI(uint256 tokenId_) public view override(ERC721) returns (string memory) {
         address proxy = Clones.predictDeterministicAddress(servicesContractImpl, bytes32(tokenId_));
         SenseistakeServicesContractV2 serviceContract = SenseistakeServicesContractV2(payable(proxy));
-        console.log(address(serviceContract));
-        console.log(address(metadata));
         return metadata.getMetadata(
             Strings.toString(tokenId_),
             Strings.toString(serviceContract.createdAt()),

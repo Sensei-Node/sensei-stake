@@ -7,7 +7,7 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 contract SenseistakeMetadata {
     /// @notice for checking that contract implements selector function
     /// @return getMetadata selector
-    function isValid(bytes4 selector_) external pure returns (bytes4) {
+    function isValid(bytes4 selector_) external pure returns (bool) {
         return selector_ == this.getMetadata.selector;
     }
 
