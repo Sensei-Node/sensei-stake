@@ -76,7 +76,6 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
     error InvalidDepositSignature();
     error InvalidMigrationRecepient();
     error InvalidPublicKey();
-    error MethodNotImplemented();
     error NoMoreValidatorsLoaded();
     error NotAllowedAtCurrentTime();
     error NotEnoughBalance();
@@ -147,11 +146,7 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
     /// @notice Method for changing metadata contract
     /// @param newAddress_ address of the new metadata contract
     function setMetadataAddress(address newAddress_) external onlyOwner {
-        SenseistakeMetadata newMetadata = SenseistakeMetadata(newAddress_);
-        if (!metadata.isValid(metadata.getMetadata.selector)) {
-            revert MethodNotImplemented();
-        }
-        metadata = newMetadata;
+        metadata = SenseistakeMetadata(newAddress_);
         emit MetadataAddressChanged(newAddress_);
     }
 
@@ -305,9 +300,10 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
         // get withdrawable amount so that we determine what to do
         uint256 withdrawable = serviceContract.getWithdrawableAmount();
 
-        if (from_ == address(0)) {
-            revert InvalidMigrationRecepient();
-        }
+        // TODO: this is impossible to reach with the condition check msg.sender != address(senseiStakeV1)
+        // if (from_ == address(0)) {
+        //     revert InvalidMigrationRecepient();
+        // }
 
         // retrieve eth from old service contract
         senseiStakeV1.withdraw(tokenId_);
@@ -370,10 +366,4 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
     function validatorAvailable() external view returns (bool) {
         return validators[tokenIdCounter.current() + 1].validatorPubKey.length > 0;
     }
-
-    /// @notice For removing ownership of an NFT from a wallet address
-    /// @param tokenId_ Is the token id
-    // function _burn(uint256 tokenId_) internal override(ERC721) {
-    //     super._burn(tokenId_);
-    // }
 }
