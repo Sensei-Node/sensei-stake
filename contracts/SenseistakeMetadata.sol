@@ -5,6 +5,19 @@ import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 contract SenseistakeMetadata {
+    /// @notice for checking that contract implements selector function
+    /// @return getMetadata selector
+    function isValid(bytes4 selector_) external pure returns (bytes4) {
+        return selector_ == this.getMetadata.selector;
+    }
+
+    /// @notice for getting the metadata in base64 format for Senseistake NFT
+    /// @param tokenId_ of the NFT
+    /// @param createdAt_ NFT minted date
+    /// @param commissionRate_ commission rate used for service
+    /// @param validatorPubKey_ validator public key
+    /// @param exitedAt_ validator exited date
+    /// @return string base64 encoded metadata
     function getMetadata(
         string calldata tokenId_,
         string calldata createdAt_,
@@ -18,7 +31,7 @@ contract SenseistakeMetadata {
                 Base64.encode(
                     bytes(
                         abi.encodePacked(
-                            '{"name":"ETH Validator #',
+                            exitedAt_ != 0 ? '{"name":"[EXITED] ETH Validator #' : '{"name":"ETH Validator #',
                             tokenId_,
                             '","description":"Sensei Stake is a non-custodial staking platform for Ethereum 2.0, that uses a top-performance node infrastructure provided by Sensei Node. Each NFT of this collection certifies the ownership receipt for one active ETH2 Validator and its accrued proceeds from protocol issuance and transaction processing fees. These nodes are distributed across the Latin American region, on local or regional hosting service providers, outside centralized global cloud vendors. Together we are fostering decentralization and strengthening the Ethereum ecosystem. One node at a time. Decentralization matters.",',
                             '"external_url":"https://dashboard.senseinode.com/redirsenseistake?v=',

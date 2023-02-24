@@ -36,11 +36,9 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
 
     /// @notice Used in conjuction with `COMMISSION_RATE_SCALE` for determining service fees
     /// @dev Is set up on the constructor and can be modified with provided setter aswell
-    /// @return commissionRate the commission rate
     uint32 public commissionRate;
 
     /// @notice The address for being able to deposit to the ethereum deposit contract
-    /// @return depositContractAddress deposit contract address
     address public immutable depositContractAddress;
 
     /// @notice Contract for getting the metadata as base64
@@ -49,7 +47,6 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
 
     /// @notice Template service contract implementation address
     /// @dev It is used for generating clones, using hardhats proxy clone
-    /// @return servicesContractImpl where the service contract template is implemented
     address public immutable servicesContractImpl;
 
     /// @notice Token counter for handling NFT
@@ -72,12 +69,14 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
     event ValidatorAdded(uint256 indexed tokenId, bytes indexed validatorPubKey);
     event ValidatorVersionMigration(uint256 indexed oldTokenId, uint256 indexed newTokenId);
     event OldValidatorRewardsClaimed(uint256 amount);
+    event MetadataAddressChanged(address newAddress);
 
     error CallerNotSenseiStake();
     error CommisionRateTooHigh(uint32 rate);
     error InvalidDepositSignature();
     error InvalidMigrationRecepient();
     error InvalidPublicKey();
+    error MethodNotImplemented();
     error NoMoreValidatorsLoaded();
     error NotAllowedAtCurrentTime();
     error NotEnoughBalance();
@@ -109,6 +108,7 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
         servicesContractImpl = address(new SenseistakeServicesContractV2());
         senseiStakeV1 = SenseiStakeV1(senseistakeV1Address_);
         metadata = SenseistakeMetadata(senseistakeMetadataAddress_);
+        emit MetadataAddressChanged(senseistakeMetadataAddress_);
     }
 
     /// @notice This is the receive function called when a user performs a transfer to this contract address
@@ -142,6 +142,16 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
         emit ValidatorAdded(tokenId_, validatorPubKey_);
         addedValidators[validatorPubKey_] = true;
         validators[tokenId_] = validator;
+    }
+
+    /// @notice Method for changing metadata contract
+    /// @param newAddress_ address of the new metadata contract
+    function setMetadataAddress(address newAddress_) external onlyOwner {
+        metadata = SenseistakeMetadata(newAddress_);
+        if (!metadata.isValid(metadata.getMetadata.selector)) {
+            revert MethodNotImplemented();
+        }
+        emit MetadataAddressChanged(newAddress_);
     }
 
     /// @notice Creates service contract based on implementation
