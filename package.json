@@ -12,6 +12,7 @@
     "senseinode"
   ],
   "scripts": {
+    "cov": "forge coverage --contracts SenseiStakeV2 --report lcov && genhtml lcov.info --branch-coverage --output-dir coverage",
     "test": "npx hardhat test",
     "coverage": "npx hardhat coverage",
     "lint": "eslint test/*.js",

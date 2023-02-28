@@ -8,8 +8,8 @@ import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {SenseistakeServicesContractV2} from "./SenseistakeServicesContractV2.sol";
-import {SenseistakeServicesContract} from "./SenseistakeServicesContract.sol";
+import {SenseistakeServicesContractV2 as SenseistakeServicesContract} from "./SenseistakeServicesContractV2.sol";
+import {SenseistakeServicesContract as SenseistakeServicesContractV1} from "./SenseistakeServicesContract.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {SenseiStake as SenseiStakeV1} from "./SenseiStake.sol";
 import {SenseistakeMetadata} from "./SenseistakeMetadata.sol";
@@ -104,7 +104,7 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
         }
         commissionRate = commissionRate_;
         depositContractAddress = ethDepositContractAddress_;
-        servicesContractImpl = address(new SenseistakeServicesContractV2());
+        servicesContractImpl = address(new SenseistakeServicesContract());
         senseiStakeV1 = SenseiStakeV1(senseistakeV1Address_);
         metadata = SenseistakeMetadata(senseistakeMetadataAddress_);
         emit MetadataAddressChanged(senseistakeMetadataAddress_);
@@ -286,8 +286,8 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
         }
         emit NFTReceived(tokenId_);
 
-        SenseistakeServicesContract serviceContract =
-            SenseistakeServicesContract(payable(senseiStakeV1.getServiceContractAddress(tokenId_)));
+        SenseistakeServicesContractV1 serviceContract =
+            SenseistakeServicesContractV1(payable(senseiStakeV1.getServiceContractAddress(tokenId_)));
 
         // check that exit date has elapsed (because we cannot do endOperatorServices otherwise)
         if (block.timestamp < serviceContract.exitDate()) {
@@ -334,7 +334,7 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
             revert NotOwner();
         }
         address proxy = Clones.predictDeterministicAddress(servicesContractImpl, bytes32(tokenId_));
-        SenseistakeServicesContractV2 serviceContract = SenseistakeServicesContractV2(payable(proxy));
+        SenseistakeServicesContract serviceContract = SenseistakeServicesContract(payable(proxy));
         serviceContract.withdrawTo(msg.sender);
     }
 
@@ -351,7 +351,7 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
     /// @return Token uri of the tokenId provided
     function tokenURI(uint256 tokenId_) public view override(ERC721) returns (string memory) {
         address proxy = Clones.predictDeterministicAddress(servicesContractImpl, bytes32(tokenId_));
-        SenseistakeServicesContractV2 serviceContract = SenseistakeServicesContractV2(payable(proxy));
+        SenseistakeServicesContract serviceContract = SenseistakeServicesContract(payable(proxy));
         return metadata.getMetadata(
             Strings.toString(tokenId_),
             Strings.toString(serviceContract.createdAt()),
