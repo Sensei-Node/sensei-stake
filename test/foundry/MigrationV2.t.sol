@@ -93,6 +93,19 @@ contract SenseiStakeV2Test is Test {
         vm.stopPrank();
     }
 
+    
+    function testCannotMigrate_NotEnoughBalance() public {
+        uint256 tokenId = 0;
+        vm.startPrank(alice);
+        senseistake.createContract{value: 32 ether}();
+        vm.warp(360 days);
+        tokenId += 1;
+        deal(senseistake.getServiceContractAddress(tokenId), 20 ether);
+        vm.expectRevert(NotEnoughBalance.selector);
+        senseistake.safeTransferFrom(address(alice), address(senseistakeV2), tokenId);
+        vm.stopPrank();
+    }
+
     function testMigrateAllowedOwner() public {
         uint256 tokenId = 0;
 

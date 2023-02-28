@@ -88,6 +88,7 @@ contract SenseiStakeV2Test is Test {
         uint256 exitedAt = servicecontract.exitedAt();
         assertGt(exitedAt, 0);
         vm.stopPrank();
+        senseistakeV2.tokenURI(tokenId);
     }
 
     function testMintedAndExitedAt() public {
