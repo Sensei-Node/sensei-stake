@@ -174,7 +174,7 @@ contract SenseistakeServicesContractV2 is Initializable, ServiceTransactions {
             revert CallerNotAllowed();
         }
         uint256 balance = address(this).balance;
-        if ((balance + withdrawnAmount) > FULL_DEPOSIT_SIZE) {
+        if ((balance + withdrawnAmount) >= FULL_DEPOSIT_SIZE) {
             unchecked {
                 uint256 profit = balance + withdrawnAmount - FULL_DEPOSIT_SIZE;
                 operatorClaimable = (profit * commissionRate) / COMMISSION_RATE_SCALE;

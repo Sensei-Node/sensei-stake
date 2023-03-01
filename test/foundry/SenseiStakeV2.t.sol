@@ -96,7 +96,7 @@ contract SenseiStakeV2Test is Test {
         uint256 tokenId = senseistakeV2.mintValidator{value: 32 ether}();
         address scaddr = senseistakeV2.getServiceContractAddress(tokenId);
         SenseistakeServicesContract sscc = SenseistakeServicesContract(payable(scaddr));
-        deal(senseistakeV2.getServiceContractAddress(tokenId), 33 ether);
+        deal(senseistakeV2.getServiceContractAddress(tokenId), 32 ether);
         assertEq(sscc.createdAt(), block.timestamp); // minted at this block.timestamp
         vm.warp(1 days);
         senseistakeV2.withdraw(tokenId);

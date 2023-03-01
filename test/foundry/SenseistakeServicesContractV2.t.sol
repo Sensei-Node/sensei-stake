@@ -174,6 +174,24 @@ contract SenseistakeServicesContractV2Test is Test, ServiceTransactions {
         emit SubmitTransaction(1, "Testing Get Depositor Address");
         sscc.submitTransaction(transaction, "Testing Get Depositor Address");
 
+        Operation memory transaction2 =
+            Operation(address(depositContract), 0, abi.encodeWithSignature("whitelisted(address)", alice));
+        vm.expectEmit(true, true, false, false);
+        emit SubmitTransaction(2, "Testing 2");
+        sscc.submitTransaction(transaction2, "Testing 2");
+
+        vm.startPrank(alice);
+        vm.expectEmit(true, false, false, false);
+        emit ConfirmTransaction(1);
+        sscc.confirmTransaction(1);
+        vm.stopPrank();
+
+        vm.expectRevert(abi.encodeWithSelector(PreviousValidTransactionNotExecuted.selector, 0));
+        sscc.executeTransaction(1);
+
+        vm.expectRevert(TransactionNotConfirmed.selector);
+        sscc.executeTransaction(0);
+
         vm.startPrank(alice);
         vm.expectEmit(true, false, false, false);
         emit ConfirmTransaction(0);
@@ -192,15 +210,19 @@ contract SenseistakeServicesContractV2Test is Test, ServiceTransactions {
         emit SubmitTransaction(1, "Testing Get Depositor Address");
         sscc.submitTransaction(transaction, "Testing Get Depositor Address");
 
-        // vm.startPrank(alice);
-        // vm.expectEmit(true, false, false, false);
-        // emit ConfirmTransaction(0);
-        // sscc.confirmTransaction(0);
-        // vm.stopPrank();
+        Operation memory transaction2 =
+            Operation(address(depositContract), 0, abi.encodeWithSignature("whitelist(address)", alice));
+        vm.expectEmit(true, true, false, false);
+        emit SubmitTransaction(2, "Testing 2");
+        sscc.submitTransaction(transaction2, "Testing 2");
 
         vm.expectEmit(true, false, false, false);
         emit CancelTransaction(0);
         sscc.cancelTransaction(0);
+
+        vm.expectEmit(true, false, false, false);
+        emit CancelTransaction(1);
+        sscc.cancelTransaction(1);
     }
 
     // only the operator can execute transaction confirmed by user
@@ -224,5 +246,65 @@ contract SenseistakeServicesContractV2Test is Test, ServiceTransactions {
 
         vm.expectRevert(TransactionAlreadyExecuted.selector);
         sscc.cancelTransaction(0);
+    }
+
+    function testCancelTransaction_Other() public {
+        Operation memory transaction =
+            Operation(address(depositContract), 0, abi.encodeWithSignature("whitelisted(address)", alice));
+        vm.expectEmit(true, true, false, false);
+        emit SubmitTransaction(1, "Testing 1");
+        sscc.submitTransaction(transaction, "Testing 1");
+
+        Operation memory transaction2 =
+            Operation(address(depositContract), 0, abi.encodeWithSignature("whitelisted(address)", alice));
+        vm.expectEmit(true, true, false, false);
+        emit SubmitTransaction(2, "Testing 2");
+        sscc.submitTransaction(transaction2, "Testing 2");
+
+        Operation memory transaction3 =
+            Operation(address(depositContract), 0, abi.encodeWithSignature("whitelisted(address)", alice));
+        vm.expectEmit(true, true, false, false);
+        emit SubmitTransaction(3, "Testing 3");
+        sscc.submitTransaction(transaction3, "Testing 3");
+
+        Operation memory transaction4 =
+            Operation(address(depositContract), 0, abi.encodeWithSignature("whitelisted(address)", alice));
+        vm.expectEmit(true, true, false, false);
+        emit SubmitTransaction(4, "Testing 4");
+        sscc.submitTransaction(transaction4, "Testing 4");
+
+        // cancel middle
+        vm.expectEmit(true, false, false, false);
+        emit CancelTransaction(2);
+        sscc.cancelTransaction(2);
+
+        // cancel last
+        vm.expectEmit(true, false, false, false);
+        emit CancelTransaction(3);
+        sscc.cancelTransaction(3);
+
+        // just padding (will become the last)
+        vm.expectEmit(true, false, false, false);
+        emit CancelTransaction(1);
+        sscc.cancelTransaction(1);
+
+        // cancel first
+        vm.expectEmit(true, false, false, false);
+        emit CancelTransaction(0);
+        sscc.cancelTransaction(0);
+    }
+
+    function testGetTxCount() public {
+        uint256 txCount = sscc.getTransactionCount();
+        assertEq(txCount, 0);
+
+        Operation memory transaction =
+            Operation(address(depositContract), 0, abi.encodeWithSignature("whitelisted(address)", alice));
+        vm.expectEmit(true, true, false, false);
+        emit SubmitTransaction(1, "Testing 1");
+        sscc.submitTransaction(transaction, "Testing 1");
+
+        uint256 txCount2 = sscc.getTransactionCount();
+        assertEq(txCount2, 1);
     }
 }
