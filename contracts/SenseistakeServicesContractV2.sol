@@ -6,13 +6,12 @@ import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.s
 import {IDepositContract} from "./interfaces/IDepositContract.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {SenseiStake} from "./SenseiStake.sol";
-import {ServiceTransactions} from "./ServiceTransactions.sol";
 
 /// @title A Service contract for handling SenseiStake Validators
 /// @author Senseinode
 /// @notice A service contract is where the deposits of a client are managed and all validator related tasks are performed. The ERC721 contract is the entrypoint for a client deposit, from there it is separeted into 32ETH chunks and then sent to different service contracts.
 /// @dev This contract is the implementation for the proxy factory clones that are made on ERC721 contract function (createContract) (an open zeppelin solution to create the same contract multiple times with gas optimization). The openzeppelin lib: https://docs.openzeppelin.com/contracts/4.x/api/proxy#Clone
-contract SenseistakeServicesContractV2 is Initializable, ServiceTransactions {
+contract SenseistakeServicesContractV2 is Initializable {
     using Address for address payable;
 
     /// @notice Used in conjuction with `COMMISSION_RATE_SCALE` for determining service fees
@@ -106,47 +105,6 @@ contract SenseistakeServicesContractV2 is Initializable, ServiceTransactions {
         emit ValidatorDeposited(validatorPubKey_);
     }
 
-    /// @notice For canceling a submited transaction if needed
-    /// @dev Only protocol owner can do so
-    /// @param index_: transaction index
-    function cancelTransaction(uint256 index_)
-        external
-        txExists(index_)
-        txValid(index_)
-        txNotExecuted(index_)
-        onlyOperator
-    {
-        _cancelTransaction(index_);
-    }
-
-    /// @notice Token owner or allowed confirmation to execute transaction by protocol owner
-    /// @param index_: transaction index to confirm
-    function confirmTransaction(uint256 index_)
-        external
-        txExists(index_)
-        txValid(index_)
-        txNotConfirmed(index_)
-        txNotExecuted(index_)
-    {
-        if (!SenseiStake(tokenContractAddress).isApprovedOrOwner(msg.sender, tokenId)) {
-            revert CallerNotAllowed();
-        }
-        _confirmTransaction(index_);
-    }
-
-    /// @notice Executes transaction index_ that is valid, confirmed and not executed
-    /// @dev Requires previous transaction valid to be executed
-    /// @param index_: transaction at index to be executed
-    function executeTransaction(uint256 index_)
-        external
-        onlyOperator
-        txExists(index_)
-        txValid(index_)
-        txNotExecuted(index_)
-    {
-        _executeTransaction(index_);
-    }
-
     /// @notice Transfers to operator the claimable amount of eth
     function operatorClaim() external onlyOperator {
         if (operatorClaimable == 0) {
@@ -157,13 +115,6 @@ contract SenseistakeServicesContractV2 is Initializable, ServiceTransactions {
         address _owner = Ownable(tokenContractAddress).owner();
         emit Claim(_owner, claimable);
         payable(_owner).sendValue(claimable);
-    }
-
-    /// @notice Only protocol owner can submit a new transaction
-    /// @param operation_: mapping of operations to be executed (could be just one or batch)
-    /// @param description_: transaction description for easy read
-    function submitTransaction(Operation calldata operation_, string calldata description_) external onlyOperator {
-        _submitTransaction(operation_, description_);
     }
 
     /// @notice Withdraw the deposit to a beneficiary
