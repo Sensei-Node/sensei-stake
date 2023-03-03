@@ -19,17 +19,20 @@ contract SenseistakeServicesContractV2 is Initializable {
     /// @return commissionRate the commission rate
     uint32 public commissionRate;
 
-    /// @notice The address for being able to deposit to the ethereum deposit contract
-    /// @return depositContractAddress deposit contract address
-    address public depositContractAddress;
-
     /// @notice Used for determining when a validator has ended (balance withdrawn from service contract too)
-    /// @return exited block timestamp at which the user has withdrawn all from validator
-    uint256 public exitedAt;
+    /// @return exitedAt block timestamp at which the user has withdrawn all from validator
+    uint64 public exitedAt;
 
     /// @notice Used for determining when the service contract was created
     /// @return createdAt block timestamp at which the contract was created
-    uint256 public createdAt;
+    uint64 public createdAt;
+
+    /// @notice Scale for getting the commission rate (service fee)
+    uint32 private constant COMMISSION_RATE_SCALE = 1_000_000;
+
+    /// @notice The address for being able to deposit to the ethereum deposit contract
+    /// @return depositContractAddress deposit contract address
+    address public depositContractAddress;
 
     /// @notice The amount of eth the operator can claim
     /// @return state the operator claimable amount (in eth)
@@ -46,9 +49,6 @@ contract SenseistakeServicesContractV2 is Initializable {
     /// @notice The amount of eth in wei that owner has withdrawn
     /// @return withdrawnAmount amount withdrawn by owner given that ETH validator withdrawals are available after shanghai
     uint256 public withdrawnAmount;
-
-    /// @notice Scale for getting the commission rate (service fee)
-    uint32 private constant COMMISSION_RATE_SCALE = 1_000_000;
 
     /// @notice Prefix of eth1 address for withdrawal credentials
     uint96 private constant ETH1_ADDRESS_WITHDRAWAL_PREFIX = uint96(0x010000000000000000000000);
@@ -101,7 +101,7 @@ contract SenseistakeServicesContractV2 is Initializable {
             depositSignature_,
             depositDataRoot_
         );
-        createdAt = block.timestamp;
+        createdAt = uint64(block.timestamp);
         emit ValidatorDeposited(validatorPubKey_);
     }
 
@@ -130,8 +130,7 @@ contract SenseistakeServicesContractV2 is Initializable {
                 uint256 profit = balance + withdrawnAmount - FULL_DEPOSIT_SIZE;
                 operatorClaimable = (profit * commissionRate) / COMMISSION_RATE_SCALE;
             }
-            // TODO: validar esta condicion, si no hay que poner llamada externa
-            exitedAt = block.timestamp;
+            exitedAt = uint64(block.timestamp);
         }
         uint256 amount = balance - operatorClaimable;
         withdrawnAmount += amount;
