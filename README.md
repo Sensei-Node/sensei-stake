@@ -69,3 +69,38 @@ you can use tags to deploy diferent part of the deploy --tags XXX
 ## Complete diagram of all process
 ![Complete Diagram - SenseiStake.drawio.png](readme_assets/diagramaUIsenseistakeNFT.png)
 
+# Sensei Stake V2
+
+## general
+
+This new version add the functionality related to the withdrawals. This allows user to withdraw his stake. If the user has a withdrawal credentials with 0x01 could withdraw his staked + rewards. 
+We make a new version to allow this new functionality. 
+
+### nft owner users
+
+For the existing users, they have to send the token to the new contract in order to be updated to the new version. The new version prepares all the necessary to give the user a new nft in the new versión. 
+<b>This process must be done after 6 month from the nft minting.</b> 
+
+The internal process is the following : 
+1. The user send the nft to the contract. 
+2. The SenseiStakeV2 reveive the nft. 
+3. Check the date is after the exitDate from the service contract v1
+4. Call the endOperatorServices in Sensei Stake V1 --> Service Contract V1. 
+     - Make the followings checks: 
+       - Check the balance of Service contract V1
+       - Validator is active
+       - now < exitDate
+       - check msg.sender is the contractAddress or the onwer of the token
+     - The validatorActive in the v1 contract is set to false
+     - Calculate the operatorClaimable
+5. Calculate the rewards to which the user is entitled(all the balance - 32 eth), and send to the user
+6. Mint new validator in the SenseiStakeV2 contract to the user 
+
+
+## new user 
+
+For the new user, they have to mint the nft in SenseiStakeV2 with 32 eth. The process is the same as the SenseiStakeV1. 
+
+
+
+
