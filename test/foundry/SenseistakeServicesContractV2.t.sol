@@ -57,6 +57,7 @@ contract SenseistakeServicesContractV2Test is Test {
     }
 
     function testCannotWithdraw(address caller) public {
+        vm.assume(caller != senseistakeV2.owner());
         vm.startPrank(caller);
         vm.expectRevert(CallerNotAllowed.selector);
         sscc.withdrawTo(caller);

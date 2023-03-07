@@ -6,7 +6,6 @@ import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
-import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {SenseistakeServicesContractV2 as SenseistakeServicesContract} from "./SenseistakeServicesContractV2.sol";
 import {SenseistakeServicesContract as SenseistakeServicesContractV1} from "./SenseistakeServicesContract.sol";
@@ -18,7 +17,7 @@ import {SenseistakeMetadata} from "./SenseistakeMetadata.sol";
 /// @author Senseinode
 /// @notice Serves as entrypoint for SenseiStake
 /// @dev Serves as entrypoint for creating service contracts, depositing, withdrawing and dealing with non fungible token. Inherits the OpenZepplin ERC721 and Ownable implentation
-contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
+contract SenseiStakeV2 is ERC721, Ownable {
     using Address for address;
     using Address for address payable;
     using Counters for Counters.Counter;
@@ -276,11 +275,7 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
     /// @param from_: owner of the tokenId_
     /// @param tokenId_: token id of the NFT transfered
     /// @return selector must return its Solidity selector to confirm the token transfer.
-    function onERC721Received(address, address from_, uint256 tokenId_, bytes calldata)
-        external
-        override
-        returns (bytes4)
-    {
+    function onERC721Received(address, address from_, uint256 tokenId_, bytes calldata) external returns (bytes4) {
         if (msg.sender != address(senseiStakeV1)) {
             revert CallerNotSenseiStake();
         }
@@ -300,11 +295,6 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
         // get withdrawable amount so that we determine what to do
         uint256 withdrawable = serviceContract.getWithdrawableAmount();
 
-        // TODO: this is impossible to reach with the condition check msg.sender != address(senseiStakeV1)
-        // if (from_ == address(0)) {
-        //     revert InvalidMigrationRecepient();
-        // }
-
         // retrieve eth from old service contract
         senseiStakeV1.withdraw(tokenId_);
 
@@ -323,7 +313,7 @@ contract SenseiStakeV2 is ERC721, IERC721Receiver, Ownable {
         uint256 newTokenId = this.mintValidatorTo{value: FULL_DEPOSIT_SIZE}(from_);
         emit ValidatorVersionMigration(tokenId_, newTokenId);
 
-        return IERC721Receiver.onERC721Received.selector;
+        return this.onERC721Received.selector;
     }
 
     /// @notice Performs withdraw of balance in service contract
