@@ -82,8 +82,8 @@ For the existing users, they have to send the token to the new contract in order
 <b>This process must be done after 6 month from the nft minting.</b> 
 
 The internal process is the following : 
-1. The user send the nft to the contract. 
-2. The SenseiStakeV2 reveive the nft. 
+1. The user send the nft to the SenseiStakeV2 contract. 
+2. The SenseiStakeV2 receive the nft. 
 3. Check the date is after the exitDate from the service contract v1
 4. Call the endOperatorServices in Sensei Stake V1 --> Service Contract V1. 
      - Make the followings checks: 
@@ -94,7 +94,13 @@ The internal process is the following :
      - The validatorActive in the v1 contract is set to false
      - Calculate the operatorClaimable
 5. Calculate the rewards to which the user is entitled(all the balance - 32 eth), and send to the user
-6. Mint new validator in the SenseiStakeV2 contract to the user 
+6. Call the SenseiStakeV1.withdraw 
+     - burn the NFT token in the V1
+7. Call the withdrawTo in the ServiceContractV1
+     - Checks: msg.sender == SenseiStakeV1 and Validator is active
+     - Send the (address(this).balance - operatorClaimable) amount to the SenseiStakeV2
+8. Calculate the rewards and send to the user. 
+9. Mint new validator in the SenseiStakeV2 contract on behalf of user. The user is the owner of the new nft. 
 
 
 ## new user 
