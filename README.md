@@ -93,14 +93,13 @@ The internal process is the following :
        - check msg.sender is the contractAddress or the onwer of the token
      - The validatorActive in the v1 contract is set to false
      - Calculate the operatorClaimable
-5. Calculate the rewards to which the user is entitled(all the balance - 32 eth), and send to the user
-6. Call the SenseiStakeV1.withdraw 
+5. Call the SenseiStakeV1.withdraw 
      - burn the NFT token in the V1
-7. Call the withdrawTo in the ServiceContractV1
+6. Call the withdrawTo in the ServiceContractV1
      - Checks: msg.sender == SenseiStakeV1 and Validator is active
      - Send the (address(this).balance - operatorClaimable) amount to the SenseiStakeV2
-8. Calculate the rewards and send to the user. 
-9. Mint new validator in the SenseiStakeV2 contract on behalf of user. The user is the owner of the new nft. 
+7. Calculate the rewards and send to the user. 
+8. Mint new validator in the SenseiStakeV2 contract on behalf of user. The user is the owner of the new nft. 
 
 
 ## new user 
