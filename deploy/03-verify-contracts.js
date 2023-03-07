@@ -15,15 +15,18 @@ module.exports = async ({
     let ethDepositContractAddress, senseiStakeV1Address, senseistakeMetadataAddress;
     try {
         ethDepositContractAddress = await deployments.get("DepositContract");
-        senseiStakeV1Address = await deployments.get("SenseiStake");
         senseistakeMetadataAddress = await deployments.get("SenseistakeMetadata");
     } catch (err) {
         ethDepositContractAddress = deploymentVariables.depositContractAddress[network.config.chainId] ?
             { address: deploymentVariables.depositContractAddress[network.config.chainId] } : { address: '0x00000000219ab540356cBB839Cbe05303d7705Fa' }
-        senseiStakeV1Address = deploymentVariables.senseiStakeV1Address[network.config.chainId] ?
-            { address: deploymentVariables.senseiStakeV1Address[network.config.chainId] } : { address: '0x2421A0aF8baDfAe12E1c1700E369747D3DB47B09' }
         senseistakeMetadataAddress = deploymentVariables.senseistakeMetadataAddress[network.config.chainId] ?
             { address: deploymentVariables.senseistakeMetadataAddress[network.config.chainId] } : { address: '' }
+    }
+    try {
+        senseiStakeV1Address = await deployments.get("SenseiStake");
+    } catch (err) {
+        senseiStakeV1Address = deploymentVariables.senseiStakeV1Address[network.config.chainId] ?
+            { address: deploymentVariables.senseiStakeV1Address[network.config.chainId] } : { address: '0x2421A0aF8baDfAe12E1c1700E369747D3DB47B09' }
     }
     if (['testnet', 'mainnet'].includes(network.config.type) && process.env.ETHERSCAN_KEY) {
         console.log('WAITING 10 seconds')

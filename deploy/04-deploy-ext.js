@@ -7,12 +7,12 @@ const sleep = (milliseconds) => {
 
 module.exports = async ({
     deployments,
-    upgrades, 
+    upgrades,
     run
 }) => {
     const { deploy, log } = deployments;
     const [deployer] = await ethers.getSigners();
-    
+
     const erc721Deployment = await deployments.get('SenseiStake')
 
     const args = [erc721Deployment.address];
@@ -33,4 +33,4 @@ module.exports = async ({
     }
 }
 
-module.exports.tags = ["all", "extSenseiStake"]
+module.exports.tags = ["extSenseiStake"]
