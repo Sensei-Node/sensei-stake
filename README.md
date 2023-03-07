@@ -105,20 +105,35 @@ The internal process is the following :
 ![MigrationToV2](readme_assets/MigrationToV2.png)
 
 Events call in the migration:
-Approval (index_topic_1 address owner, index_topic_2 address approved, index_topic_3 uint256 tokenId)
-Transfer (index_topic_1 address from, index_topic_2 address to, index_topic_3 uint256 tokenId)
-NFTReceived (index_topic_1 uint256 tokenId)
-ServiceEnd ()
-Approval (index_topic_1 address owner, index_topic_2 address approved, index_topic_3 uint256 tokenId)
-Transfer (index_topic_1 address from, index_topic_2 address to, index_topic_3 uint256 tokenId)
-Withdrawal (index_topic_1 address to, uint256 value)
-OldValidatorRewardsClaimed (uint256 amount)
-DepositEvent (bytes pubkey, bytes withdrawal_credentials, bytes amount, bytes signature, bytes index)
-ValidatorDeposited (bytes pubkey)
-Initialized (uint8 version)
-ValidatorMinted (uint256 tokenIdServiceContract)
-Transfer (index_topic_1 address from, index_topic_2 address to, index_topic_3 uint256 tokenId)
-ValidatorVersionMigration (index_topic_1 uint256 oldTokenId, index_topic_2 uint256 newTokenId)
+
+`Approval (index_topic_1 address owner, index_topic_2 address approved, index_topic_3 uint256 tokenId)` 
+
+`Transfer (index_topic_1 address from, index_topic_2 address to, index_topic_3 uint256 tokenId)` 
+
+`NFTReceived (index_topic_1 uint256 tokenId)`
+
+`ServiceEnd ()`
+
+`Approval (index_topic_1 address owner, index_topic_2 address approved, index_topic_3 uint256 tokenId)`
+
+`Transfer (index_topic_1 address from, index_topic_2 address to, index_topic_3 uint256 tokenId)`
+
+`Withdrawal (index_topic_1 address to, uint256 value)`
+
+`OldValidatorRewardsClaimed (uint256 amount)`
+
+`DepositEvent (bytes pubkey, bytes withdrawal_credentials, bytes amount, bytes signature, bytes index)`
+
+`ValidatorDeposited (bytes pubkey)`
+
+`Initialized (uint8 version)`
+
+`ValidatorMinted (uint256 tokenIdServiceContract)`
+
+`Transfer (index_topic_1 address from, index_topic_2 address to, index_topic_3 uint256 tokenId)`
+
+`ValidatorVersionMigration (index_topic_1 uint256 oldTokenId, index_topic_2 uint256 newTokenId)`
+
 
 ## new user
 
