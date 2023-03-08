@@ -76,10 +76,18 @@ you can use tags to deploy diferent part of the deploy --tags XXX
 This new version add the functionality related to the withdrawals. This allows user to withdraw his stake. If the user has a withdrawal credentials with 0x01 could withdraw his staked + rewards.
 We make a new version to allow this new functionality.
 
-### nft owner users
+
+### How to migrate my V1 nft to V2
 
 For the existing users, they have to send the token to the new contract in order to be updated to the new version. The new version prepares all the necessary to give the user a new nft in the new versión.
 <b>This process must be done after 6 month from the nft minting.</b>
+
+The general process is the following :
+
+1. Send nft to the V2 contract. 
+2. Stop the validator in the old contract (burn the nft v1)
+3. Send the eths from the V1 to the V2
+4. Create the nft V2 
 
 The internal process is the following :
 
@@ -135,6 +143,12 @@ Events call in the migration:
 `ValidatorVersionMigration (index_topic_1 uint256 oldTokenId, index_topic_2 uint256 newTokenId)`
 
 
-## new user
+### How to create a validator in the V2 (not a existing validator)
 
 For the new user, they have to mint the nft in SenseiStakeV2 with 32 eth. The process is the same as the SenseiStakeV1.
+
+
+### How to withdraw the funds of a validator
+
+
+ 
