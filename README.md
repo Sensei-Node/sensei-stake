@@ -94,7 +94,7 @@ The general process is the following :
 
 The internal process is the following :
 
-1. The user send the nft to the SenseiStakeV2 contract.
+1. The user send the nft to the SenseiStakeV2 contract.(`SenseiStakeV1.safeTransferFrom(nftOwnerAddress, senseistakeV2Address, tokenId)`)
 2. The SenseiStakeV2 receive the nft.
 3. Check the date is after the exitDate from the service contract v1
 4. Call the endOperatorServices in Sensei Stake V1 --> Service Contract V1.
@@ -149,9 +149,18 @@ Events call in the migration:
 ### How to create a validator in the V2 (not a existing validator)
 
 For the new user, they have to mint the nft in SenseiStakeV2 with 32 eth. The process is the same as the SenseiStakeV1.
+The method of the SenseiStakeV2 is `mintValidator()`
+
+
+### How to make partials withdraws in V2
+
+En cualquier momento el usuario puede claimear lo que sea que el contrato de servicio asociado a su NFT posea. Se hace withdraw haciendo llamado a la funcion `withdraw(tokenId)` . El retiro parcial no cobra comisiones: no se cobra ninguna comision sino hasta que se retire mas de lo que se depositó (es decir 32 eth)
+
+Sugerencias para frontend:
+
+- No permitir retiro si el balance del service contract == 0
 
 
 ### How to withdraw the funds of a validator
 
-
- 
+It's the same as the partial withdraw but you have to do the voluntary-exit + withdraw (senseinode do) to the 32 eth come back from the deposit contrat to the service contract of this validator. This process set the exit date and the NFT change his image to a one that reference to the exit. 
