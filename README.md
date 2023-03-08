@@ -80,7 +80,10 @@ We make a new version to allow this new functionality.
 ### How to migrate my V1 nft to V2
 
 For the existing users, they have to send the token to the new contract in order to be updated to the new version. The new version prepares all the necessary to give the user a new nft in the new versión.
-<b>This process must be done after 6 month from the nft minting.</b>
+
+<b style="color: red">Important NOTE 1 </b> : This process must be done after 6 month from the nft minting.
+
+<b style="color: red">Important NOTE 2</b> : It is necessary to Senseinode calls the [voluntary-exit](https://lighthouse-book.sigmaprime.io/voluntary-exit.html) + withdraw before the migration. This proccess only will be possible after the [Capella hardfork](https://notes.ethereum.org/@launchpad/withdrawals-faq#Q-What-is-ShanghaiCapella), which allow the withdrawal address (service contract of the user) receive the 32 eth and the rewards.
 
 The general process is the following :
 
