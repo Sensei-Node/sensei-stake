@@ -27,14 +27,9 @@ const deploymentVariables = {
     waitConfirmations: waitConfirmations[network.config.type],
 }
 
-const mappingChainId = {
-    mainnet: 1,
-    goerli: 5
-}
-
 // const forkVersion = {
 //     mainnet: '00000000',
 //     goerli: '00001020'
 // }
 
-module.exports = { deploymentVariables, mappingChainId, waitConfirmations }
+module.exports = { deploymentVariables, waitConfirmations }

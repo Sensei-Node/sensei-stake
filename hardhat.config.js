@@ -49,6 +49,13 @@ module.exports = {
       type: 'hardhat',
       name: 'hardhat'
     },
+    polyedge: {
+      url: "http://18.219.1.98:8545",
+      accounts: [process.env.ACCOUNT_PK_GOERLI, process.env.ACCOUNT_PK_GOERLI_ALICE, process.env.ACCOUNT_PK_GOERLI_BOB],
+      chainId: 100,
+      type: 'testnet',
+      name: 'polyedge'
+    },
     goerli: {
       url: process.env.GOERLI_RPC,
       accounts: [process.env.ACCOUNT_PK_GOERLI, process.env.ACCOUNT_PK_GOERLI_ALICE, process.env.ACCOUNT_PK_GOERLI_BOB],
