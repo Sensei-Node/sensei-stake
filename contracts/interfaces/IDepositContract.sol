@@ -11,18 +11,9 @@
 
 pragma solidity ^0.8.0;
 
-// This interface is designed to be compatible with the Vyper version.
-/// @notice This is the Ethereum 2.0 deposit contract interface.
-/// For more information see the Phase 0 specification under https://github.com/ethereum/eth2.0-specs
 interface IDepositContract {
     /// @notice A processed deposit event.
-    event DepositEvent(
-        bytes pubkey,
-        bytes withdrawal_credentials,
-        bytes amount,
-        bytes signature,
-        bytes index
-    );
+    event DepositEvent(bytes pubkey, bytes withdrawal_credentials, bytes amount, bytes signature, bytes index);
 
     /// @notice Submit a Phase 0 DepositData object.
     /// @param pubkey A BLS12-381 public key.
@@ -31,9 +22,10 @@ interface IDepositContract {
     /// @param deposit_data_root The SHA-256 hash of the SSZ-encoded DepositData object.
     /// Used as a protection against malformed input.
     function deposit(
-        bytes calldata pubkey,
-        bytes calldata withdrawal_credentials,
-        bytes calldata signature,
-        bytes32 deposit_data_root
-    ) external payable;
+        bytes memory pubkey,
+        bytes memory withdrawal_credentials,
+        bytes memory signature,
+        bytes32 deposit_data_root,
+        uint256 stake_amount
+    ) external;
 }

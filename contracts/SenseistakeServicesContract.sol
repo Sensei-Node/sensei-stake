@@ -48,8 +48,7 @@ contract SenseistakeServicesContract is Initializable, ServiceTransactions {
     uint32 private constant COMMISSION_RATE_SCALE = 1_000_000;
 
     /// @notice Prefix of eth1 address for withdrawal credentials
-    uint96 private constant ETH1_ADDRESS_WITHDRAWAL_PREFIX =
-        uint96(0x010000000000000000000000);
+    uint96 private constant ETH1_ADDRESS_WITHDRAWAL_PREFIX = uint96(0x010000000000000000000000);
 
     /// @notice Fixed amount of the deposit
     uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
@@ -104,13 +103,12 @@ contract SenseistakeServicesContract is Initializable, ServiceTransactions {
         exitDate = exitDate_;
         tokenContractAddress = msg.sender;
         depositContractAddress = ethDepositContractAddress_;
-        IDepositContract(depositContractAddress).deposit{
-            value: FULL_DEPOSIT_SIZE
-        }(
+        IDepositContract(depositContractAddress).deposit(
             validatorPubKey_,
             abi.encodePacked(ETH1_ADDRESS_WITHDRAWAL_PREFIX, address(this)),
             depositSignature_,
-            depositDataRoot_
+            depositDataRoot_,
+            FULL_DEPOSIT_SIZE
         );
         validatorActive = true;
         emit ValidatorDeposited(validatorPubKey_);
@@ -138,12 +136,7 @@ contract SenseistakeServicesContract is Initializable, ServiceTransactions {
         txNotConfirmed(index_)
         txNotExecuted(index_)
     {
-        if (
-            !SenseiStake(tokenContractAddress).isApprovedOrOwner(
-                msg.sender,
-                tokenId
-            )
-        ) {
+        if (!SenseiStake(tokenContractAddress).isApprovedOrOwner(msg.sender, tokenId)) {
             revert CallerNotAllowed();
         }
         _confirmTransaction(index_);
@@ -163,14 +156,9 @@ contract SenseistakeServicesContract is Initializable, ServiceTransactions {
             revert NotAllowedAtCurrentTime();
         }
         if (
-            (msg.sender != tokenContractAddress) &&
-            (
-                !SenseiStake(tokenContractAddress).isApprovedOrOwner(
-                    msg.sender,
-                    tokenId
-                )
-            ) &&
-            (msg.sender != Ownable(tokenContractAddress).owner())
+            (msg.sender != tokenContractAddress)
+                && (!SenseiStake(tokenContractAddress).isApprovedOrOwner(msg.sender, tokenId))
+                && (msg.sender != Ownable(tokenContractAddress).owner())
         ) {
             revert CallerNotAllowed();
         }
@@ -178,8 +166,7 @@ contract SenseistakeServicesContract is Initializable, ServiceTransactions {
         if (balance > FULL_DEPOSIT_SIZE) {
             unchecked {
                 uint256 profit = balance - FULL_DEPOSIT_SIZE;
-                uint256 finalCommission = (profit * commissionRate) /
-                    COMMISSION_RATE_SCALE;
+                uint256 finalCommission = (profit * commissionRate) / COMMISSION_RATE_SCALE;
                 operatorClaimable += finalCommission;
             }
         }
@@ -214,10 +201,7 @@ contract SenseistakeServicesContract is Initializable, ServiceTransactions {
     /// @notice Only protocol owner can submit a new transaction
     /// @param operation_: mapping of operations to be executed (could be just one or batch)
     /// @param description_: transaction description for easy read
-    function submitTransaction(
-        Operation calldata operation_,
-        string calldata description_
-    ) external onlyOperator {
+    function submitTransaction(Operation calldata operation_, string calldata description_) external onlyOperator {
         _submitTransaction(operation_, description_);
     }
 

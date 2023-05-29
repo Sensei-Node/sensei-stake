@@ -49,6 +49,14 @@ module.exports = {
       type: 'hardhat',
       name: 'hardhat'
     },
+    chiado: {
+      url: "https://rpc.chiadochain.net",
+      accounts: [process.env.ACCOUNT_PK_GOERLI, process.env.ACCOUNT_PK_GOERLI_ALICE, process.env.ACCOUNT_PK_GOERLI_BOB],
+      chainId: 10200,
+      gasPrice: 1000000000,
+      type: 'testnet',
+      name: 'chiado'
+    },
     polyedge: {
       url: "http://18.219.1.98:8545",
       accounts: [process.env.ACCOUNT_PK_GOERLI, process.env.ACCOUNT_PK_GOERLI_ALICE, process.env.ACCOUNT_PK_GOERLI_BOB],
@@ -94,8 +102,40 @@ module.exports = {
     runOnCompile: true,
   },
 
+  // etherscan: {
+  //   apiKey: process.env.ETHERSCAN_KEY
+  // },
+
   etherscan: {
-    apiKey: process.env.ETHERSCAN_KEY
+    customChains: [
+      {
+        network: "chiado",
+        chainId: 10200,
+        urls: {
+          //Blockscout
+          apiURL: "https://blockscout.com/gnosis/chiado/api",
+          browserURL: "https://blockscout.com/gnosis/chiado",
+        },
+      },
+      {
+        network: "gnosis",
+        chainId: 100,
+        urls: {
+          // 3) Select to what explorer verify the contracts
+          // Gnosisscan
+          apiURL: "https://api.gnosisscan.io/api",
+          browserURL: "https://gnosisscan.io/",
+          // Blockscout
+          //apiURL: "https://blockscout.com/xdai/mainnet/api",
+          //browserURL: "https://blockscout.com/xdai/mainnet",
+        },
+      },
+    ],
+    apiKey: {
+      mainnet: process.env.ETHERSCAN_KEY,
+      chiado: "your key",
+      gnosis: "your key",
+    },
   },
 
   mocha: {

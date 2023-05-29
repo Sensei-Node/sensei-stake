@@ -50,14 +50,10 @@ contract SenseistakeServicesContractV2 is Initializable {
     /// @return withdrawnAmount amount withdrawn by owner given that ETH validator withdrawals are available after shanghai
     uint256 public withdrawnAmount;
 
-    /// @notice Prefix of eth1 address for withdrawal credentials
-    uint96 private constant ETH1_ADDRESS_WITHDRAWAL_PREFIX = uint96(0x010000000000000000000000);
-
     /// @notice Fixed amount of the deposit
-    uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
+    uint256 private constant FULL_DEPOSIT_SIZE = 1 ether;
 
     event Claim(address indexed receiver, uint256 amount);
-    event ValidatorDeposited(bytes pubkey);
     event Withdrawal(address indexed to, uint256 value);
 
     error CallerNotAllowed();
@@ -79,30 +75,17 @@ contract SenseistakeServicesContractV2 is Initializable {
     /// @dev Sets the commission rate, the operator address, operator data commitment, the tokenId and creates the validator
     /// @param commissionRate_  The service commission rate
     /// @param tokenId_ The token id that is used
-    /// @param validatorPubKey_ The validator public key
-    /// @param depositSignature_ The deposit_data.json signature
-    /// @param depositDataRoot_ The deposit_data.json data root
     /// @param ethDepositContractAddress_ The ethereum deposit contract address for validator creation
     function initialize(
         uint32 commissionRate_,
         uint256 tokenId_,
-        bytes calldata validatorPubKey_,
-        bytes calldata depositSignature_,
-        bytes32 depositDataRoot_,
         address ethDepositContractAddress_
-    ) external payable initializer {
+    ) external initializer {
         commissionRate = commissionRate_;
         tokenId = tokenId_;
         tokenContractAddress = msg.sender;
         depositContractAddress = ethDepositContractAddress_;
-        IDepositContract(depositContractAddress).deposit{value: FULL_DEPOSIT_SIZE}(
-            validatorPubKey_,
-            abi.encodePacked(ETH1_ADDRESS_WITHDRAWAL_PREFIX, address(this)),
-            depositSignature_,
-            depositDataRoot_
-        );
         createdAt = uint64(block.timestamp);
-        emit ValidatorDeposited(validatorPubKey_);
     }
 
     /// @notice Transfers to operator the claimable amount of eth

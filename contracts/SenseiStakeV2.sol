@@ -6,11 +6,10 @@ import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {IDepositContract} from "./interfaces/IDepositContract.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {SenseistakeServicesContractV2 as SenseistakeServicesContract} from "./SenseistakeServicesContractV2.sol";
-import {SenseistakeServicesContract as SenseistakeServicesContractV1} from "./SenseistakeServicesContract.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
-import {SenseiStake as SenseiStakeV1} from "./SenseiStake.sol";
 import {SenseistakeMetadata} from "./SenseistakeMetadata.sol";
 
 /// @title Main contract for handling SenseiStake Services
@@ -30,6 +29,14 @@ contract SenseiStakeV2 is ERC721, Ownable {
         bytes32 depositDataRoot;
     }
 
+    /// @notice Struct that specifies inputs for loading validators via unsafe batch method
+    struct Validators {
+        uint256 tokenId;
+        bytes validatorPubKey;
+        bytes depositSignature;
+        bytes32 depositDataRoot;
+    }
+
     /// @notice For determining if a validator pubkey was already added or not
     mapping(bytes => bool) public addedValidators;
 
@@ -40,6 +47,9 @@ contract SenseiStakeV2 is ERC721, Ownable {
     /// @notice The address for being able to deposit to the ethereum deposit contract
     address public immutable depositContractAddress;
 
+    /// @notice The address of the GNO token contract
+    address public immutable gnoContractAddress;
+
     /// @notice Contract for getting the metadata as base64
     /// @dev stored separately due to contract size restrictions
     SenseistakeMetadata public metadata;
@@ -47,9 +57,6 @@ contract SenseiStakeV2 is ERC721, Ownable {
     /// @notice Template service contract implementation address
     /// @dev It is used for generating clones, using hardhats proxy clone
     address public immutable servicesContractImpl;
-
-    /// @notice Token counter for handling NFT
-    SenseiStakeV1 public immutable senseiStakeV1;
 
     /// @notice Token counter for handling NFT
     Counters.Counter public tokenIdCounter;
@@ -60,14 +67,14 @@ contract SenseiStakeV2 is ERC721, Ownable {
     /// @notice Scale for getting the commission rate (service fee)
     uint32 private constant COMMISSION_RATE_SCALE = 1_000_000;
 
-    /// @notice Fixed amount of the deposit
-    uint256 private constant FULL_DEPOSIT_SIZE = 32 ether;
+    /// @notice Prefix of eth1 address for withdrawal credentials
+    uint96 private constant ETH1_ADDRESS_WITHDRAWAL_PREFIX = uint96(0x010000000000000000000000);
 
-    event ValidatorMinted(uint256 tokenIdServiceContract);
-    event NFTReceived(uint256 indexed tokenId);
+    /// @notice Fixed amount of the deposit
+    uint256 private constant FULL_DEPOSIT_SIZE = 1 ether;
+
     event ValidatorAdded(uint256 indexed tokenId, bytes indexed validatorPubKey);
-    event ValidatorVersionMigration(uint256 indexed oldTokenId, uint256 indexed newTokenId);
-    event OldValidatorRewardsClaimed(uint256 amount);
+    event ValidatorMinted(uint256 tokenIdServiceContract);
     event MetadataAddressChanged(address newAddress);
 
     error CallerNotSenseiStake();
@@ -89,14 +96,13 @@ contract SenseiStakeV2 is ERC721, Ownable {
     /// @param symbol_ The token symbol
     /// @param commissionRate_ The service commission rate
     /// @param ethDepositContractAddress_ The ethereum deposit contract address for validator creation
-    /// @param senseistakeV1Address_ Address of the v1 senseistake contract
     constructor(
         string memory name_,
         string memory symbol_,
         uint32 commissionRate_,
         address ethDepositContractAddress_,
-        address senseistakeV1Address_,
-        address senseistakeMetadataAddress_
+        address senseistakeMetadataAddress_,
+        address gnoContractAddress_
     ) ERC721(name_, symbol_) {
         if (commissionRate_ > (COMMISSION_RATE_SCALE / 2)) {
             revert CommisionRateTooHigh(commissionRate_);
@@ -104,13 +110,10 @@ contract SenseiStakeV2 is ERC721, Ownable {
         commissionRate = commissionRate_;
         depositContractAddress = ethDepositContractAddress_;
         servicesContractImpl = address(new SenseistakeServicesContract());
-        senseiStakeV1 = SenseiStakeV1(senseistakeV1Address_);
+        gnoContractAddress = gnoContractAddress_;
         metadata = SenseistakeMetadata(senseistakeMetadataAddress_);
         emit MetadataAddressChanged(senseistakeMetadataAddress_);
     }
-
-    /// @notice This is the receive function called when a user performs a transfer to this contract address
-    receive() external payable {}
 
     /// @notice Adds validator info to validators mapping
     /// @dev Stores the tokenId and operatorDataCommitment used for generating new service contract
@@ -142,6 +145,22 @@ contract SenseiStakeV2 is ERC721, Ownable {
         validators[tokenId_] = validator;
     }
 
+    /// @notice Adds multiple validators in batch
+    /// @dev It does not check data integrity/validity, use it if completely sure that data input is correct
+    /// @param validators_ array of validators that will be stored
+    function unsafeBatchAddValidator(Validators[] memory validators_) external onlyOwner {
+        for (uint256 i = 0; i < validators_.length;) {
+            addedValidators[validators_[i].validatorPubKey] = true;
+            Validator memory validator = Validator(
+                validators_[i].validatorPubKey, validators_[i].depositSignature, validators_[i].depositDataRoot
+            );
+            validators[validators_[i].tokenId] = validator;
+            unchecked {
+                i++;
+            }
+        }
+    }
+
     /// @notice Method for changing metadata contract
     /// @param newAddress_ address of the new metadata contract
     function setMetadataAddress(address newAddress_) external onlyOwner {
@@ -151,82 +170,19 @@ contract SenseiStakeV2 is ERC721, Ownable {
 
     /// @notice Creates service contract based on implementation
     /// @dev Performs a clone of the implementation contract, a service contract handles logic for managing user deposit, withdraw and validator
-    function mintValidator() external payable returns (uint256) {
-        if (msg.value != FULL_DEPOSIT_SIZE) {
+    function mintValidators(uint256 amount_, address owner_) external {
+        if (amount_ == 0 || amount_ % FULL_DEPOSIT_SIZE != 0) {
             revert ValueSentDifferentThanFullDeposit();
         }
-        // increment tokenid counter
-        tokenIdCounter.increment();
-        uint256 tokenId = tokenIdCounter.current();
-        Validator memory validator = validators[tokenId];
-        // check that validator exists
-        if (validator.validatorPubKey.length == 0) {
-            revert NoMoreValidatorsLoaded();
-        }
-        bytes memory initData = abi.encodeWithSignature(
-            "initialize(uint32,uint256,bytes,bytes,bytes32,address)",
-            commissionRate,
-            tokenId,
-            validator.validatorPubKey,
-            validator.depositSignature,
-            validator.depositDataRoot,
-            depositContractAddress
+        // receive GNO tokens and update balance
+        (bool successTransfer,) = gnoContractAddress.call(
+            abi.encodeWithSignature(
+                "transferFrom(address,address,uint256)", 
+                owner_, address(this), amount_
+            )
         );
-        address proxy = Clones.cloneDeterministic(servicesContractImpl, bytes32(tokenId));
-        (bool success,) = proxy.call{value: msg.value}(initData);
-        require(success, "Proxy init failed");
-
-        emit ValidatorMinted(tokenId);
-
-        // mint the NFT
-        _safeMint(msg.sender, tokenId);
-
-        return tokenId;
-    }
-
-    /// @notice Creates service contract based on implementation and gives NFT ownership to another user
-    /// @dev Performs a clone of the implementation contract, a service contract handles logic for managing user deposit, withdraw and validator
-    /// @param owner_ the address that will receive the minted NFT
-    function mintValidatorTo(address owner_) external payable returns (uint256) {
-        if (msg.value != FULL_DEPOSIT_SIZE) {
-            revert ValueSentDifferentThanFullDeposit();
-        }
-        // increment tokenid counter
-        tokenIdCounter.increment();
-        uint256 tokenId = tokenIdCounter.current();
-        Validator memory validator = validators[tokenId];
-        // check that validator exists
-        if (validator.validatorPubKey.length == 0) {
-            revert NoMoreValidatorsLoaded();
-        }
-        bytes memory initData = abi.encodeWithSignature(
-            "initialize(uint32,uint256,bytes,bytes,bytes32,address)",
-            commissionRate,
-            tokenId,
-            validator.validatorPubKey,
-            validator.depositSignature,
-            validator.depositDataRoot,
-            depositContractAddress
-        );
-        address proxy = Clones.cloneDeterministic(servicesContractImpl, bytes32(tokenId));
-        (bool success,) = proxy.call{value: msg.value}(initData);
-        require(success, "Proxy init failed");
-
-        emit ValidatorMinted(tokenId);
-
-        // mint the NFT
-        _safeMint(owner_, tokenId);
-
-        return tokenId;
-    }
-
-    /// @notice Creates service contract based on implementation
-    /// @dev Performs a clone of the implementation contract, a service contract handles logic for managing user deposit, withdraw and validator
-    function mintMultipleValidators() external payable {
-        if (msg.value == 0 || msg.value % FULL_DEPOSIT_SIZE != 0) {
-            revert ValueSentDifferentThanFullDeposit();
-        }
-        uint256 validators_amount = msg.value / FULL_DEPOSIT_SIZE;
+        require(successTransfer, "GNO tokens transfer failed");
+        uint256 validators_amount = amount_ / FULL_DEPOSIT_SIZE;
         for (uint256 i = 0; i < validators_amount;) {
             // increment tokenid counter
             tokenIdCounter.increment();
@@ -245,14 +201,24 @@ contract SenseiStakeV2 is ERC721, Ownable {
                 validator.depositDataRoot,
                 depositContractAddress
             );
+            // create the service contract
             address proxy = Clones.cloneDeterministic(servicesContractImpl, bytes32(tokenId));
-            (bool success,) = proxy.call{value: FULL_DEPOSIT_SIZE}(initData);
-            require(success, "Proxy init failed");
+            (bool successInit,) = proxy.call(initData);
+            require(successInit, "Proxy init failed");
+
+            // deposit validator
+            IDepositContract(depositContractAddress).deposit(
+                validator.validatorPubKey,
+                abi.encodePacked(ETH1_ADDRESS_WITHDRAWAL_PREFIX, proxy),
+                validator.depositSignature,
+                validator.depositDataRoot,
+                FULL_DEPOSIT_SIZE
+            );
 
             emit ValidatorMinted(tokenId);
 
             // mint the NFT
-            _safeMint(msg.sender, tokenId);
+            _safeMint(owner_, tokenId);
 
             unchecked {
                 ++i;
@@ -268,52 +234,6 @@ contract SenseiStakeV2 is ERC721, Ownable {
     function isApprovedOrOwner(address spender_, uint256 tokenId_) external view returns (bool) {
         address owner = ERC721.ownerOf(tokenId_);
         return (spender_ == owner || isApprovedForAll(owner, spender_) || getApproved(tokenId_) == spender_);
-    }
-
-    /// @notice Accepting NFT reception for migrating contract v1 to v2
-    /// @dev Used for migrating senseistake contract from v1 to v2
-    /// @param from_: owner of the tokenId_
-    /// @param tokenId_: token id of the NFT transfered
-    /// @return selector must return its Solidity selector to confirm the token transfer.
-    function onERC721Received(address, address from_, uint256 tokenId_, bytes calldata) external returns (bytes4) {
-        if (msg.sender != address(senseiStakeV1)) {
-            revert CallerNotSenseiStake();
-        }
-        emit NFTReceived(tokenId_);
-
-        SenseistakeServicesContractV1 serviceContract =
-            SenseistakeServicesContractV1(payable(senseiStakeV1.getServiceContractAddress(tokenId_)));
-
-        // check that exit date has elapsed (because we cannot do endOperatorServices otherwise)
-        if (block.timestamp < serviceContract.exitDate()) {
-            revert NotAllowedAtCurrentTime();
-        }
-
-        // we need to determine service fees and mark service contract as exited
-        senseiStakeV1.endOperatorServices(tokenId_);
-
-        // get withdrawable amount so that we determine what to do
-        uint256 withdrawable = serviceContract.getWithdrawableAmount();
-
-        // retrieve eth from old service contract
-        senseiStakeV1.withdraw(tokenId_);
-
-        // only withdraw available balance to nft owner because mint is not possible
-        if (withdrawable < FULL_DEPOSIT_SIZE) {
-            revert NotEnoughBalance();
-        }
-        uint256 reward = withdrawable - FULL_DEPOSIT_SIZE;
-        emit OldValidatorRewardsClaimed(reward);
-        if (reward > 0) {
-            // if withdrawable is greater than FULL_DEPOSIT_SIZE we give nft owner the excess
-            payable(from_).sendValue(reward);
-        }
-
-        // we can mint new validator to the owner
-        uint256 newTokenId = this.mintValidatorTo{value: FULL_DEPOSIT_SIZE}(from_);
-        emit ValidatorVersionMigration(tokenId_, newTokenId);
-
-        return this.onERC721Received.selector;
     }
 
     /// @notice Performs withdraw of balance in service contract

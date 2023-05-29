@@ -8,32 +8,34 @@ module.exports = async ({
     const [deployer] = await ethers.getSigners();
 
     // deposit contract address
-    let ethDepositContractAddress, senseiStakeV1Address, senseistakeMetadataAddress;
+    let ethDepositContractAddress, senseistakeMetadataAddress;
     try {
         ethDepositContractAddress = await deployments.get("DepositContract");
-        senseistakeMetadataAddress = await deployments.get("SenseistakeMetadata");
         // console.log(`\n --- UTILIZA DEPOSIT CONTRACT PROPIO: ${ethDepositContractAddress.address} --- \n`);
     } catch (err) {
         // console.log('\n --- NO UTILIZA DEPOSIT CONTRACT PROPIO, USA EL DE LA RED --- \n');
         ethDepositContractAddress = deploymentVariables.depositContractAddress[network.config.chainId] ?
             { address: deploymentVariables.depositContractAddress[network.config.chainId] } : { address: '0x00000000219ab540356cBB839Cbe05303d7705Fa' }
+    }
+    try {
+        senseistakeMetadataAddress = await deployments.get("SenseistakeMetadata");
+        // console.log(`\n --- UTILIZA DEPOSIT CONTRACT PROPIO: ${ethDepositContractAddress.address} --- \n`);
+    } catch (err) {
+        // console.log('\n --- NO UTILIZA DEPOSIT CONTRACT PROPIO, USA EL DE LA RED --- \n');
         senseistakeMetadataAddress = deploymentVariables.senseistakeMetadataAddress[network.config.chainId] ?
             { address: deploymentVariables.senseistakeMetadataAddress[network.config.chainId] } : { address: '' }
     }
-    try {
-        senseiStakeV1Address = await deployments.get("SenseiStake");
-    } catch (err) {
-        senseiStakeV1Address = deploymentVariables.senseiStakeV1Address[network.config.chainId] ?
-            { address: deploymentVariables.senseiStakeV1Address[network.config.chainId] } : { address: '0x2421A0aF8baDfAe12E1c1700E369747D3DB47B09' }
-    }
+
     // name, symbol, commissionRate
+    const tName = deploymentVariables.tokenDeployed[network.config.chainId].name
+    const tSymbol = deploymentVariables.tokenDeployed[network.config.chainId].symbol
     const args = [
-        "SenseiStake Ethereum Validator",
-        "SSEV",
+        tName,
+        tSymbol,
         100_000,
         ethDepositContractAddress.address,
-        senseiStakeV1Address.address,
-        senseistakeMetadataAddress.address
+        senseistakeMetadataAddress.address,
+        deploymentVariables.gnoContractAddress[network.config.chainId]
     ];
     const senseistakeERC721 = await deploy("SenseiStakeV2", {
         contract: "SenseiStakeV2",
