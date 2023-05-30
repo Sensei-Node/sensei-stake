@@ -176,10 +176,7 @@ contract SenseiStakeV2 is ERC721, Ownable {
         }
         // receive GNO tokens and update balance
         (bool successTransfer,) = gnoContractAddress.call(
-            abi.encodeWithSignature(
-                "transferFrom(address,address,uint256)", 
-                owner_, address(this), amount_
-            )
+            abi.encodeWithSignature("transferFrom(address,address,uint256)", owner_, address(this), amount_)
         );
         require(successTransfer, "GNO tokens transfer failed");
         uint256 validators_amount = amount_ / FULL_DEPOSIT_SIZE;
@@ -193,13 +190,7 @@ contract SenseiStakeV2 is ERC721, Ownable {
                 revert NoMoreValidatorsLoaded();
             }
             bytes memory initData = abi.encodeWithSignature(
-                "initialize(uint32,uint256,bytes,bytes,bytes32,address)",
-                commissionRate,
-                tokenId,
-                validator.validatorPubKey,
-                validator.depositSignature,
-                validator.depositDataRoot,
-                depositContractAddress
+                "initialize(uint32,uint256,address)", commissionRate, tokenId, depositContractAddress
             );
             // create the service contract
             address proxy = Clones.cloneDeterministic(servicesContractImpl, bytes32(tokenId));
