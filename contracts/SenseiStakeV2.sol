@@ -6,6 +6,7 @@ import {Base64} from "@openzeppelin/contracts/utils/Base64.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {Counters} from "@openzeppelin/contracts/utils/Counters.sol";
 import {ERC721} from "@openzeppelin/contracts/token/ERC721/ERC721.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IDepositContract} from "./interfaces/IDepositContract.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {SenseistakeServicesContractV2 as SenseistakeServicesContract} from "./SenseistakeServicesContractV2.sol";
@@ -196,6 +197,9 @@ contract SenseiStakeV2 is ERC721, Ownable {
             address proxy = Clones.cloneDeterministic(servicesContractImpl, bytes32(tokenId));
             (bool successInit,) = proxy.call(initData);
             require(successInit, "Proxy init failed");
+
+            // give approval of gno tokens to deposit contract
+            IERC20(gnoContractAddress).approve(depositContractAddress, FULL_DEPOSIT_SIZE);
 
             // deposit validator
             IDepositContract(depositContractAddress).deposit(

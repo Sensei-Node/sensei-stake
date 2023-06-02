@@ -115,6 +115,8 @@ module.exports = async ({ deployments, upgrades, run }) => {
         }
     }
 
+    // console.log(validator_init_array[0].map(x => utils.hexlify(x)));
+
     try {
         const fcs = await tokenContract.unsafeBatchAddValidator(validator_init_array)
         if (['testnet', 'mainnet'].includes(network.config.type)) {

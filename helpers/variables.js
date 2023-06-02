@@ -33,6 +33,10 @@ const deploymentVariables = {
             name: 'SenseiStake Gnosis Validator',
             symbol: 'SSGV'
         },
+        31337: {
+            name: 'SenseiStake Hardhat Validator',
+            symbol: 'SSHV'
+        }
     },
     senseiStakeV1Address: {
         1: '0x2421A0aF8baDfAe12E1c1700E369747D3DB47B09',
