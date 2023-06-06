@@ -59,7 +59,7 @@ module.exports = async ({ deployments, upgrades, run }) => {
         // const keystoreDecryptedPrivKey = '0x' + (await keystore.decrypt(deploymentVariables.keystorePassword)).toString('hex')
         // console.log('DECRYPTED KEYSTORE', keystoreDecryptedPrivKey)
         const contractAddress = saltBytesToContractAddress(utils.hexZeroPad(utils.hexlify(index), 32), NNETWK);
-        const depositData = createOperatorDepositData(operatorPrivKey, contractAddress, network.config.type);
+        const depositData = createOperatorDepositData(operatorPrivKey, contractAddress, network.config.name);
         // let dDate = new Date(new Date().toISOString().slice(0, 10));
         // dDate.setMonth(dDate.getMonth() + 6);
         // const exitDate = BigNumber.from(dDate.getTime() / 1000);

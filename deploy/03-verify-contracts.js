@@ -12,22 +12,19 @@ module.exports = async ({
 }) => {
     const serviceDeployment = await deployments.get('SenseistakeServicesContractV2')
     const erc721Deployment = await deployments.get('SenseiStakeV2')
-    let ethDepositContractAddress, senseiStakeV1Address, senseistakeMetadataAddress;
+    let ethDepositContractAddress, senseistakeMetadataAddress;
     try {
         ethDepositContractAddress = await deployments.get("DepositContract");
-        senseistakeMetadataAddress = await deployments.get("SenseistakeMetadata");
     } catch (err) {
         ethDepositContractAddress = deploymentVariables.depositContractAddress[network.config.chainId] ?
             { address: deploymentVariables.depositContractAddress[network.config.chainId] } : { address: '0x00000000219ab540356cBB839Cbe05303d7705Fa' }
+    }
+    try {
+        senseistakeMetadataAddress = await deployments.get("SenseistakeMetadata");
+    } catch (err) {
         senseistakeMetadataAddress = deploymentVariables.senseistakeMetadataAddress[network.config.chainId] ?
             { address: deploymentVariables.senseistakeMetadataAddress[network.config.chainId] } : { address: '' }
     }
-    // try {
-    //     senseiStakeV1Address = await deployments.get("SenseiStake");
-    // } catch (err) {
-    //     senseiStakeV1Address = deploymentVariables.senseiStakeV1Address[network.config.chainId] ?
-    //         { address: deploymentVariables.senseiStakeV1Address[network.config.chainId] } : { address: '0x2421A0aF8baDfAe12E1c1700E369747D3DB47B09' }
-    // }
     const tName = deploymentVariables.tokenDeployed[network.config.chainId].name
     const tSymbol = deploymentVariables.tokenDeployed[network.config.chainId].symbol
     if (['testnet', 'mainnet'].includes(network.config.type) && process.env.ETHERSCAN_KEY) {
@@ -38,18 +35,18 @@ module.exports = async ({
         //     await verify(depositDeployment.address, [])
         // } catch { }
         // // verify metadata
-        // try {
-        //     await verify(senseistakeMetadataAddress.address, [])
-        // } catch { }
+        try {
+            await verify(senseistakeMetadataAddress.address, [])
+        } catch { }
         // verify service contract
         await verify(serviceDeployment.address, [])
         // verify erc721 contract
         await verify(erc721Deployment.address, [
-            "SenseiStake Ethereum Validator",
-            "SSEV",
-            100_000,
             tName,
             tSymbol,
+            100_000,
+            ethDepositContractAddress.address,
+            senseistakeMetadataAddress.address,
             deploymentVariables.gnoContractAddress[network.config.chainId]
         ])
     }

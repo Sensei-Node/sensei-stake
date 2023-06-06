@@ -151,6 +151,9 @@ contract SenseiStakeV2 is ERC721, Ownable {
     /// @param validators_ array of validators that will be stored
     function unsafeBatchAddValidator(Validators[] memory validators_) external onlyOwner {
         for (uint256 i = 0; i < validators_.length;) {
+            if (validators_[i].tokenId <= tokenIdCounter.current()) {
+                revert TokenIdAlreadyMinted();
+            }
             addedValidators[validators_[i].validatorPubKey] = true;
             Validator memory validator = Validator(
                 validators_[i].validatorPubKey, validators_[i].depositSignature, validators_[i].depositDataRoot
@@ -210,9 +213,8 @@ contract SenseiStakeV2 is ERC721, Ownable {
                 FULL_DEPOSIT_SIZE
             );
 
-            emit ValidatorMinted(tokenId);
-
             // mint the NFT
+            emit ValidatorMinted(tokenId);
             _safeMint(owner_, tokenId);
 
             unchecked {

@@ -56,9 +56,4 @@ const deploymentVariables = {
     waitConfirmations: waitConfirmations[network.config.type],
 }
 
-// const forkVersion = {
-//     mainnet: '00000000',
-//     goerli: '00001020'
-// }
-
 module.exports = { deploymentVariables, waitConfirmations }
