@@ -39,16 +39,20 @@ module.exports = async ({
             await verify(senseistakeMetadataAddress.address, [])
         } catch { }
         // verify service contract
-        await verify(serviceDeployment.address, [])
+        try {
+            await verify(serviceDeployment.address, [])
+        } catch { }
         // verify erc721 contract
-        await verify(erc721Deployment.address, [
-            tName,
-            tSymbol,
-            100_000,
-            ethDepositContractAddress.address,
-            senseistakeMetadataAddress.address,
-            deploymentVariables.gnoContractAddress[network.config.chainId]
-        ])
+        try {
+            await verify(erc721Deployment.address, [
+                tName,
+                tSymbol,
+                100_000,
+                ethDepositContractAddress.address,
+                senseistakeMetadataAddress.address,
+                deploymentVariables.gnoContractAddress[network.config.chainId]
+            ])
+        } catch { }
     }
 }
 

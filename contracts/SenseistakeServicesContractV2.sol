@@ -5,7 +5,8 @@ import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {IDepositContract} from "./interfaces/IDepositContract.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {SenseiStake} from "./SenseiStake.sol";
+import {SenseiStakeV2} from "./SenseiStakeV2.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /// @title A Service contract for handling SenseiStake Validators
 /// @author Senseinode
@@ -33,6 +34,9 @@ contract SenseistakeServicesContractV2 is Initializable {
     /// @notice The address for being able to deposit to the ethereum deposit contract
     /// @return depositContractAddress deposit contract address
     address public depositContractAddress;
+
+    /// @notice The address of the GNO token contract
+    address public gnoContractAddress;
 
     /// @notice The amount of eth the operator can claim
     /// @return state the operator claimable amount (in eth)
@@ -68,9 +72,6 @@ contract SenseistakeServicesContractV2 is Initializable {
         _;
     }
 
-    /// @notice This is the receive function called when a user performs a transfer to this contract address
-    receive() external payable {}
-
     /// @notice Initializes the contract and creates validator
     /// @dev Sets the commission rate, the operator address, operator data commitment, the tokenId and creates the validator
     /// @param commissionRate_  The service commission rate
@@ -84,6 +85,8 @@ contract SenseistakeServicesContractV2 is Initializable {
         commissionRate = commissionRate_;
         tokenId = tokenId_;
         tokenContractAddress = msg.sender;
+        gnoContractAddress = SenseiStakeV2(tokenContractAddress)
+            .gnoContractAddress();
         depositContractAddress = ethDepositContractAddress_;
         createdAt = uint64(block.timestamp);
     }
@@ -97,7 +100,7 @@ contract SenseistakeServicesContractV2 is Initializable {
         operatorClaimable = 0;
         address _owner = Ownable(tokenContractAddress).owner();
         emit Claim(_owner, claimable);
-        payable(_owner).sendValue(claimable);
+        IERC20(gnoContractAddress).transfer(_owner, claimable);
     }
 
     /// @notice Withdraw the deposit to a beneficiary
@@ -107,23 +110,26 @@ contract SenseistakeServicesContractV2 is Initializable {
         if (msg.sender != tokenContractAddress) {
             revert CallerNotAllowed();
         }
-        uint256 balance = address(this).balance;
+        uint256 balance = IERC20(gnoContractAddress).balanceOf(address(this));
         if ((balance + withdrawnAmount) >= FULL_DEPOSIT_SIZE) {
             unchecked {
                 uint256 profit = balance + withdrawnAmount - FULL_DEPOSIT_SIZE;
-                operatorClaimable = (profit * commissionRate) / COMMISSION_RATE_SCALE;
+                operatorClaimable =
+                    (profit * commissionRate) /
+                    COMMISSION_RATE_SCALE;
             }
             exitedAt = uint64(block.timestamp);
         }
         uint256 amount = balance - operatorClaimable;
         withdrawnAmount += amount;
         emit Withdrawal(beneficiary_, amount);
-        payable(beneficiary_).sendValue(amount);
+        IERC20(gnoContractAddress).transfer(beneficiary_, amount);
     }
 
     /// @notice Get withdrawable amount of a user
     /// @return amount the depositor is allowed withdraw
     function getWithdrawableAmount() external view returns (uint256) {
-        return address(this).balance - operatorClaimable;
+        uint256 balance = IERC20(gnoContractAddress).balanceOf(address(this));
+        return balance - operatorClaimable;
     }
 }

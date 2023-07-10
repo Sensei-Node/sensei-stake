@@ -69,12 +69,16 @@ contract SenseiStakeV2 is ERC721, Ownable {
     uint32 private constant COMMISSION_RATE_SCALE = 1_000_000;
 
     /// @notice Prefix of eth1 address for withdrawal credentials
-    uint96 private constant ETH1_ADDRESS_WITHDRAWAL_PREFIX = uint96(0x010000000000000000000000);
+    uint96 private constant ETH1_ADDRESS_WITHDRAWAL_PREFIX =
+        uint96(0x010000000000000000000000);
 
     /// @notice Fixed amount of the deposit
     uint256 private constant FULL_DEPOSIT_SIZE = 1 ether;
 
-    event ValidatorAdded(uint256 indexed tokenId, bytes indexed validatorPubKey);
+    event ValidatorAdded(
+        uint256 indexed tokenId,
+        bytes indexed validatorPubKey
+    );
     event ValidatorMinted(uint256 tokenIdServiceContract);
     event MetadataAddressChanged(address newAddress);
 
@@ -140,7 +144,11 @@ contract SenseiStakeV2 is ERC721, Ownable {
         if (depositSignature_.length != 96) {
             revert InvalidDepositSignature();
         }
-        Validator memory validator = Validator(validatorPubKey_, depositSignature_, depositDataRoot_);
+        Validator memory validator = Validator(
+            validatorPubKey_,
+            depositSignature_,
+            depositDataRoot_
+        );
         emit ValidatorAdded(tokenId_, validatorPubKey_);
         addedValidators[validatorPubKey_] = true;
         validators[tokenId_] = validator;
@@ -149,14 +157,18 @@ contract SenseiStakeV2 is ERC721, Ownable {
     /// @notice Adds multiple validators in batch
     /// @dev It does not check data integrity/validity, use it if completely sure that data input is correct
     /// @param validators_ array of validators that will be stored
-    function unsafeBatchAddValidator(Validators[] memory validators_) external onlyOwner {
-        for (uint256 i = 0; i < validators_.length;) {
+    function unsafeBatchAddValidator(
+        Validators[] memory validators_
+    ) external onlyOwner {
+        for (uint256 i = 0; i < validators_.length; ) {
             if (validators_[i].tokenId <= tokenIdCounter.current()) {
                 revert TokenIdAlreadyMinted();
             }
             addedValidators[validators_[i].validatorPubKey] = true;
             Validator memory validator = Validator(
-                validators_[i].validatorPubKey, validators_[i].depositSignature, validators_[i].depositDataRoot
+                validators_[i].validatorPubKey,
+                validators_[i].depositSignature,
+                validators_[i].depositDataRoot
             );
             validators[validators_[i].tokenId] = validator;
             unchecked {
@@ -179,12 +191,17 @@ contract SenseiStakeV2 is ERC721, Ownable {
             revert ValueSentDifferentThanFullDeposit();
         }
         // receive GNO tokens and update balance
-        (bool successTransfer,) = gnoContractAddress.call(
-            abi.encodeWithSignature("transferFrom(address,address,uint256)", owner_, address(this), amount_)
+        (bool successTransfer, ) = gnoContractAddress.call(
+            abi.encodeWithSignature(
+                "transferFrom(address,address,uint256)",
+                owner_,
+                address(this),
+                amount_
+            )
         );
         require(successTransfer, "GNO tokens transfer failed");
         uint256 validators_amount = amount_ / FULL_DEPOSIT_SIZE;
-        for (uint256 i = 0; i < validators_amount;) {
+        for (uint256 i = 0; i < validators_amount; ) {
             // increment tokenid counter
             tokenIdCounter.increment();
             uint256 tokenId = tokenIdCounter.current();
@@ -194,15 +211,24 @@ contract SenseiStakeV2 is ERC721, Ownable {
                 revert NoMoreValidatorsLoaded();
             }
             bytes memory initData = abi.encodeWithSignature(
-                "initialize(uint32,uint256,address)", commissionRate, tokenId, depositContractAddress
+                "initialize(uint32,uint256,address)",
+                commissionRate,
+                tokenId,
+                depositContractAddress
             );
             // create the service contract
-            address proxy = Clones.cloneDeterministic(servicesContractImpl, bytes32(tokenId));
-            (bool successInit,) = proxy.call(initData);
+            address proxy = Clones.cloneDeterministic(
+                servicesContractImpl,
+                bytes32(tokenId)
+            );
+            (bool successInit, ) = proxy.call(initData);
             require(successInit, "Proxy init failed");
 
             // give approval of gno tokens to deposit contract
-            IERC20(gnoContractAddress).approve(depositContractAddress, FULL_DEPOSIT_SIZE);
+            IERC20(gnoContractAddress).approve(
+                depositContractAddress,
+                FULL_DEPOSIT_SIZE
+            );
 
             // deposit validator
             IDepositContract(depositContractAddress).deposit(
@@ -228,9 +254,14 @@ contract SenseiStakeV2 is ERC721, Ownable {
     /// @param spender_: the address to check if it has approval or ownership of tokenId
     /// @param tokenId_: the asset to check
     /// @return bool whether it is approved or owner of the token
-    function isApprovedOrOwner(address spender_, uint256 tokenId_) external view returns (bool) {
+    function isApprovedOrOwner(
+        address spender_,
+        uint256 tokenId_
+    ) external view returns (bool) {
         address owner = ERC721.ownerOf(tokenId_);
-        return (spender_ == owner || isApprovedForAll(owner, spender_) || getApproved(tokenId_) == spender_);
+        return (spender_ == owner ||
+            isApprovedForAll(owner, spender_) ||
+            getApproved(tokenId_) == spender_);
     }
 
     /// @notice Performs withdraw of balance in service contract
@@ -240,8 +271,13 @@ contract SenseiStakeV2 is ERC721, Ownable {
         if (!_isApprovedOrOwner(msg.sender, tokenId_)) {
             revert NotOwner();
         }
-        address proxy = Clones.predictDeterministicAddress(servicesContractImpl, bytes32(tokenId_));
-        SenseistakeServicesContract serviceContract = SenseistakeServicesContract(payable(proxy));
+        address proxy = Clones.predictDeterministicAddress(
+            servicesContractImpl,
+            bytes32(tokenId_)
+        );
+        SenseistakeServicesContract serviceContract = SenseistakeServicesContract(
+                payable(proxy)
+            );
         serviceContract.withdrawTo(msg.sender);
     }
 
@@ -249,28 +285,43 @@ contract SenseiStakeV2 is ERC721, Ownable {
     /// @dev For getting the service contract address of a given token id
     /// @param tokenId_ Is the token id
     /// @return Address of a service contract
-    function getServiceContractAddress(uint256 tokenId_) external view returns (address) {
-        return Clones.predictDeterministicAddress(servicesContractImpl, bytes32(tokenId_));
+    function getServiceContractAddress(
+        uint256 tokenId_
+    ) external view returns (address) {
+        return
+            Clones.predictDeterministicAddress(
+                servicesContractImpl,
+                bytes32(tokenId_)
+            );
     }
 
     /// @notice Gets token uri where the metadata of NFT is stored
     /// @param tokenId_ Is the token id
     /// @return Token uri of the tokenId provided
-    function tokenURI(uint256 tokenId_) public view override(ERC721) returns (string memory) {
-        address proxy = Clones.predictDeterministicAddress(servicesContractImpl, bytes32(tokenId_));
-        SenseistakeServicesContract serviceContract = SenseistakeServicesContract(payable(proxy));
-        return metadata.getMetadata(
-            Strings.toString(tokenId_),
-            Strings.toString(serviceContract.createdAt()),
-            Strings.toString((COMMISSION_RATE_SCALE / commissionRate)),
-            validators[tokenId_].validatorPubKey,
-            serviceContract.exitedAt()
+    function tokenURI(
+        uint256 tokenId_
+    ) public view override(ERC721) returns (string memory) {
+        address proxy = Clones.predictDeterministicAddress(
+            servicesContractImpl,
+            bytes32(tokenId_)
         );
+        SenseistakeServicesContract serviceContract = SenseistakeServicesContract(
+                payable(proxy)
+            );
+        return
+            metadata.getMetadata(
+                Strings.toString(tokenId_),
+                Strings.toString(serviceContract.createdAt()),
+                Strings.toString((COMMISSION_RATE_SCALE / commissionRate)),
+                validators[tokenId_].validatorPubKey,
+                serviceContract.exitedAt()
+            );
     }
 
     /// @notice For checking that there is a validator available for creation
     /// @return bool true if next validator is available or else false
     function validatorAvailable() external view returns (bool) {
-        return validators[tokenIdCounter.current() + 1].validatorPubKey.length > 0;
+        return
+            validators[tokenIdCounter.current() + 1].validatorPubKey.length > 0;
     }
 }
